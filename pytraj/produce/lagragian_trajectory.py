@@ -4,6 +4,8 @@ import xarray as xr
 import numpy as np
 import dateutil.parser
 
+from ..utils import validation
+
 
 def _make_stationary_trajectory(lat0, lon0, t0, t_max, dt):
     times = [t0]
@@ -43,6 +45,7 @@ def main(lat0, lon0, t0, t_max, dt, trajectory_type, out_filename):
     else:
         raise NotImplementedError(trajectory_type)
 
+    validation.validate_trajectory(ds)
     ds.to_netcdf(out_filename)
     print("Wrote trajectory to {}".format(out_filename))
 

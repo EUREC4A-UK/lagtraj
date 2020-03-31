@@ -1,0 +1,3 @@
+xarray
+pytest
+netCDF4

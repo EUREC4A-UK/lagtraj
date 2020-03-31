@@ -34,5 +34,4 @@ jobs:
     - name: Test with pytest
       run: |
         pip install pytest |
-        echo "::set-env name=PYTHONPATH::home/runner/work/pytraj" |
-        pytest
+        python -m pytest

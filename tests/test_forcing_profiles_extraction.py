@@ -2,13 +2,13 @@ from pathlib import Path
 import dateutil.parser
 import datetime
 
-import pytraj.produce.lagragian_trajectory
+import pytraj.produce.lagrangian_trajectory
 import pytraj.produce.forcing_profiles
 
 
 def test_create_stationary_trajectory():
     fn_trajectory = "trajectory_test.nc"
-    pytraj.produce.lagragian_trajectory.main(
+    pytraj.produce.lagrangian_trajectory.main(
         lat0=-10, lon0=40,
         t0=dateutil.parser.parse("2020-01-22T12:00"),
         t_max=dateutil.parser.parse("2020-01-24T12:00"),

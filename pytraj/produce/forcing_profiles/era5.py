@@ -3,11 +3,13 @@ import datetime
 import xarray as xr
 import numpy as np
 
+class InvalidLevelsDefinition(NotImplementedError):
+    pass
 
 def extract_forcing_profiles(ds_traj, required_variables, da_levels):
-    if not da_levels.units == "Pa":
-        raise NotImplementedError(
-            "ERA5 data can currently only be generated on pressure levels"
+    if not da_levels.units == "m":
+        raise InvalidLevelsDefinition(
+            "ERA5 data can currently only be generated on height levels"
         )
 
     ds_forcing_profiles = xr.Dataset(

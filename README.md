@@ -1,4 +1,4 @@
-# pytraj Lagragian simulations trajectories
+# lagtraj Lagragian simulations trajectories
 
 ## Project components
 
@@ -9,8 +9,8 @@ Two steps:
 2. Extract forcing profiles along trajectory
 
 ```bash
-$> python -m pytraj.produce.forcing_profiles [trajectory.nc]
-$> python -m pytraj.produce.lagrangian_trajectory -lat0 -lon0 -t_start
+$> python -m lagtraj.produce.forcing_profiles [trajectory.nc]
+$> python -m lagtraj.produce.lagrangian_trajectory -lat0 -lon0 -t_start
 ```
 
 

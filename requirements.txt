@@ -4,3 +4,4 @@ netCDF4
 cfgrib
 datetime
 numpy
+yaml

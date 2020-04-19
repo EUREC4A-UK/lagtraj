@@ -2,15 +2,18 @@
 
 ## Project components
 
-Two steps:
+Three steps:
 
-1. Produce trajectory (could then be specified by other means)
+1. Download a domain for a given date (small for Eulerian simulations, big for Lagrangian)
 
-2. Extract forcing profiles along trajectory
+2. Produce trajectory
+
+3. Extract forcing profiles along the trajectory
 
 ```bash
-$> python -m lagtraj.produce.forcing_profiles [trajectory.nc]
-$> python -m lagtraj.produce.lagrangian_trajectory -lat0 -lon0 -t_start
+$> python -m lagtraj.domains.era.download [input_domain.yaml] [start date (yyyy-mm-dd)] [end date (yyyy-mm-dd)]
+$> python -m lagtraj.trajectory.era.create [input_trajectory.yaml]
+$> python -m lagtraj.forcings.era.create [input_forcings.yaml]
 ```
 
 
@@ -24,7 +27,7 @@ Required utilies:
 
 - smoothing
 
-- plotting?
+- plotting (to some extent)
 
 - generating HighTune formatted output netCDF files
 
@@ -33,15 +36,14 @@ Required utilies:
 
 ## Algorithmic approach:
 
-a) Download all data needed (across entire domain) at once in a single request
-   to ECMWF
+a) Download all data needed (across entire domain, single/model levels+) in the minimum number of 
+   requests from ECMWF.
 
-b) Or download interatively by each integration step, only downloading data
-   required to do the next integration
+b) Split these into daily files
 
 Considerations:
 
 - may need whole domain for plotting
 
 - how many download requests can we make with ECMWF's data server? One big
-  request many small ones
+  request seems better than many small ones

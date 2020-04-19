@@ -1,0 +1,7 @@
+name      : eurec4a_circle_eul_domain
+lat_min   : -62.217
+lat_max   : -54.217
+lon_min   : 9.8
+lon_max   : 16.8
+latsamp   : 0.1
+lonsamp   : 0.1

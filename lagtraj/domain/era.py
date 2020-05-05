@@ -1,6 +1,10 @@
 import cdsapi
 cds_client = cdsapi.Client()
 
+def get_from_yaml(input_file):
+    with open(input_file) as input_file:
+        domain_dict=yaml.load(this_case_file, Loader=yaml.FullLoader)
+                    
 def get_by_day(date,north,west,south,east,era5dir):
     check_if_exists(date,north,west,south,east,era5dir)
     if(not ml

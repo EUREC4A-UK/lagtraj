@@ -3,5 +3,5 @@ lat_min   : -62.217
 lat_max   : -54.217
 lon_min   : 9.8
 lon_max   : 16.8
-latsamp   : 0.1
-lonsamp   : 0.1
+lat_samp   : 0.1
+lon_samp   : 0.1

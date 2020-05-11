@@ -11,7 +11,7 @@ Three steps:
 3. Extract forcing profiles along the trajectory
 
 ```bash
-$> python -m lagtraj.domains.era.download [input_domain.yaml] [start date (yyyy-mm-dd)] [end date (yyyy-mm-dd)]
+$> python -m lagtraj.domains.era.get_from_yaml [input_domain.yaml] [start date (yyyy-mm-dd)] [end date (yyyy-mm-dd)]
 $> python -m lagtraj.trajectory.era.create [input_trajectory.yaml]
 $> python -m lagtraj.forcings.era.create [input_forcings.yaml]
 ```

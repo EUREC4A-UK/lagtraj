@@ -5,6 +5,13 @@ from lagtraj.utils.parsers import domain_filename_parse
 import datetime
 import xarray as xr
 
+# Routines for downloading data from ECMWF archives
+# TODO
+# - Think about a way to put multiple days in one file, if this speeds up downloading?
+#   (drawback: both dates in file name, may make it necessary to download data multiple times) 
+# - Make both NetCDF and Grib downloads are an option?
+# - Check metadata against dictionary (possibly with a hash sum)
+
 cds_client = cdsapi.Client()
 
 def main():
@@ -23,15 +30,10 @@ def get_from_yaml(input_file,start_date,end_date,directories_file,l_overwrite):
         directories_dict=yaml.load(this_directories_file, Loader=yaml.FullLoader)  
     with open(input_file) as this_case_file:
         domain_dict=yaml.load(this_case_file, Loader=yaml.FullLoader)
-        
-    # Should be removed later on
-    print(directories_dict)
-    print(domain_dict)
-    
+            
     start = datetime.datetime.strptime(start_date, "%Y-%m-%d")
     end = datetime.datetime.strptime(end_date, "%Y-%m-%d")
     # Note: forecast needs to start a day earlier, due to it starting from 18Z
-    # This is slightly wasteful on the number of requests
     an_dates_as_list = [(start + datetime.timedelta(days=x)).strftime("%Y-%m-%d") for x in range(0, (end-start).days+1)]
     fc_dates_as_list = [(start + datetime.timedelta(days=x)).strftime("%Y-%m-%d") for x in range(-1, (end-start).days+1)]
 
@@ -213,10 +215,16 @@ def get_model_level_fc(date,directories_dict,domain_dict,l_overwrite):
         p = multiprocessing.Process(target=retrieve_file, args=(this_repository,this_dict,this_filename,))
         p.start()
         
-def check_if_file_exists(date,pre_str,directories_dict,domain_dict):
-    return False
+def check_if_file_exists(date,prefix_str,directories_dict,domain_dict):
+    this_filename=domain_filename_parse(date,prefix_str,directories_dict,domain_dict)
     #check if the file name exists
-    #check if the meta-data agrees
+    if(not(os.path.isfile(this_filename))):
+        return False
+    else:
+        return True
+        #even better: check if the meta data agrees
+        #xr.Dataset.from_dict()
+        #xr.Dataset.to_dict()
 
 if __name__ == '__main__':
     main()

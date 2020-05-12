@@ -6,6 +6,6 @@ def trajectory_filename_parse(directories_dict,trajectory_dict):
     filename=directories_dict['output_trajectories_dir']+'/traj_'+trajectory_dict['name']+'.nc'
     return filename
     
-def forcing_filename_parse(directories_dict,forcing_dict):
-    filename=directories_dict['output_forcings_dir']+'/for_'+forcing_dict['name']+'.nc'
+def forcings_filename_parse(directories_dict,forcings_dict):
+    filename=directories_dict['output_forcings_dir']+'/for_'+forcings_dict['name']+'.nc'
     return filename

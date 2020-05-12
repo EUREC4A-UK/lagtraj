@@ -6,6 +6,11 @@ import numpy as np
 import pandas as pd
 from lagtraj.utils.parsers import domain_filename_parse,trajectory_filename_parse
 
+# Routines for creating a trajectory
+# TODO
+# - Implement different strategies 9single level, weighted, in future possibly hysplit)
+# - Add metadata to NetCDF
+
 def main():
     import argparse
     argparser = argparse.ArgumentParser()
@@ -31,7 +36,7 @@ def get_from_yaml(input_file,directories_file):
         raise ValueError('Trajectory_type not found')
 
 def create_eulerian_trajectory(directories_dict,trajectory_dict):
-    times=pd.date_range(np.datetime64(trajectory_dict['datetime_end'])-np.timedelta64(24, 'h'), periods=25, freq='h')
+    times=pd.date_range(np.datetime64(trajectory_dict['datetime_end'])-np.timedelta64(trajectory_dict['duration_hours'], 'h'), periods=trajectory_dict['duration_hours']+1, freq='h')
     nr_hours=len(times)
     lats=np.full((nr_hours),trajectory_dict['lat_end'])
     lons=np.full((nr_hours),trajectory_dict['lon_end'])

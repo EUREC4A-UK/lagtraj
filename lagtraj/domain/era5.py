@@ -3,14 +3,16 @@ import multiprocessing
 import yaml
 from lagtraj.utils.parsers import domain_filename_parse
 import datetime
-import xarray as xr
+import netCDF4
+import os
+import zlib
 
 # Routines for downloading data from ECMWF archives
 # TODO
 # - Think about a way to put multiple days in one file, if this speeds up downloading?
-#   (drawback: both dates in file name, may make it necessary to download data multiple times) 
-# - Make both NetCDF and Grib downloads are an option?
-# - Check metadata against dictionary (possibly with a hash sum)
+#   (on request: check for each day individually if it is there already, add the missing ones to a list, download the request, split the files by date again) 
+# - Make both NetCDF and Grib downloads are an option? 
+# - Check: check metadata against dictionary hash sum
 
 cds_client = cdsapi.Client()
 
@@ -21,15 +23,15 @@ def main():
     argparser.add_argument('start_date')
     argparser.add_argument('end_date')
     argparser.add_argument ("-f", "--file", dest='directories_file', default='directories.yaml', type=str)
-    argparser.add_argument ("-o", "--overwrite", dest='l_overwrite',action='store_true')
+    argparser.add_argument ("-o", "--overwrite", dest='l_overwrite',action='store_true', default=False)
     args = argparser.parse_args()
     get_from_yaml(args.input_file,args.start_date,args.end_date,args.directories_file,args.l_overwrite)
 
 def get_from_yaml(input_file,start_date,end_date,directories_file,l_overwrite):
     with open(directories_file) as this_directories_file:
         directories_dict=yaml.load(this_directories_file, Loader=yaml.FullLoader)  
-    with open(input_file) as this_case_file:
-        domain_dict=yaml.load(this_case_file, Loader=yaml.FullLoader)
+    with open(input_file) as this_domain_file:
+        domain_dict=yaml.load(this_domain_file, Loader=yaml.FullLoader)
             
     start = datetime.datetime.strptime(start_date, "%Y-%m-%d")
     end = datetime.datetime.strptime(end_date, "%Y-%m-%d")
@@ -45,10 +47,24 @@ def get_from_yaml(input_file,start_date,end_date,directories_file,l_overwrite):
         get_single_level_fc(this_date,directories_dict,domain_dict,l_overwrite)
         get_model_level_fc(this_date,directories_dict,domain_dict,l_overwrite)
 
+
+def create_hash(this_dict):
+    this_hash=0
+    for item in sorted(this_dict.items()):
+        curr_hash = 1
+        for sub_item in item:
+            curr_hash = zlib.adler32(bytes(repr(sub_item),'utf-8'), curr_hash)
+        this_hash=this_hash ^ curr_hash
+    return str(this_hash)
+    
 def retrieve_file(this_repository,this_dict,this_filename):
+    this_hash=create_hash(this_dict)
     c = cdsapi.Client()
     c.retrieve(this_repository,this_dict,this_filename)
-  
+    ds=netCDF4.Dataset(this_filename,'a')
+    ds.setncattr('dict_checksum', this_hash)
+    ds.close()
+    
 def get_single_level_an(date,directories_dict,domain_dict,l_overwrite):        
     # 2D ANALYSIS FROM ERA5
     # 31 Sea ice area fraction [(0 - 1)], ci
@@ -87,23 +103,20 @@ def get_single_level_an(date,directories_dict,domain_dict,l_overwrite):
         'date': date,
         'expver': '1',
         'levtype': 'sfc',
-        'param': """31.128/32.128/33.128/34.128/35.128/39.128/40.128/41.128/
-42.128/129.128/136.128/134.128/139.128/141.128/151.128/159.128/164.128/
-170.128/172.128/183.128/186.128/187.128/188.128/236.128/238.128/243.128/
-#~ 244.128/245.128""",
+        'param': '31.128/32.128/33.128/34.128/35.128/39.128/40.128/41.128/42.128/129.128/136.128/134.128/139.128/141.128/151.128/159.128/164.128/170.128/172.128/183.128/186.128/187.128/188.128/236.128/238.128/243.128/244.128/245.128',
         'stream': 'oper',
         'time': '00:00:00/01:00:00/02:00:00/03:00:00/04:00:00/05:00:00/06:00:00/07:00:00/08:00:00/09:00:00/10:00:00/11:00:00/12:00:00/13:00:00/14:00:00/15:00:00/16:00:00/17:00:00/18:00:00/19:00:00/20:00:00/21:00:00/22:00:00/23:00:00',
         'area': [domain_dict['lat_max'], domain_dict['lon_min'], domain_dict['lat_min'], domain_dict['lon_max']],
         'grid': str(domain_dict['lat_samp'])+'/'+str(domain_dict['lon_samp']),
         'type': 'an',
         'format':'netcdf'}
-    file_exists=check_if_file_exists(date,prefix_str,directories_dict,domain_dict)
+    file_exists=check_if_file_exists(date,prefix_str,directories_dict,domain_dict,this_dict)
     if(l_overwrite or not(file_exists)):       
         p = multiprocessing.Process(target=retrieve_file, args=(this_repository,this_dict,this_filename,))
         p.start()
     
 def get_model_level_an(date,directories_dict,domain_dict,l_overwrite):
-    # 3-D ANALYSIS FROM ERA5
+    # 3D ANALYSIS FROM ERA5
     # 75  Specific rain water content [kg kg**-1],  crwc
     # 76  Specific snow water content [kg kg**-1],  cswc
     # 77  Eta-coordinate vertical velocity [s**-1], etadot
@@ -134,7 +147,7 @@ def get_model_level_an(date,directories_dict,domain_dict,l_overwrite):
         'grid': str(domain_dict['lat_samp'])+'/'+str(domain_dict['lon_samp']),
         'type': 'an',
         'format':'netcdf'}
-    file_exists=check_if_file_exists(date,prefix_str,directories_dict,domain_dict)
+    file_exists=check_if_file_exists(date,prefix_str,directories_dict,domain_dict,this_dict)
     if(l_overwrite or not(file_exists)):       
         p = multiprocessing.Process(target=retrieve_file, args=(this_repository,this_dict,this_filename,))
         p.start()
@@ -171,9 +184,7 @@ def get_single_level_fc(date,directories_dict,domain_dict,l_overwrite):
         'date': date,
         'expver': '1',
         'levtype': 'sfc',
-        'param': """228001/228003/228023/235033/235034/235035/235036/235037/
-235038/235039/235040/235043/235049/235050/235051/235052/235053/235058/
-235059/235068/235069/235070""",
+        'param': '228001/228003/228023/235033/235034/235035/235036/235037/235038/235039/235040/235043/235049/235050/235051/235052/235053/235058/235059/235068/235069/235070',
         'stream': 'oper',
         'time': '06:00:00/18:00:00',
         'area': [domain_dict['lat_max'], domain_dict['lon_min'], domain_dict['lat_min'], domain_dict['lon_max']],
@@ -181,8 +192,8 @@ def get_single_level_fc(date,directories_dict,domain_dict,l_overwrite):
         'type': 'fc',
         'step':'0/1/2/3/4/5/6/7/8/9/10/11',
         'format':'netcdf'}
-    file_exists=check_if_file_exists(date,prefix_str,directories_dict,domain_dict)
-    if(l_overwrite or not(file_exists)):       
+    file_exists=check_if_file_exists(date,prefix_str,directories_dict,domain_dict,this_dict)
+    if(l_overwrite or not(file_exists)): 
         p = multiprocessing.Process(target=retrieve_file, args=(this_repository,this_dict,this_filename,))
         p.start()
             
@@ -210,21 +221,25 @@ def get_model_level_fc(date,directories_dict,domain_dict,l_overwrite):
         'grid': str(domain_dict['lat_samp'])+'/'+str(domain_dict['lon_samp']),
         'step':'0/1/2/3/4/5/6/7/8/9/10/11',
         'format':'netcdf'}
-    file_exists=check_if_file_exists(date,prefix_str,directories_dict,domain_dict)
+    file_exists=check_if_file_exists(date,prefix_str,directories_dict,domain_dict,this_dict)
     if(l_overwrite or not(file_exists)):       
         p = multiprocessing.Process(target=retrieve_file, args=(this_repository,this_dict,this_filename,))
         p.start()
         
-def check_if_file_exists(date,prefix_str,directories_dict,domain_dict):
+def check_if_file_exists(date,prefix_str,directories_dict,domain_dict,this_dict):
     this_filename=domain_filename_parse(date,prefix_str,directories_dict,domain_dict)
-    #check if the file name exists
+    # check if the file name exists
     if(not(os.path.isfile(this_filename))):
         return False
     else:
-        return True
-        #even better: check if the meta data agrees
-        #xr.Dataset.from_dict()
-        #xr.Dataset.to_dict()
+        # check if the meta data agrees
+        this_hash=create_hash(this_dict)
+        ds=netCDF4.Dataset(this_filename)
+        hash_unchanged=(ds.getncattr('dict_checksum')==this_hash)
+        if(hash_unchanged):
+            return True
+        else:
+            return False
 
 if __name__ == '__main__':
     main()

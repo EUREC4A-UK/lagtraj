@@ -9,10 +9,9 @@ import zlib
 
 # Routines for downloading data from ECMWF archives
 # TODO
-# - Think about a way to put multiple days in one file, if this speeds up downloading?
+# - Think about a way to put multiple days in one file, which may speed up downloading?
 #   (on request: check for each day individually if it is there already, add the missing ones to a list, download the request, split the files by date again) 
 # - Make both NetCDF and Grib downloads are an option? 
-# - Check: check metadata against dictionary hash sum
 
 cds_client = cdsapi.Client()
 

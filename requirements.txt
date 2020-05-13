@@ -7,3 +7,9 @@ numpy
 yaml
 os
 shutil
+weave
+zlib
+multiprocessing
+cdsapi
+pandas
+scipy

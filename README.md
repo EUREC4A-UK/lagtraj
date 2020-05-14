@@ -36,8 +36,10 @@ Required utilies:
 
 ## Algorithmic approach:
 
-a) Download all data needed (across entire domain, single/model levels+) in the minimum number of 
-   requests from ECMWF.
+a) Download all data needed (across entire domain, single/model levels+).
+   Currently this creates daily files, but we may aim for the minimum number of 
+   requests from ECMWF (However, grib to netcdf conversion via the cds api
+   can only deal with files of up to about 10GB).
 
 b) Split these into daily files
 

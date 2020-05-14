@@ -8,8 +8,8 @@ from lagtraj.utils.parsers import domain_filename_parse,trajectory_filename_pars
 
 # Routines for creating a trajectory
 # TODO
-# - Implement different strategies 9single level, weighted, in future possibly hysplit)
-# - Add metadata to NetCDF
+# - Implement different strategies (single height, weighted over heights, in future possibly hysplit)
+# - Add metadata to NetCDF output
 
 def main():
     import argparse
@@ -33,7 +33,7 @@ def get_from_yaml(input_file,directories_file):
     elif(trajectory_type=='weighted'):
         create_weighted_trajectory(directories_dict,trajectory_dict)
     else:
-        raise ValueError('Trajectory_type not found')
+        raise Exception('Trajectory_type not found')
 
 def create_eulerian_trajectory(directories_dict,trajectory_dict):
     times=pd.date_range(np.datetime64(trajectory_dict['datetime_end'])-np.timedelta64(trajectory_dict['duration_hours'], 'h'), periods=trajectory_dict['duration_hours']+1, freq='h')

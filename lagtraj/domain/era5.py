@@ -11,7 +11,8 @@ import zlib
 # TODO
 # - Think about a way to put multiple days in one file, which may speed up downloading?
 #   (on request: check for each day individually if it is there already, add the missing ones to a list, download the request, split the files by date again) 
-# - Make both NetCDF and Grib downloads are an option? 
+# - Make both NetCDF and Grib downloads an option? 
+# - Add a flag for putting a request online, but without download (only submit a request). Then simply run again to download.
 
 cds_client = cdsapi.Client()
 

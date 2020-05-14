@@ -1,5 +1,10 @@
-name           : eurec4a_20191209_12_eul_forcings_def
-trajectory     : eurec4a_20191209_12_eul_trajectory
-domain         : eurec4a_circle_eul_domain
-averaging_stategy : box_degrees
-averaging_width   : 2.0
+name               : eurec4a_20191209_12_eul_forcings_def
+trajectory         : eurec4a_20191209_12_eul_trajectory
+domain             : eurec4a_circle_eul_domain
+profiles_strategy  : box_degrees
+gradient_strategy  : box_degrees
+averaging_width    : 2.0
+levels_strategy    : exponential
+levels_number      : 128
+levels_dzmin       : 40.0
+levels_top         : 16000.0

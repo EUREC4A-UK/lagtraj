@@ -11,7 +11,8 @@ import lagtraj.produce.forcing_profiles
 
 def test_create_dummy_forcing_from_stationary_trajectory():
     ds_traj = lagtraj.produce.lagrangian_trajectory.stationary.extract_trajectory(
-        lat0=-10, lon0=40,
+        lat0=-10,
+        lon0=40,
         t0=dateutil.parser.parse("2020-01-22T12:00"),
         t_max=dateutil.parser.parse("2020-01-24T12:00"),
         dt=datetime.timedelta(hours=4),
@@ -19,13 +20,11 @@ def test_create_dummy_forcing_from_stationary_trajectory():
 
     da_levels = xr.DataArray(
         np.array([100e3, 90e3, 80e3, 70e3]),
-        attrs=dict(long_name='pressure levels', units='Pa')
+        attrs=dict(long_name="pressure levels", units="Pa"),
     )
 
     ds_forcing_profiles = lagtraj.produce.forcing_profiles.dummy.extract_forcing_profiles(
-        ds_traj=ds_traj,
-        required_variables=["ddt__qv",],
-        da_levels=da_levels
+        ds_traj=ds_traj, required_variables=["ddt__qv",], da_levels=da_levels
     )
 
 
@@ -33,11 +32,12 @@ def test_create_dummy_forcing_from_stationary_trajectory():
 def test_main():
     fn_trajectory = "trajectory_test.nc"
     lagtraj.produce.lagrangian_trajectory.main(
-        lat0=-10, lon0=40,
+        lat0=-10,
+        lon0=40,
         t0=dateutil.parser.parse("2020-01-22T12:00"),
         t_max=dateutil.parser.parse("2020-01-24T12:00"),
         dt=datetime.timedelta(hours=4),
-        trajectory_type='stationary',
+        trajectory_type="stationary",
         out_filename=fn_trajectory,
     )
 

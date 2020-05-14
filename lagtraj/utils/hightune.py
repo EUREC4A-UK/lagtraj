@@ -2,4 +2,4 @@
 # TODO
 # - Add list of variables
 
-hightune_variables={}
+hightune_variables = {}

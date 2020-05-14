@@ -15,9 +15,7 @@ def main(lat0, lon0, t0, t_max, dt, trajectory_type, out_filename):
             lat0=lat0, lon0=lon0, t_max=t_max, t0=t0, dt=dt
         )
     elif trajectory_type == "ERA5":
-        ds = extract_era5_trajectory(
-            lat0=lat0, lon0=lon0, t_max=t_max, t0=t0, dt=dt
-        )
+        ds = extract_era5_trajectory(lat0=lat0, lon0=lon0, t_max=t_max, t0=t0, dt=dt)
     else:
         raise NotImplementedError(trajectory_type)
 

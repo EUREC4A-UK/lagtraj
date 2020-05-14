@@ -12,14 +12,13 @@ def extract_forcing_profiles(ds_traj, required_variables, da_levels):
 
     ds_forcing_profiles = xr.Dataset(
         coords=dict(
-            time=ds_traj.time,
-            lat=ds_traj.lat,
-            lon=ds_traj.lon,
-            level=da_levels
+            time=ds_traj.time, lat=ds_traj.lat, lon=ds_traj.lon, level=da_levels
         ),
-        attrs=dict(description="ERA5 forcing data generated {}".format(
-            datetime.datetime.now().isoformat()
-        ))
+        attrs=dict(
+            description="ERA5 forcing data generated {}".format(
+                datetime.datetime.now().isoformat()
+            )
+        ),
     )
 
     ds_start = ds_traj.isel(time=0)

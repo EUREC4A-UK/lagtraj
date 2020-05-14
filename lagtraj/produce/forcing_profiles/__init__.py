@@ -15,18 +15,16 @@ def main(fn_trajectory, source_data, out_filename):
     # TODO: move this to a yaml file
     da_levels = xr.DataArray(
         np.array([100e3, 90e3, 80e3, 70e3]),
-        attrs=dict(long_name='pressure levels', units='Pa')
+        attrs=dict(long_name="pressure levels", units="Pa"),
     )
 
-    if source_data == 'ERA5':
+    if source_data == "ERA5":
         ds_forcing_profiles = era5_extract_forcing_profiles(
-            ds_traj=ds_traj, required_variables=["ddt__qv"],
-            da_levels=da_levels
+            ds_traj=ds_traj, required_variables=["ddt__qv"], da_levels=da_levels
         )
-    elif source_data == 'dummy':
+    elif source_data == "dummy":
         ds_forcing_profiles = dummy_extract_forcing_profiles(
-            ds_traj=ds_traj, required_variables=["ddt__qv"],
-            da_levels=da_levels
+            ds_traj=ds_traj, required_variables=["ddt__qv"], da_levels=da_levels
         )
     else:
         raise NotImplementedError(source_data)

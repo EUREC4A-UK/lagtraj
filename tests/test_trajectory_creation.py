@@ -8,7 +8,8 @@ from lagtraj.utils import validation
 
 def test_create_stationary_trajectory():
     ds = lagtraj.produce.lagrangian_trajectory.stationary.extract_trajectory(
-        lat0=-10, lon0=40,
+        lat0=-10,
+        lon0=40,
         t0=dateutil.parser.parse("2020-01-22T12:00"),
         t_max=dateutil.parser.parse("2020-01-24T12:00"),
         dt=datetime.timedelta(hours=4),
@@ -20,11 +21,12 @@ def test_create_stationary_trajectory():
 def test_main():
     fn_out = "stationary_trajectory_test.nc"
     lagtraj.produce.lagrangian_trajectory.main(
-        lat0=-10, lon0=40,
+        lat0=-10,
+        lon0=40,
         t0=dateutil.parser.parse("2020-01-22T12:00"),
         t_max=dateutil.parser.parse("2020-01-24T12:00"),
         dt=datetime.timedelta(hours=4),
-        trajectory_type='stationary',
+        trajectory_type="stationary",
         out_filename=fn_out,
     )
 

@@ -1,4 +1,6 @@
 *.pyc
 .*.sw*
 *.nc
+*.so
+lagtraj/utils/*.html
 __pycache__/

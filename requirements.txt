@@ -5,8 +5,6 @@ cfgrib
 datetime
 numpy
 pyyaml
-os
-shutil
 zlib
 multiprocessing
 cdsapi

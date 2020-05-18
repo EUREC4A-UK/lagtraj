@@ -48,6 +48,11 @@ def get_from_yaml(input_file, directories_file):
 
 
 def append_timestep(forcings_dict, forcing_data, trajectory_data, timestep):
+    if (forcings_dict["source"]).lower() == "era5":
+        append_era5_timestep(forcings_dict, forcing_data, trajectory_data, timestep)
+
+
+def append_era5_timestep(forcings_dict, forcing_data, trajectory_data, timestep):
     # FOR EACH TIME STEP
     # find the right input data
     # reinterpolate data to height or pressure with effective height (tbd)

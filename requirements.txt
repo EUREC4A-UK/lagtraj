@@ -4,10 +4,9 @@ netCDF4
 cfgrib
 datetime
 numpy
-yaml
+pyyaml
 os
 shutil
-weave
 zlib
 multiprocessing
 cdsapi

@@ -5,8 +5,6 @@ cfgrib
 datetime
 numpy
 pyyaml
-zlib
-multiprocessing
 cdsapi
 pandas
 scipy

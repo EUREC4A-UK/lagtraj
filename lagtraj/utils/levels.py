@@ -1,6 +1,8 @@
 import numpy as np
 from scipy.optimize import ridder
 
+import xarray as xr
+
 # Utilities related to level spacing and interpolation
 # Except steffen interpolation, which is in separate pyx file
 
@@ -15,7 +17,10 @@ def make_levels(forcings_dict):
         levels = make_linear_levels(top, n_levels)
     else:
         raise Exception("Unknown strategy for making levels")
-    return levels
+    return xr.DataArray(
+        levels, dims=('level',),
+        attrs=dict(long_name="height", units="m")
+    )
 
 
 def exponential_levels_error(x, dz_min, top, n_levels):

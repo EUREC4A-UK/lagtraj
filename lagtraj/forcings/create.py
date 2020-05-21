@@ -4,16 +4,25 @@ import xarray as xr
 import os
 import numpy as np
 import pandas as pd
+from pkg_resources import resource_filename
+from lagtraj.utils.levels import make_levels
+# from lagtraj.utils.era5 import add_heights_and_pressures
+from lagtraj.utils.hightune import hightune_variables
 from lagtraj.utils.parsers import (
     domain_filename_parse,
     trajectory_filename_parse,
     forcings_filename_parse,
 )
-from lagtraj.utils.levels import make_levels
 
-# from lagtraj.utils.era5 import add_heights_and_pressures
-from lagtraj.utils.hightune import hightune_variables
+""" Routines for creating the forcings
 
+Todo
+- Implement the routines in the ERA5 time stepping"""
+
+levelsfile = resource_filename('lagtraj', 'utils/137levels.dat')
+df = pd.read_table(levelsfile, sep="\s+") 
+levA=df['a[Pa]'].values
+levB=df['b'].values
 
 def main():
     import argparse
@@ -40,7 +49,6 @@ def get_from_yaml(input_file, directories_file):
     times = trajectory_data["time"]
 
     levels = make_levels(forcings_dict)
-
     forcing_data = xr.Dataset()
     for timestep in trajectory_data["time"]:
         append_timestep(forcings_dict, forcing_data, trajectory_data, timestep)
@@ -53,11 +61,11 @@ def append_timestep(forcings_dict, forcing_data, trajectory_data, timestep):
 
 
 def append_era5_timestep(forcings_dict, forcing_data, trajectory_data, timestep):
-    # FOR EACH TIME STEP
-    # find the right input data
-    # reinterpolate data to height or pressure with effective height (tbd)
-    # create 'mask' for forcings on domain
-    # calculate profiles and forcings
+    """For each time step:
+    - Find the right input data
+    - Reinterpolate data to height or pressure with effective height (tbd)
+    - Create 'mask' for forcings on domain
+    - Calculate profiles and forcings"""
     lon_indices, lat_indices = calculate_current_lat_lon_range(
         forcings_dict, trajectory_data, timestep
     )
@@ -83,6 +91,7 @@ def append_era5_timestep(forcings_dict, forcing_data, trajectory_data, timestep)
 
 
 def calculate_current_lat_lon_range(forcings_dict, trajectory_data, timestep):
+    # subsets a par
     lon_indices = []
     lat_indices = []
     return lon_indices, lat_indices

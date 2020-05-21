@@ -6,12 +6,13 @@ import numpy as np
 import pandas as pd
 from lagtraj.utils.parsers import domain_filename_parse, trajectory_filename_parse
 
-# Routines for creating a trajectory
-# TODO
-# - Implement different strategies (single height, weighted over heights, in future possibly hysplit)
-# - Add metadata to NetCDF output
-# - Improve linear trajectory to work with haversine functions and actual velocities
-# - Relax assumption of hourly data?
+""" Routines for creating a trajectory
+
+Todo
+- Implement different strategies (single height, weighted over heights, in future possibly hysplit)
+- Add metadata to NetCDF output
+- Improve linear trajectory to work with haversine functions and actual velocities
+- Relax assumption of hourly data?"""
 
 
 def main():

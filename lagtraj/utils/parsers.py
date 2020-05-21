@@ -10,7 +10,7 @@ def domain_filename_parse(date, prefix_str, directories_dict, domain_input):
             + domain_input["name"]
             + ".nc"
         )
-    if type(domain_input) == str:
+    elif type(domain_input) == str:
         filename = (
             directories_dict["output_domains_dir"]
             + "/"
@@ -32,7 +32,7 @@ def trajectory_filename_parse(directories_dict, trajectory_input):
             + trajectory_input["name"]
             + ".nc"
         )
-    if type(trajectory_input) == str:
+    elif type(trajectory_input) == str:
         filename = (
             directories_dict["output_trajectories_dir"]
             + "/traj_"
@@ -50,7 +50,7 @@ def forcings_filename_parse(directories_dict, forcings_input):
             + forcings_input["name"]
             + ".nc"
         )
-    if type(trajectory_input) == str:
+    elif type(forcings_input) == str:
         filename = (
             directories_dict["output_forcings_dir"] + "/for_" + forcings_input + ".nc"
         )

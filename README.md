@@ -11,9 +11,9 @@ Three steps:
 3. Extract forcing profiles along the trajectory
 
 ```bash
-$> python -m lagtraj.domains.era5 [input_domain.yaml] [start date (yyyy-mm-dd)] [end date (yyyy-mm-dd)] [--file directories.yaml] [--overwrite]
-$> python -m lagtraj.trajectory.era5 [input_trajectory.yaml]
-$> python -m lagtraj.forcings.era5 [input_forcings.yaml]
+$> python -m lagtraj.domains.download [input_domain.yaml] [start date (yyyy-mm-dd)] [end date (yyyy-mm-dd)] [--file directories.yaml] [--overwrite]
+$> python -m lagtraj.trajectory.create [input_trajectory.yaml]
+$> python -m lagtraj.forcings.create [input_forcings.yaml]
 ```
 
 
@@ -36,8 +36,10 @@ Required utilies:
 
 ## Algorithmic approach:
 
-a) Download all data needed (across entire domain, single/model levels+) in the minimum number of 
-   requests from ECMWF.
+a) Download all data needed (across entire domain, single/model levels+).
+   Currently this creates daily files, but we may aim for the minimum number of 
+   requests from ECMWF (However, grib to netcdf conversion via the cds api
+   can only deal with files of up to about 10GB).
 
 b) Split these into daily files
 

@@ -46,6 +46,19 @@ def get_from_yaml(input_file, start_date, end_date, directories_file, l_overwrit
     with open(input_file) as this_domain_file:
         domain_dict = yaml.load(this_domain_file, Loader=yaml.FullLoader)
 
+    if (domain_dict["source"]).lower() == "era5":
+        get_era5_from_yaml(
+            input_file, start_date, end_date, directories_dict, domain_dict, l_overwrite
+        )
+    else:
+        raise Exception(
+            "Source type in domain dictionary unknown. Should for example be 'era5'"
+        )
+
+
+def get_era5_from_yaml(
+    input_file, start_date, end_date, directories_dict, domain_dict, l_overwrite
+):
     start = datetime.datetime.strptime(start_date, "%Y-%m-%d")
     end = datetime.datetime.strptime(end_date, "%Y-%m-%d")
     # Note: forecast needs to start a day earlier, due to it starting from 18Z
@@ -310,7 +323,11 @@ def check_if_file_exists(date, prefix_str, directories_dict, domain_dict, this_d
         # check if the meta data agrees
         this_hash = create_hash(this_dict)
         ds = netCDF4.Dataset(this_filename)
-        hash_unchanged = ds.getncattr("dict_checksum") == this_hash
+        try:
+            hash_unchanged = ds.getncattr("dict_checksum") == this_hash
+        except:
+            # if hash checking fails, just download
+            return False
         if hash_unchanged:
             return True
         else:

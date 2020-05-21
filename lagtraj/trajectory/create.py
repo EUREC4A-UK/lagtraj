@@ -10,6 +10,8 @@ from lagtraj.utils.parsers import domain_filename_parse, trajectory_filename_par
 # TODO
 # - Implement different strategies (single height, weighted over heights, in future possibly hysplit)
 # - Add metadata to NetCDF output
+# - Improve linear trajectory to work with haversine functions and actual velocities
+# - Relax assumption of hourly data?
 
 
 def main():
@@ -33,6 +35,8 @@ def get_from_yaml(input_file, directories_file):
     trajectory_type = (trajectory_dict["trajectory_type"]).lower()
     if trajectory_type == "eulerian":
         create_eulerian_trajectory(directories_dict, trajectory_dict)
+    elif trajectory_type == "linear":
+        create_linear_trajectory(directories_dict, trajectory_dict)
     elif trajectory_type == "single_level":
         create_single_level_trajectory(directories_dict, trajectory_dict)
     elif trajectory_type == "weighted":
@@ -51,6 +55,24 @@ def create_eulerian_trajectory(directories_dict, trajectory_dict):
     nr_hours = len(times)
     lats = np.full((nr_hours), trajectory_dict["lat_end"])
     lons = np.full((nr_hours), trajectory_dict["lon_end"])
+    data = trajectory_to_xarray(times, lats, lons)
+    data.to_netcdf(trajectory_filename_parse(directories_dict, trajectory_dict))
+
+
+def create_linear_trajectory(directories_dict, trajectory_dict):
+    times = pd.date_range(
+        np.datetime64(trajectory_dict["datetime_end"])
+        - np.timedelta64(trajectory_dict["duration_hours"], "h"),
+        periods=trajectory_dict["duration_hours"] + 1,
+        freq="h",
+    )
+    nr_hours = len(times)
+    lat_end = trajectory_dict["lat_end"]
+    lon_end = trajectory_dict["lon_end"]
+    dlat_dt = trajectory_dict["dlat_dt"]
+    dlon_dt = trajectory_dict["dlon_dt"]
+    lats = lat_end - 3600.0 * dlat_dt * np.arange(nr_hours - 1, -1, -1)
+    lons = lon_end - 3600.0 * dlon_dt * np.arange(nr_hours - 1, -1, -1)
     data = trajectory_to_xarray(times, lats, lons)
     data.to_netcdf(trajectory_filename_parse(directories_dict, trajectory_dict))
 

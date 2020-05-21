@@ -1,4 +1,5 @@
 name      : eurec4a_circle_eul_domain
+source    : era5
 lat_min   : 8.0
 lat_max   : 30.0
 lon_min   : -64.217

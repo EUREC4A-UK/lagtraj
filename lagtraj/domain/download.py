@@ -7,16 +7,6 @@ from pathlib import Path
 from .sources import era5
 from . import LatLonBoundingBox, LatLonSamplingResolution
 
-# TODO
-# - Think about a way to put multiple days in one file, which may speed up
-#   downloading?
-#   (on request: check for each day individually if it is there already, add
-#   the missing ones to a list, download the request, split the files by date
-#   again)
-# - Make both NetCDF and Grib downloads an option?
-# - Add a flag for putting a request online, but without download (only submit
-#   a request). Then simply run again to download.
-
 
 def download(dst_path, source, t_start, t_end, bbox, latlon_sampling,
              overwrite_existing=False):
@@ -49,7 +39,7 @@ if __name__ == "__main__":
     argparser.add_argument("start_date", type=dateutil.parser.parse)
     argparser.add_argument("end_date", type=dateutil.parser.parse)
     argparser.add_argument(
-        "-d", "--data-path", default=os.getcwd(), type=Path
+        "-d", "--data-path", default=os.getcwd()/"data", type=Path
     )
     argparser.add_argument(
         "-o", "--overwrite", dest="l_overwrite", action="store_true",

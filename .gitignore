@@ -4,3 +4,5 @@
 *.so
 lagtraj/utils/*.html
 __pycache__/
+
+data/

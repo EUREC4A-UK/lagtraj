@@ -8,4 +8,5 @@ def dict_to_hash(d):
         for sub_item in item:
             curr_hash = zlib.adler32(bytes(repr(sub_item), "utf-8"), curr_hash)
         this_hash = this_hash ^ curr_hash
+
     return str(this_hash)

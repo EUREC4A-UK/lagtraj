@@ -1,59 +1,124 @@
 """
 Routines for downloading era5 data for a given domain and storing it locally
 """
-
 import datetime
-import multiprocessing
 import warnings
 from pathlib import Path
 import shutil
 
-import cdsapi
 import netCDF4
+import yaml
 
 from ... import utils
+from .cdsapi_request import RequestFetchCDSClient
 
 
 DATE_FORMAT = "%Y-%m-%d"
 TIME_FORMAT = "%h:%M:%s"
 REPOSITORY_NAME = "reanalysis-era5-complete"
 FILENAME_FORMAT = "{model_run_type}_{level_type}_{date}.nc"
+DATA_REQUESTS_FILENAME = "data_requests.yml"
 
 
 def download_data(path, t_start, t_end, bbox, latlon_sampling,
                   overwrite_existing=False):
+
     dl_queries = _build_queries(
         t_start=t_start, t_end=t_end, bbox=bbox,
         latlon_sampling=latlon_sampling
     )
 
+    c = RequestFetchCDSClient()
+
+    try:
+        with open(path/DATA_REQUESTS_FILENAME, "r") as fh:
+            download_requests = yaml.load(fh, Loader=yaml.FullLoader)
+    except FileNotFoundError:
+        download_requests = {}
+
     for output_filename, query_kwargs in dl_queries:
         file_path = Path(path)/output_filename
+        query_hash = utils.dict_to_hash(query_kwargs)
+
+        download_id = str(file_path)
+        should_make_request = True
         if not overwrite_existing and file_path.exists():
-            if _data_valid(file_path):
-                pass
+            if _data_valid(file_path=file_path, query_hash=query_hash):
+                should_make_request = False
             else:
                 warnings.warn("Invalid data found for ({})"
                               ", deleting and queuing for re-download"
                               "".format(output_filename))
-                shutil.remove(output_filename)
-        else:
-            p = multiprocessing.Process(
-                target=retrieve_file,
-                args=(query_kwargs, str(file_path),)
+                file_path.unlink()
+
+        if download_id in download_requests:
+            if download_requests[download_id]['query_hash'] == query_hash:
+                should_make_request = False
+            else:
+                del download_data[download_id]
+
+        if should_make_request:
+            request_id = c.queue_data_request(
+                repository_name=REPOSITORY_NAME, query_kwargs=query_kwargs
             )
-            p.start()
+            assert request_id is not None
+            download_requests[download_id] = dict(
+                request_id=request_id, query_hash=query_hash
+            )
+
+    # save the download requests IDs so we have them later in case we quit,
+    # downloads fail, etc
+    if len(download_requests) > 0:
+        Path(path).mkdir(exist_ok=True, parents=True)
+        with open(path/DATA_REQUESTS_FILENAME, "w") as fh:
+            fh.write(yaml.dump(download_requests))
+
+    files_to_download = []
+    if len(download_requests) > 0:
+        print("Status on current data requests:")
+        for file_path, request_details in download_requests.items():
+            request_id = request_details['request_id']
+            status = c.get_request_status(request_id=request_id)
+            print(" {}:\n\t{} ({})".format(file_path, status, request_id))
+
+            if status == 'completed':
+                files_to_download.append(file_path)
+
+    if len(files_to_download) > 0:
+        print("Downloading files which are ready...")
+        for file_path in files_to_download:
+            request_details = download_requests[file_path]
+            request_id = request_details['request_id']
+            query_hash = request_details['query_hash']
+
+            Path(file_path).parent.mkdir(exist_ok=True, parents=True)
+            c.download_data_by_request(request_id=request_id,
+                                       target=file_path)
+            _fingerprint_downloaded_file(query_hash=query_hash,
+                                         file_path=file_path)
+
+            del download_requests[file_path]
+
+    # save download requets again now we've downloaded the files that were
+    # ready
+    if len(download_requests) > 0:
+        with open(path/DATA_REQUESTS_FILENAME, "w") as fh:
+            fh.write(yaml.dump(download_requests))
+    else:
+        data_requests_file = Path(path/DATA_REQUESTS_FILENAME)
+        if data_requests_file.exists():
+            data_requests_file.unlink()
+        print("All files downloaded!")
 
 
-def _data_valid(output_filename, query_dict):
+def _data_valid(file_path, query_hash):
     """
-    Create hash on `query_dict` and ensure it matches that stored in file
+    Create hash on `query_kwargs` and ensure it matches that stored in file
     on disk
     """
-    this_hash = utils.dict_to_hash(query_dict)
-    ds = netCDF4.Dataset(output_filename)
+    ds = netCDF4.Dataset(file_path)
     try:
-        hash_unchanged = ds.getncattr("dict_checksum") == this_hash
+        hash_unchanged = ds.getncattr("dict_checksum") == query_hash
     except AttributeError:
         # if hash checking fails, just download
         return False
@@ -129,12 +194,13 @@ def _build_query(model_run_type, level_type, date, bbox, latlon_sampling):
         raise NotImplementedError(model_run_type, level_type)
 
 
-def retrieve_file(query_dict, file_path):
-    this_hash = utils.dict_to_hash(query_dict)
-    c = cdsapi.Client()
-    c.retrieve(REPOSITORY_NAME, query_dict, file_path)
+def _get_query_status(request_id):
+    return "TOFIX"
+
+
+def _fingerprint_downloaded_file(query_hash, file_path):
     ds = netCDF4.Dataset(file_path, "a")
-    ds.setncattr("dict_checksum", this_hash)
+    ds.setncattr("dict_checksum", query_hash)
     ds.close()
 
 

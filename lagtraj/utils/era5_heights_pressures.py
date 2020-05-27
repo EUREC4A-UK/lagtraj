@@ -1,16 +1,24 @@
 """
-ERA5 utilities that
+ERA5 utilities that can
 - Add heights and pressures to an input data array on model levels
-- Interpolate from model levels to constant heights
-- Calculate gradients
-- Subset domain
+- Interpolate from model levels to constant height levels (Steffen interpolation)
+- Calculate gradients using boundary values or regression method
+- Extract local profiles and mean profiles
+- Subselect a domain
+- Filter/mask data: e.g. "ocean values only"
+- Add auxiliary variables
 
 TODO
-- Check code for surface height different from zero over ocean
-- Check use of float vs double
-- Move some functionality to more generic utilities
-- Extend float 
+- Move some functionality (e.g. auxiliary variables) to more generic utilities
+- Check/improve code for surface height above zero over ocean
+- Integrate surface level code into interpolation algorithm for better speed
+  with option of constant (most prognostics) and gradient (pressure) extrapolation.
+- Discuss use of float vs double
+- Discuss data filtering
+- Compare regression and boundary gradients
+- Look into other mean/gradient techniques (e.g. Gaussian weighted).
 - Find out how to get more efficient code for lower level variables
+- Further documentation
 """
 
 import os
@@ -289,7 +297,6 @@ def era5_on_height_levels(ds_pressure_levels, heights_array):
     time_steps = len(ds_pressure_levels["height_f"])
     shape_p_levels = np.shape(ds_pressure_levels["height_f"])
     shape_h_levels = (shape_p_levels[0],) + (len(heights_array),) + shape_p_levels[2:]
-    shape_no_levels = (shape_p_levels[0],) + shape_p_levels[2:]
     for variable in ds_pressure_levels.variables:
         if ds_pressure_levels[variable].dims == (
             "time",
@@ -325,11 +332,14 @@ def era5_on_height_levels(ds_pressure_levels, heights_array):
                 )
     return ds_height_levels
 
+
 def add_lower_level_variables(ds_pressure_levels):
     """Extend below the lowest full level to the corresponding
     half-level. Over sea, mak sure to extend to below zero.
-    Unfortunately, 'normal concatenation' of data-arrays struggles
-    perform well. The current code seems pretty memory-inefficient"""
+    Unfortunately, 'normal concatenation' of data-arrays also struggles
+    to perform well. The current code seems pretty memory-inefficient
+    and it would probabily be best to integrate extrapolation into the
+    routines that converts between pressure and height levels"""
     sea_mask = (
         (ds_pressure_levels["height_h"][:, -1, :, :].values < 5.0)
         * (ds_pressure_levels["height_h"][:, -1, :, :].values > 1.0e-6)
@@ -403,7 +413,10 @@ def add_lower_level_variables(ds_pressure_levels):
 
 
 def add_auxiliary_variable(ds_level_2, var):
-    """Alternative: equations could be separated out to utility"""
+    """Adds auxiliary variables to arrays.
+    Alternatively, the equations could be separated out to another utility
+    I think this may be adding a 'black box layer' though
+    To be discussed"""
     if var == "theta":
         attr_dict = {"units": "K", "long_name": "potential temperature"}
         ds_level_2[var] = (
@@ -416,14 +429,19 @@ def add_auxiliary_variable(ds_level_2, var):
 
 
 def add_auxiliary_variables(ds_level_1, list_of_vars):
-    """Add variables defined in list to dictionary"""
+    """Wrapper for auxiliary variable calculation"""
     for var in list_of_vars:
         add_auxiliary_variable(ds_level_1, var)
     return ds_level_1
 
 
 def era_5_normalise_longitude(ds_to_normalise):
-    """Normalise lognitudes"""
+    """Normalise longitudes to be between 0 and 360 degrees
+    This is needed because these are stored differently in the surface
+    and model level data. Rounding up to 4 decimals seems to work for now,
+    with more decimals misalignment has happenend. Would be good to sort
+    out why this is the case.
+    """
     ds_to_normalise.coords["longitude"] = np.round(
         ds_to_normalise.coords["longitude"] % 360.0, decimals=4
     )
@@ -439,21 +457,25 @@ def era_5_subset(ds_full, dictionary):
     )
     return ds_subset
 
+
 def era5_single_point(ds_domain, dictionary):
-    """for a single variable, extract a local profile"""
+    """Extracts a local profile at the nearest point"""
     ds_at_location = ds_domain.sel(
         latitude=dictionary["lat"], longitude=dictionary["lon"] % 360, method="nearest"
     )
     return ds_at_location
 
+
 def era5_mask(ds_to_mask, dictionary):
+    """Returns a lat-lon mask"""
     # Only use ocean points, ensure it can be used after before or after array extensions
     if dictionary["mask"] == "ocean":
         mask = (ds_to_mask["z"] < 5.0 * rg) * (ds_to_mask["lsm"].values < 0.2)
     return mask
 
+
 def era5_weighted(ds_to_weigh, dictionary):
-    """adds weights to dictionary"""
+    """Adds weights to dictionary"""
     if "weights" in dictionary:
         if dictionary["weights"] == "area":
             ds_to_weigh.weigths = np.cos(np.deg2rad(ds_to_weigh.lat_meshgrid))
@@ -464,6 +486,7 @@ def era5_weighted(ds_to_weigh, dictionary):
 
 def era5_box_mean(ds_box, dictionary):
     """
+    Calculates mean over a data_set.
     - Only use columns where the first level is higher than the local first level
     in the location of interest
     - Option to weight by box size?
@@ -476,8 +499,10 @@ def era5_box_mean(ds_box, dictionary):
         ds_mean = ds_box.mean(("latitude", "longitude"))
     return ds_mean
 
+
 def era5_add_lat_lon_meshgrid(ds_to_extend):
-    """add a lat, lon meshgrid to a dataset, useful for gradients with filter"""
+    """Adds a [lat, lon] meshgrid to a dataset, useful for gradients in order to work
+    around nan values on edge"""
     lon_mesh, lat_mesh = np.meshgrid(ds_to_extend.longitude, ds_to_extend.latitude)
     ds_to_extend["lon_meshgrid"] = (
         ("latitude", "longitude"),
@@ -491,8 +516,11 @@ def era5_add_lat_lon_meshgrid(ds_to_extend):
     )
     return ds_to_extend
 
+
 def dist(ds_1, ds_2):
+    """calculate distances between two datasets of the same shape"""
     pi = np.pi
+    # convert to degrees
     lon1 = ds_1["lon_meshgrid"].values * (2 * pi / 360)
     lon2 = ds_2["lon_meshgrid"].values * (2 * pi / 360)
     dlon = lon2 - lon1
@@ -502,21 +530,24 @@ def dist(ds_1, ds_2):
     a = np.sin(dlat / 2) ** 2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2) ** 2
     c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1.0 - a))
     dist = r_earth * c
-    return dist
+    return dist.flatten()
+
 
 def era5_boundary_gradients(ds_box, variable, dictionary):
     """ Calculate gradients using haversine function
     How to deal with missing data?
     Weight by box size?
     Gradients from boundary values"""
-    # use argmin instead ??
-    # ~ left = left.where(np.nanmin(ds_box["height_f"][:, :, :, :]) < 20.0)
-    # ~ left = left.where(left.longitude > [dictionary["lon_min"] % 360])
+    # left = left.where(left.longitude > [dictionary["lon_min"] % 360])
     # left = left.sel(latitude=slice(dictionary["lat_max"], dictionary["lat_min"]))
+    ds_filtered = ds_box
+    if "mask" in dictionary:
+        mask = era5_mask(ds_box, dictionary)
+        ds_filtered = ds_filtered.where(mask)
     left = ds_box.min("longitude", skipna=True)
     right = ds_box.max("longitude", skipna=True)
-    top = ds_box.max("latitude", skipna=True)
-    bottom = ds_box.min("latitude", skipna=True)
+    top = ds_filtered.max("latitude", skipna=True)
+    bottom = ds_filtered.min("latitude", skipna=True)
     x_gradient = np.mean(
         (right[variable].values - left[variable].values) / dist(left, right), axis=2
     )
@@ -529,12 +560,16 @@ def era5_boundary_gradients(ds_box, variable, dictionary):
 def era5_regression_gradients(ds_box, variable, dictionary):
     """ Calculate gradients using haversine function
     From regression, using the normal equation"""
+    ds_filtered = ds_box
+    if "mask" in dictionary:
+        mask = era5_mask(ds_box, dictionary)
+        ds_filtered = ds_filtered.where(mask)
     pi = np.pi
     lon1 = dictionary["lon"] * (2 * pi / 360)
-    lon2 = ds_box["lon_meshgrid"].values * (2 * pi / 360)
+    lon2 = ds_filtered["lon_meshgrid"].values * (2 * pi / 360)
     dlon = lon2 - lon1
     lat1 = dictionary["lat"] * (2 * pi / 360)
-    lat2 = ds_box["lat_meshgrid"].values * (2 * pi / 360)
+    lat2 = ds_filtered["lat_meshgrid"].values * (2 * pi / 360)
     dlat = lat2 - lat1
     a = np.sin(dlat / 2) ** 2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2) ** 2
     c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1.0 - a))
@@ -554,19 +589,25 @@ def era5_regression_gradients(ds_box, variable, dictionary):
     y_gradient_array = np.empty((len_temp, len_levels))
     for this_time in range(len_temp):
         for this_level in range(len_levels):
-            data_flat = ds_box[variable][this_time, this_level, :, :].values.flatten()
-            data_flat_filter = data_flat[~np.isnan(data_flat)][:,None]
-            x_flat_filter = x_flat[~np.isnan(data_flat)][:,None]
-            y_flat_filter = y_flat[~np.isnan(data_flat)][:,None]
-            ones_flat_filter= ones_flat[~np.isnan(data_flat)][:,None]
+            data_flat = ds_filtered[variable][
+                this_time, this_level, :, :
+            ].values.flatten()
+            data_flat_filter = data_flat[~np.isnan(data_flat)][:, None]
+            x_flat_filter = x_flat[~np.isnan(data_flat)][:, None]
+            y_flat_filter = y_flat[~np.isnan(data_flat)][:, None]
+            ones_flat_filter = ones_flat[~np.isnan(data_flat)][:, None]
             oxy_mat = np.hstack((ones_flat_filter, x_flat_filter, y_flat_filter))
             theta = np.dot(
-                np.dot(np.linalg.pinv(np.dot(oxy_mat.transpose(), oxy_mat)), oxy_mat.transpose()),
+                np.dot(
+                    np.linalg.pinv(np.dot(oxy_mat.transpose(), oxy_mat)),
+                    oxy_mat.transpose(),
+                ),
                 data_flat_filter,
             )
             x_gradient_array[this_time, this_level] = theta[1]
             y_gradient_array[this_time, this_level] = theta[2]
     return x_gradient_array, y_gradient_array
+
 
 def era5_add_gradients_to_variables(ds_level_1, list_of_vars, dictionary):
     """Add variables defined in list to dictionary"""
@@ -604,8 +645,9 @@ def era5_add_gradients_to_variables(ds_level_1, list_of_vars, dictionary):
             )
     return ds_out
 
-if __name__ == "__main__":
-    # just building an example here, with lazy loading
+
+def main():
+    """work in progress on specific example"""
     files_model_an = "output_domains/model_an_*_eurec4a_circle_eul_domain.nc"
     files_single_an = "output_domains/single_an_*_eurec4a_circle_eul_domain.nc"
     files_model_fc = "output_domains/model_fc_*_eurec4a_circle_eul_domain.nc"
@@ -619,30 +661,37 @@ if __name__ == "__main__":
     for this_ds in ds_list:
         era_5_normalise_longitude(this_ds)
     ds_merged = xr.merge(ds_list)
-    ds_time = ds_merged.isel(time=[24])
-    lats_lons_dictionary = {
-        "lat_min": 11.3,
-        "lat_max": 15.3,
-        "lon_min": -59.717,
-        "lon_max": -55.717,
-        "lat": 13.3,
-        "lon": -57.717,
-        "gradients_strategy": "both",
-    }
-    ds_smaller = era_5_subset(ds_time, lats_lons_dictionary)
-    add_heights_and_pressures(ds_smaller)
-    ds_extended = add_lower_level_variables(ds_smaller)
-    add_auxiliary_variables(ds_extended, ["theta"])
-    heights_array = np.arange(0, 5000, 40)
-    ds_time_height = era5_on_height_levels(ds_extended, heights_array)
-    era5_add_lat_lon_meshgrid(ds_time_height)
-    ds_gradients = era5_add_gradients_to_variables(
-        ds_time_height, ["u", "v", "p_f", "theta"], lats_lons_dictionary
-    )
-    ds_gradients.to_netcdf("ds_gradients.nc")
-    # era5_regression_gradient(ds_time_height, "u", lats_lons_dictionary)
-    # era5_box_average_gradients(ds_time, lats_lons_dictionary)
-    # ~ ds_era5_single_point = era5_single_point(ds_time_height, lats_lons_dictionary)
-    # ~ ds_era5_single_point.to_netcdf("ds_profile.nc")
-    # ~ ds_era5_mean = era5_box_mean(ds_time_height, lats_lons_dictionary)
-    # ~ ds_era5_mean.to_netcdf("ds_mean.nc")
+    ds_out = xr.Dataset()
+    for this_time in range(18, 30):
+        ds_time = ds_merged.isel(time=[this_time])
+        lats_lons_dictionary = {
+            "lat_min": 11.3,
+            "lat_max": 15.3,
+            "lon_min": -59.717,
+            "lon_max": -55.717,
+            "lat": 13.3,
+            "lon": -57.717,
+            "gradients_strategy": "both",
+            "mask": "ocean",
+        }
+        ds_smaller = era_5_subset(ds_time, lats_lons_dictionary)
+        add_heights_and_pressures(ds_smaller)
+        ds_extended = add_lower_level_variables(ds_smaller)
+        add_auxiliary_variables(ds_extended, ["theta"])
+        heights_array = np.arange(0, 5000, 40)
+        ds_time_height = era5_on_height_levels(ds_extended, heights_array)
+        era5_add_lat_lon_meshgrid(ds_time_height)
+        ds_gradients = era5_add_gradients_to_variables(
+            ds_time_height, ["u", "v", "p_f", "theta"], lats_lons_dictionary
+        )
+        ds_single_point = era5_single_point(ds_time_height, lats_lons_dictionary)
+        ds_era5_mean = era5_box_mean(ds_time_height, lats_lons_dictionary)
+        ds_time_step = xr.merge((ds_gradients, ds_single_point))
+        for variable in ds_era5_mean.variables:
+            ds_time_step[variable + "_mean"] = ds_era5_mean[variable]
+        ds_out = xr.merge((ds_out, ds_time_step))
+    ds_out.to_netcdf("ds_out.nc")
+
+
+if __name__ == "__main__":
+    main()

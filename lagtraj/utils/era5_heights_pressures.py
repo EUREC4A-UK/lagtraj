@@ -1,7 +1,7 @@
 """
 ERA5 utilities that can
 - Add heights and pressures to an input data array on model levels
-- Interpolate from model levels to constant height levels (Steffen interpolation)
+- Interpolate from model levels to constant height levels (using Steffen interpolation)
 - Calculate gradients using boundary values or regression method
 - Extract local profiles and mean profiles
 - Subselect a domain
@@ -10,18 +10,17 @@ ERA5 utilities that can
 
 TODO
 - Move some functionality (e.g. auxiliary variables) to more generic utilities
-- Check/improve code for surface height above zero over ocean
-- Integrate surface level code into interpolation algorithm for better speed
-  with option of constant (most prognostics) and gradient (pressure) extrapolation.
-- Discuss use of float vs double
-- Discuss data filtering
+- May want to write/use some code for degrees versus radians
+- Discuss need to check float vs double
+- Discuss data filter and weight procedures
 - Compare regression and boundary gradients
 - Look into other mean/gradient techniques (e.g. Gaussian weighted, see CSET code).
-- Find out how to get more efficient code for lower level variables
 - Further documentation
+- cfchecker compatibility
 """
 
 import os
+import numbers
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -117,7 +116,13 @@ def calculate_heights_and_pressures(
 
 
 @njit
-def steffen_3d(input_data, input_levels, output_level_array):
+def steffen_3d(
+    input_data,
+    input_levels,
+    output_level_array,
+    lower_extrapolation_surface,
+    lower_extrapolation_with_gradient=False,
+):
     """
     Performs Steffen interpolation on each individual column.
     Steffen, M. (1990). A simple method for monotonic interpolation
@@ -231,6 +236,15 @@ def steffen_3d(input_data, input_levels, output_level_array):
                     t_2 = t * t
                     t_3 = t_2 * t
                     output_data[k_out, j, i] = a * t_3 + b * t_2 + c * t + d
+                elif (k_temp == 0) and (
+                    output_level_array[k_out] >= lower_extrapolation_surface[j, i]
+                ):
+                    if lower_extrapolation_with_gradient:
+                        output_data[k_out, j, i] = input_data[0, j, i] + linear_slope[
+                            0, j, i
+                        ] * (output_level_array[k_out] - input_levels[0, j, i])
+                    else:
+                        output_data[k_out, j, i] = input_data[0, j, i]
                 else:
                     output_data[k_out, j, i] = np.nan
     return output_data
@@ -280,6 +294,8 @@ def add_heights_and_pressures(ds_from_era5):
 def era5_on_height_levels(ds_pressure_levels, heights_array):
     """Converts ERA5 model level data to data on height levels
     using Steffen interpolation"""
+    if isinstance(heights_array[0], numbers.Integral):
+        raise Exception("Heights need to be floating numbers, rather than integers")
     heights_coord = {
         "height": (
             "height",
@@ -319,6 +335,14 @@ def era5_on_height_levels(ds_pressure_levels, heights_array):
     for time_index in range(time_steps):
         h_f_inverse = ds_pressure_levels["height_f"][time_index, ::-1, :, :].values
         h_h_inverse = ds_pressure_levels["height_h"][time_index, ::-1, :, :].values
+        sea_mask = (
+            (ds_pressure_levels["height_h"][time_index, -1, :, :].values < 5.0)
+            * (ds_pressure_levels["height_h"][time_index, -1, :, :].values > 1.0e-6)
+            * (ds_pressure_levels["lsm"][time_index, :, :].values < 0.2)
+        )
+        lower_extrapolation_with_mask = xr.where(
+            sea_mask, -1.0e-6, ds_pressure_levels["height_h"][time_index, -1, :, :]
+        ).values
         for variable in ds_pressure_levels.variables:
             if np.shape(ds_pressure_levels[variable]) == shape_p_levels:
                 if variable in ["height_h", "p_h"]:
@@ -328,89 +352,22 @@ def era5_on_height_levels(ds_pressure_levels, heights_array):
                 field_p_levels = ds_pressure_levels[variable][
                     time_index, ::-1, :, :
                 ].values
-                ds_height_levels[variable][time_index] = steffen_3d(
-                    field_p_levels, h_inverse, heights_array
-                )
+                if variable in ["p_h", "p_f", "height_h", "height_f"]:
+                    ds_height_levels[variable][time_index] = steffen_3d(
+                        field_p_levels,
+                        h_inverse,
+                        heights_array,
+                        lower_extrapolation_with_mask,
+                        lower_extrapolation_with_gradient=True,
+                    )
+                else:
+                    ds_height_levels[variable][time_index] = steffen_3d(
+                        field_p_levels,
+                        h_inverse,
+                        heights_array,
+                        lower_extrapolation_with_mask,
+                    )
     return ds_height_levels
-
-
-def add_lower_level_variables(ds_pressure_levels):
-    """Extend below the lowest full level to the corresponding
-    half-level. Over sea, mak sure to extend to below zero.
-    Unfortunately, 'normal concatenation' of data-arrays also struggles
-    to perform well. The current code seems pretty memory-inefficient
-    and it would probabily be best to integrate extrapolation into the
-    routines that converts between pressure and height levels"""
-    sea_mask = (
-        (ds_pressure_levels["height_h"][:, -1, :, :].values < 5.0)
-        * (ds_pressure_levels["height_h"][:, -1, :, :].values > 1.0e-6)
-        * (ds_pressure_levels["lsm"].values < 0.2)
-    )
-    level_data_dims = (
-        "time",
-        "level",
-        "latitude",
-        "longitude",
-    )
-    levels_extended = {
-        "level": (
-            "level",
-            np.concatenate(
-                (
-                    ds_pressure_levels["level"].values,
-                    [ds_pressure_levels["level"].values[-1] + 1],
-                )
-            ).astype("int32"),
-            ds_pressure_levels["level"].attrs,
-        )
-    }
-    coords_extended = {
-        "time": ds_pressure_levels.time,
-        **levels_extended,
-        "latitude": ds_pressure_levels.latitude,
-        "longitude": ds_pressure_levels.longitude,
-    }
-    ds_extended = xr.Dataset(coords=coords_extended)
-    for variable in ds_pressure_levels.variables:
-        if ds_pressure_levels[variable].dims == level_data_dims:
-            ds_extended[variable] = (
-                coords_extended,
-                np.concatenate(
-                    (
-                        ds_pressure_levels[variable][:, :, :, :],
-                        ds_pressure_levels[variable][:, [-1], :, :],
-                    ),
-                    axis=1,
-                ),
-            )
-        elif "level" not in ds_pressure_levels[variable].dims:
-            ds_extended[variable] = (
-                ds_pressure_levels[variable].dims,
-                ds_pressure_levels[variable],
-                ds_pressure_levels[variable].attrs,
-            )
-    ds_extended["height_f"][:, -1, :, :] = ds_extended["height_h"][:, -1, :, :]
-    ds_extended["p_f"][:, -1, :, :] = ds_extended["p_h"][:, -1, :, :]
-    ds_extended["height_h"][:, -1, :, :] = ds_extended["height_h"][:, -2, :, :] - (
-        ds_extended["height_h"][:, -3, :, :] - ds_extended["height_h"][:, -2, :, :]
-    )
-    ds_extended["p_h"][:, -1, :, :] = ds_extended["p_h"][:, -2, :, :] - (
-        ds_extended["p_h"][:, -3, :, :] - ds_extended["p_h"][:, -2, :, :]
-    )
-    ds_extended["height_f"][:, -1, :, :] = xr.where(
-        sea_mask, -1.0e-6, ds_extended["height_f"][:, -1, :, :]
-    )
-    slope = (ds_extended["p_h"][:, -3, :, :] - ds_extended["p_h"][:, -2, :, :]) / (
-        ds_extended["height_h"][:, -3, :, :] - ds_extended["height_h"][:, -2, :, :]
-    )
-    ds_extended["p_f"][:, -1, :, :] = xr.where(
-        sea_mask,
-        ds_extended["p_h"][:, -2, :, :]
-        - (ds_extended["height_h"][:, -2, :, :] - ds_extended["height_f"][:, -1, :, :])
-        * slope,
-        ds_extended["p_f"][:, -1, :, :],
-    )
-    return ds_extended
 
 
 def add_auxiliary_variable(ds_level_2, var):
@@ -468,6 +425,8 @@ def era5_single_point(ds_domain, dictionary):
 
 
 def era5_interp_column(ds_domain, lat_to_interp, lon_to_interp):
+    """Returns the dataset interpolated to given latitude and longitude
+    with latitude and longitude dimensions retained"""
     ds_at_location = ds_domain.interp(
         latitude=[lat_to_interp], longitude=[lon_to_interp % 360]
     )
@@ -686,18 +645,20 @@ def trace_back(lat, lon, u, v, dt):
     return previous_lat, previous_lon
 
 
+def cos_transition(absolute_input, transition_start, transition_end):
+    """function that smoothly transitions from 1 to 0 using a cosine-shaped
+    transition between start and end"""
+    normalised_input = (absolute_input - transition_start) / (
+        transition_end - transition_start
+    )
+    weight_factor = 1.0 * (normalised_input < 0.0) + (
+        0.5 + 0.5 * np.cos(normalised_input * pi)
+    ) * (1.0 - (normalised_input < 0.0) - (normalised_input > 1.0))
+    return weight_factor
+
+
 def weighted_velocity(ds_for_vel):
     """weighted velociy: needs more work"""
-
-    def cos_transition(absolute_input, transition_start, transition_end):
-        normalised_input = (absolute_input - transition_start) / (
-            transition_end - transition_start
-        )
-        weight_factor = 1.0 * (normalised_input < 0.0) + (
-            0.5 + 0.5 * np.cos(normalised_input * pi)
-        ) * (1.0 - (normalised_input < 0.0) - (normalised_input > 1.0))
-        return weight_factor
-
     pres_cutoff_start = 60000.0
     pres_cutoff_end = 50000.0
     height_factor = cos_transition(
@@ -763,12 +724,11 @@ def dummy_forcings(ds_forcing):
             "gradients_strategy": "both",
             "mask": "ocean",
         }
+        out_levels = np.arange(0, 500.0, 4.0)
         ds_smaller = era_5_subset(ds_time, lats_lons_dictionary)
         add_heights_and_pressures(ds_smaller)
-        ds_extended = add_lower_level_variables(ds_smaller)
-        add_auxiliary_variables(ds_extended, ["theta"])
-        heights_array = np.arange(0, 5000, 40)
-        ds_time_height = era5_on_height_levels(ds_extended, heights_array)
+        add_auxiliary_variables(ds_smaller, ["theta"])
+        ds_time_height = era5_on_height_levels(ds_smaller, out_levels)
         era5_add_lat_lon_meshgrid(ds_time_height)
         ds_gradients = era5_add_gradients_to_variables(
             ds_time_height, ["u", "v", "p_f", "theta"], lats_lons_dictionary
@@ -797,8 +757,8 @@ def main():
     for this_ds in ds_list:
         era_5_normalise_longitude(this_ds)
     ds_merged = xr.merge(ds_list)
-    dummy_trajectory(ds_merged)
     dummy_forcings(ds_merged)
+    dummy_trajectory(ds_merged)
 
 
 if __name__ == "__main__":

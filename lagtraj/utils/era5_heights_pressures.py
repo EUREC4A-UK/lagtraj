@@ -16,7 +16,7 @@ TODO
 - Discuss use of float vs double
 - Discuss data filtering
 - Compare regression and boundary gradients
-- Look into other mean/gradient techniques (e.g. Gaussian weighted).
+- Look into other mean/gradient techniques (e.g. Gaussian weighted, see CSET code).
 - Find out how to get more efficient code for lower level variables
 - Further documentation
 """
@@ -50,6 +50,7 @@ cp = 1004.0
 rd_over_cp = rd / cp
 p_ref_inv = 1.0 / p_ref
 r_earth = 6371000.0
+pi = np.pi
 
 levels_file = os.path.dirname(__file__) + "/137levels.dat"
 levels_table = pd.read_table(levels_file, sep="\s+")
@@ -466,6 +467,13 @@ def era5_single_point(ds_domain, dictionary):
     return ds_at_location
 
 
+def era5_interp_column(ds_domain, lat_to_interp, lon_to_interp):
+    ds_at_location = ds_domain.interp(
+        latitude=[lat_to_interp], longitude=[lon_to_interp % 360]
+    )
+    return ds_at_location
+
+
 def era5_mask(ds_to_mask, dictionary):
     """Returns a lat-lon mask"""
     # Only use ocean points, ensure it can be used after before or after array extensions
@@ -517,9 +525,8 @@ def era5_add_lat_lon_meshgrid(ds_to_extend):
     return ds_to_extend
 
 
-def dist(ds_1, ds_2):
+def dist_from_meshgrids(ds_1, ds_2):
     """calculate distances between two datasets of the same shape"""
-    pi = np.pi
     # convert to degrees
     lon1 = ds_1["lon_meshgrid"].values * (2 * pi / 360)
     lon2 = ds_2["lon_meshgrid"].values * (2 * pi / 360)
@@ -527,9 +534,9 @@ def dist(ds_1, ds_2):
     lat1 = ds_1["lat_meshgrid"].values * (2 * pi / 360)
     lat2 = ds_2["lat_meshgrid"].values * (2 * pi / 360)
     dlat = lat2 - lat1
-    a = np.sin(dlat / 2) ** 2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2) ** 2
-    c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1.0 - a))
-    dist = r_earth * c
+    haver = np.sin(dlat / 2) ** 2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2) ** 2
+    arc_dist = 2 * np.arctan2(np.sqrt(haver), np.sqrt(1.0 - haver))
+    dist = r_earth * arc_dist
     return dist.flatten()
 
 
@@ -549,10 +556,14 @@ def era5_boundary_gradients(ds_box, variable, dictionary):
     top = ds_filtered.max("latitude", skipna=True)
     bottom = ds_filtered.min("latitude", skipna=True)
     x_gradient = np.mean(
-        (right[variable].values - left[variable].values) / dist(left, right), axis=2
+        (right[variable].values - left[variable].values)
+        / dist_from_meshgrids(left, right),
+        axis=2,
     )
     y_gradient = np.mean(
-        (top[variable].values - bottom[variable].values) / dist(top, bottom), axis=2
+        (top[variable].values - bottom[variable].values)
+        / dist_from_meshgrids(top, bottom),
+        axis=2,
     )
     return x_gradient, y_gradient
 
@@ -564,24 +575,23 @@ def era5_regression_gradients(ds_box, variable, dictionary):
     if "mask" in dictionary:
         mask = era5_mask(ds_box, dictionary)
         ds_filtered = ds_filtered.where(mask)
-    pi = np.pi
     lon1 = dictionary["lon"] * (2 * pi / 360)
     lon2 = ds_filtered["lon_meshgrid"].values * (2 * pi / 360)
     dlon = lon2 - lon1
     lat1 = dictionary["lat"] * (2 * pi / 360)
     lat2 = ds_filtered["lat_meshgrid"].values * (2 * pi / 360)
     dlat = lat2 - lat1
-    a = np.sin(dlat / 2) ** 2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2) ** 2
-    c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1.0 - a))
-    dist = r_earth * c
+    haver = np.sin(dlat / 2) ** 2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2) ** 2
+    arc_dist = 2 * np.arctan2(np.sqrt(haver), np.sqrt(1.0 - haver))
+    dist = r_earth * arc_dist
     theta = np.arctan2(
         np.cos(lat1) * np.sin(lat2) - np.sin(lat1) * np.cos(lat2) * np.cos(dlon),
         np.sin(dlon) * np.cos(lat2),
     )
-    x = dist * np.cos(theta)
-    y = dist * np.sin(theta)
-    x_flat = x.flatten()
-    y_flat = y.flatten()
+    x_array = dist * np.cos(theta)
+    y_array = dist * np.sin(theta)
+    x_flat = x_array.flatten()
+    y_flat = y_array.flatten()
     ones_flat = np.ones(np.shape(x_flat))
     len_temp = np.shape(ds_box[variable])[0]
     len_levels = np.shape(ds_box[variable])[1]
@@ -646,24 +656,89 @@ def era5_add_gradients_to_variables(ds_level_1, list_of_vars, dictionary):
     return ds_out
 
 
-def main():
-    """work in progress on specific example"""
-    files_model_an = "output_domains/model_an_*_eurec4a_circle_eul_domain.nc"
-    files_single_an = "output_domains/single_an_*_eurec4a_circle_eul_domain.nc"
-    files_model_fc = "output_domains/model_fc_*_eurec4a_circle_eul_domain.nc"
-    files_single_fc = "output_domains/single_fc_*_eurec4a_circle_eul_domain.nc"
-    ds_model_an = xr.open_mfdataset(files_model_an, combine="by_coords")
-    ds_model_an = ds_model_an.drop_vars("z")
-    ds_single_an = xr.open_mfdataset(files_single_an, combine="by_coords")
-    ds_model_fc = xr.open_mfdataset(files_model_fc, combine="by_coords")
-    ds_single_fc = xr.open_mfdataset(files_single_fc, combine="by_coords")
-    ds_list = [ds_model_an, ds_single_an, ds_model_fc, ds_single_fc]
-    for this_ds in ds_list:
-        era_5_normalise_longitude(this_ds)
-    ds_merged = xr.merge(ds_list)
+@njit
+def trace_back(lat, lon, u, v, dt):
+    """calculates previous position given lat,lon,u,v, and dt"""
+    if dt < 0.0:
+        raise Exception("Expecting positive dt in back-tracing")
+    # Angle corresponds to opposite (as back-tracing) direction of velocity bearing
+    theta = np.arctan2(v, u) % (2 * pi) - (pi / 2)
+    dist = np.sqrt(u ** 2 + v ** 2) * dt
+    lat_rad = lat * (2 * pi / 360.0)
+    lon_rad = lon * (2 * pi / 360.0)
+    previous_lat_rad = np.arcsin(
+        np.sin(lat_rad) * np.cos(dist / r_earth)
+        + np.cos(lat_rad) * np.sin(dist / r_earth) * np.cos(theta)
+    )
+    previous_lon_rad = lon_rad + np.arctan2(
+        np.sin(theta) * np.sin(dist / r_earth) * np.cos(lat_rad),
+        np.cos(dist / r_earth) - np.sin(lat_rad) * np.sin(previous_lat_rad),
+    )
+    previous_lat = previous_lat_rad * (360.0 / (2 * pi))
+    previous_lon = previous_lon_rad * (360.0 / (2 * pi))
+    return previous_lat, previous_lon
+
+
+def weighted_velocity(ds_for_vel):
+    """weighted velociy: needs more work"""
+    pres_cutoff = 60000.0
+    weights = (
+        -(
+            ds_for_vel["p_h"][:, 1:, :, :].values
+            - ds_for_vel["p_h"][:, :-1, :, :].values
+        )
+        * ds_for_vel["q"][:, :-1, :, :].values
+        * (ds_for_vel["p_f"][:, :-1, :, :].values > pres_cutoff)
+    )
+    u_weighted = np.sum(ds_for_vel["u"][:, :-1, :, :].values * weights) / np.sum(
+        weights
+    )
+    v_weighted = np.sum(ds_for_vel["v"][:, :-1, :, :].values * weights) / np.sum(
+        weights
+    )
+    return u_weighted, v_weighted
+
+
+def dummy_trajectory(ds_trajectory):
+    """Trajectory example
+    Needs to use dictionary input instead"""
+    this_lat = 13.3
+    this_lon = -57.717
+    nr_iterations_traj = 10
+    for this_time in range(30, 27, -1):
+        print(this_lat, this_lon)
+        ds_time = ds_trajectory.isel(time=[this_time])
+        dt_traj = (
+            ds_trajectory["time"][this_time].values
+            - ds_trajectory["time"][this_time - 1].values
+        ) / np.timedelta64(1, "s")
+        ds_local = era5_interp_column(ds_time, this_lat, this_lon)
+        add_heights_and_pressures(ds_local)
+        u_end, v_end = weighted_velocity(ds_local)
+        previous_lat, previous_lon = trace_back(
+            this_lat, this_lon, u_end, v_end, dt_traj
+        )
+        # iteratively find previous point
+        for _ in range(nr_iterations_traj):
+            ds_time = ds_trajectory.isel(time=[this_time - 1])
+            ds_local = era5_interp_column(ds_time, previous_lat, previous_lon)
+            add_heights_and_pressures(ds_local)
+            u_begin, v_begin = weighted_velocity(ds_local)
+            # estimate of mean velocity over hour
+            u_mean = (u_begin + u_end) / 2.0
+            v_mean = (v_begin + v_end) / 2.0
+            previous_lat, previous_lon = trace_back(
+                this_lat, this_lon, u_mean, v_mean, dt_traj
+            )
+        this_lat = previous_lat
+        this_lon = previous_lon
+
+
+def dummy_forcings(ds_forcing):
+    """Forcings example"""
     ds_out = xr.Dataset()
     for this_time in range(18, 30):
-        ds_time = ds_merged.isel(time=[this_time])
+        ds_time = ds_forcing.isel(time=[this_time])
         lats_lons_dictionary = {
             "lat_min": 11.3,
             "lat_max": 15.3,
@@ -691,6 +766,25 @@ def main():
             ds_time_step[variable + "_mean"] = ds_era5_mean[variable]
         ds_out = xr.merge((ds_out, ds_time_step))
     ds_out.to_netcdf("ds_out.nc")
+
+
+def main():
+    """Dummy implementations for trajectory tool"""
+    files_model_an = "output_domains/model_an_*_eurec4a_circle_eul_domain.nc"
+    files_single_an = "output_domains/single_an_*_eurec4a_circle_eul_domain.nc"
+    files_model_fc = "output_domains/model_fc_*_eurec4a_circle_eul_domain.nc"
+    files_single_fc = "output_domains/single_fc_*_eurec4a_circle_eul_domain.nc"
+    ds_model_an = xr.open_mfdataset(files_model_an, combine="by_coords")
+    ds_model_an = ds_model_an.drop_vars("z")
+    ds_single_an = xr.open_mfdataset(files_single_an, combine="by_coords")
+    ds_model_fc = xr.open_mfdataset(files_model_fc, combine="by_coords")
+    ds_single_fc = xr.open_mfdataset(files_single_fc, combine="by_coords")
+    ds_list = [ds_model_an, ds_single_an, ds_model_fc, ds_single_fc]
+    for this_ds in ds_list:
+        era_5_normalise_longitude(this_ds)
+    ds_merged = xr.merge(ds_list)
+    dummy_trajectory(ds_merged)
+    dummy_forcings(ds_merged)
 
 
 if __name__ == "__main__":

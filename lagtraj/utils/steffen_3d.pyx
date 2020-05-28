@@ -3,14 +3,14 @@ import numpy as np
 cimport numpy as np
 
 # Steffen, M. (1990). A simple method for monotonic interpolation in one dimension. Astronomy and Astrophysics, 239, 443.
-def steffen_3d(np.ndarray[double,ndim=3, mode="c"] input_data,np.ndarray[double,ndim=3, mode="c"] input_levels,np.ndarray[double, ndim=1,mode="c"] output_level_array):
+cpdef steffen_3d(np.ndarray[double,ndim=3, mode="c"] input_data,np.ndarray[double,ndim=3, mode="c"] input_levels,np.ndarray[double, ndim=1,mode="c"] output_level_array):
     cdef Py_ssize_t i_max=input_data.shape[0]
     cdef Py_ssize_t j_max=input_data.shape[1]
     cdef Py_ssize_t k_max=input_data.shape[2]
     cdef Py_ssize_t k_max_output=output_level_array.shape[0]
     cdef Py_ssize_t k_max_minus=k_max-1
-    cdef double[:,:,:] yp=np.zeros((i_max,j_max,k_max),dtype=np.double, mode="c")
-    cdef double[:,:,:] output_data=np.zeros((i_max,j_max,k_max_output),dtype=np.double, mode="c")
+    cdef double[:,:,:] yp=np.empty((i_max,j_max,k_max),dtype=np.double, mode="c")
+    cpdef double[:,:,:] output_data=np.empty((i_max,j_max,k_max_output),dtype=np.double, mode="c")
 
     cdef Py_ssize_t i,j,k,k_out,k_temp,k_high,k_low
     cdef double delta_lower,delta_upper,i_slope_lower,i_slope_upper,pp

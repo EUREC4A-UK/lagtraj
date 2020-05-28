@@ -525,26 +525,41 @@ def era5_add_lat_lon_meshgrid(ds_to_extend):
     return ds_to_extend
 
 
-def dist_from_meshgrids(ds_1, ds_2):
-    """calculate distances between two datasets of the same shape"""
-    # convert to degrees
-    lon1 = ds_1["lon_meshgrid"].values * (2 * pi / 360)
-    lon2 = ds_2["lon_meshgrid"].values * (2 * pi / 360)
+def calc_haver_dist(lat1, lon1, lat2, lon2):
+    """Calculates distance given pairs of latitude and longitude"""
     dlon = lon2 - lon1
-    lat1 = ds_1["lat_meshgrid"].values * (2 * pi / 360)
-    lat2 = ds_2["lat_meshgrid"].values * (2 * pi / 360)
     dlat = lat2 - lat1
     haver = np.sin(dlat / 2) ** 2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2) ** 2
     arc_dist = 2 * np.arctan2(np.sqrt(haver), np.sqrt(1.0 - haver))
-    dist = r_earth * arc_dist
-    return dist.flatten()
+    haver_dist = r_earth * arc_dist
+    return haver_dist
+
+
+def calc_lat_lon_angle(lat1, lon1, lat2, lon2):
+    """Calculates angle given pairs of latitude and longitude"""
+    dlon = lon2 - lon1
+    lat_lon_angle = np.arctan2(
+        np.cos(lat1) * np.sin(lat2) - np.sin(lat1) * np.cos(lat2) * np.cos(dlon),
+        np.sin(dlon) * np.cos(lat2),
+    )
+    return lat_lon_angle
+
+
+def dist_from_meshgrids(ds_1, ds_2):
+    """Calculates distances between two datasets of the same shape"""
+    # convert to degrees
+    lat1_mg = ds_1["lat_meshgrid"].values * (2 * pi / 360)
+    lon1_mg = ds_1["lon_meshgrid"].values * (2 * pi / 360)
+    lat2_mg = ds_2["lat_meshgrid"].values * (2 * pi / 360)
+    lon2_mg = ds_2["lon_meshgrid"].values * (2 * pi / 360)
+    dist_from_mg = calc_haver_dist(lat1_mg, lon1_mg, lat2_mg, lon2_mg)
+    return dist_from_mg.flatten()
 
 
 def era5_boundary_gradients(ds_box, variable, dictionary):
-    """ Calculate gradients using haversine function
-    How to deal with missing data?
-    Weight by box size?
-    Gradients from boundary values"""
+    """ Calculate gradients from boundary values
+    using haversine function
+    Weight by box size?"""
     # left = left.where(left.longitude > [dictionary["lon_min"] % 360])
     # left = left.sel(latitude=slice(dictionary["lat_max"], dictionary["lat_min"]))
     ds_filtered = ds_box
@@ -575,21 +590,14 @@ def era5_regression_gradients(ds_box, variable, dictionary):
     if "mask" in dictionary:
         mask = era5_mask(ds_box, dictionary)
         ds_filtered = ds_filtered.where(mask)
-    lon1 = dictionary["lon"] * (2 * pi / 360)
-    lon2 = ds_filtered["lon_meshgrid"].values * (2 * pi / 360)
-    dlon = lon2 - lon1
-    lat1 = dictionary["lat"] * (2 * pi / 360)
-    lat2 = ds_filtered["lat_meshgrid"].values * (2 * pi / 360)
-    dlat = lat2 - lat1
-    haver = np.sin(dlat / 2) ** 2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2) ** 2
-    arc_dist = 2 * np.arctan2(np.sqrt(haver), np.sqrt(1.0 - haver))
-    dist = r_earth * arc_dist
-    theta = np.arctan2(
-        np.cos(lat1) * np.sin(lat2) - np.sin(lat1) * np.cos(lat2) * np.cos(dlon),
-        np.sin(dlon) * np.cos(lat2),
-    )
-    x_array = dist * np.cos(theta)
-    y_array = dist * np.sin(theta)
+    lat1_point = dictionary["lat"] * (2 * pi / 360)
+    lon1_point = dictionary["lon"] * (2 * pi / 360)
+    lat2_mg = ds_filtered["lat_meshgrid"].values * (2 * pi / 360)
+    lon2_mg = ds_filtered["lon_meshgrid"].values * (2 * pi / 360)
+    dist_array = calc_haver_dist(lat1_point, lon1_point, lat2_mg, lon2_mg)
+    theta_array = calc_lat_lon_angle(lat1_point, lon1_point, lat2_mg, lon2_mg)
+    x_array = dist_array * np.cos(theta_array)
+    y_array = dist_array * np.sin(theta_array)
     x_flat = x_array.flatten()
     y_flat = y_array.flatten()
     ones_flat = np.ones(np.shape(x_flat))
@@ -656,7 +664,6 @@ def era5_add_gradients_to_variables(ds_level_1, list_of_vars, dictionary):
     return ds_out
 
 
-@njit
 def trace_back(lat, lon, u, v, dt):
     """calculates previous position given lat,lon,u,v, and dt"""
     if dt < 0.0:
@@ -683,10 +690,7 @@ def weighted_velocity(ds_for_vel):
     """weighted velociy: needs more work"""
     pres_cutoff = 60000.0
     weights = (
-        -(
-            ds_for_vel["p_h"][:, 1:, :, :].values
-            - ds_for_vel["p_h"][:, :-1, :, :].values
-        )
+        (ds_for_vel["p_h"][:, :-1, :, :].values - ds_for_vel["p_h"][:, 1:, :, :].values)
         * ds_for_vel["q"][:, :-1, :, :].values
         * (ds_for_vel["p_f"][:, :-1, :, :].values > pres_cutoff)
     )

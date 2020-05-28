@@ -526,7 +526,7 @@ def era5_add_lat_lon_meshgrid(ds_to_extend):
 
 
 def calc_haver_dist(lat1, lon1, lat2, lon2):
-    """Calculates distance given pairs of latitude and longitude"""
+    """Calculates distance given pairs of latitude and longitude in radians"""
     dlon = lon2 - lon1
     dlat = lat2 - lat1
     haver = np.sin(dlat / 2) ** 2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2) ** 2
@@ -536,7 +536,7 @@ def calc_haver_dist(lat1, lon1, lat2, lon2):
 
 
 def calc_lat_lon_angle(lat1, lon1, lat2, lon2):
-    """Calculates angle given pairs of latitude and longitude"""
+    """Calculates angle given pairs of latitude and longitude in radians"""
     dlon = lon2 - lon1
     lat_lon_angle = np.arctan2(
         np.cos(lat1) * np.sin(lat2) - np.sin(lat1) * np.cos(lat2) * np.cos(dlon),
@@ -688,18 +688,28 @@ def trace_back(lat, lon, u, v, dt):
 
 def weighted_velocity(ds_for_vel):
     """weighted velociy: needs more work"""
-    pres_cutoff = 60000.0
+
+    def cos_transition(absolute_input, transition_start, transition_end):
+        normalised_input = (absolute_input - transition_start) / (
+            transition_end - transition_start
+        )
+        weight_factor = 1.0 * (normalised_input < 0.0) + (
+            0.5 + 0.5 * np.cos(normalised_input * pi)
+        ) * (1.0 - (normalised_input < 0.0) - (normalised_input > 1.0))
+        return weight_factor
+
+    pres_cutoff_start = 60000.0
+    pres_cutoff_end = 50000.0
+    height_factor = cos_transition(
+        ds_for_vel["p_f"][:, 1:, :, :].values, pres_cutoff_start, pres_cutoff_end
+    )
     weights = (
         (ds_for_vel["p_h"][:, :-1, :, :].values - ds_for_vel["p_h"][:, 1:, :, :].values)
-        * ds_for_vel["q"][:, :-1, :, :].values
-        * (ds_for_vel["p_f"][:, :-1, :, :].values > pres_cutoff)
+        * ds_for_vel["q"][:, 1:, :, :].values
+        * height_factor
     )
-    u_weighted = np.sum(ds_for_vel["u"][:, :-1, :, :].values * weights) / np.sum(
-        weights
-    )
-    v_weighted = np.sum(ds_for_vel["v"][:, :-1, :, :].values * weights) / np.sum(
-        weights
-    )
+    u_weighted = np.sum(ds_for_vel["u"][:, 1:, :, :].values * weights) / np.sum(weights)
+    v_weighted = np.sum(ds_for_vel["v"][:, 1:, :, :].values * weights) / np.sum(weights)
     return u_weighted, v_weighted
 
 

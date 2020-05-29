@@ -17,7 +17,7 @@ DATE_FORMAT = "%Y-%m-%d"
 TIME_FORMAT = "%h:%M:%s"
 REPOSITORY_NAME = "reanalysis-era5-complete"
 FILENAME_FORMAT = "{model_run_type}_{level_type}_{date}.nc"
-DATA_REQUESTS_FILENAME = "data_requests.yml"
+DATA_REQUESTS_FILENAME = "data_requests.yaml"
 
 
 def download_data(path, t_start, t_end, bbox, latlon_sampling,

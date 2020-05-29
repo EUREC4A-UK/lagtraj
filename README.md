@@ -1,21 +1,113 @@
 # lagtraj Lagragian simulations trajectories
 
-## Project components
 
-Three steps:
+## Producing a Lagrangian forcing
 
-1. Download a domain for a given date (small for Eulerian simulations, big for Lagrangian)
+There are three steps to making forcing profiles with lagtraj:
+
+1. Download a domain for a given date-range (small for Eulerian simulations,
+big for Lagrangian)
 
 2. Produce trajectory
 
 3. Extract forcing profiles along the trajectory
 
+
+## 0. Getting started
+
+`lagtraj` stores everything (source data, definitions for how domains,
+trajectories and forcings are set up) in a *data directory* (by default this
+will be `data/` relative to where `lagtraj` is invoked). The directory
+structure is as follows:
+
 ```bash
-$> python -m lagtraj.domains.download [input_domain.yaml] [start date (yyyy-mm-dd)] [end date (yyyy-mm-dd)] [--file directories.yaml] [--overwrite]
-$> python -m lagtraj.trajectory.create [input_trajectory.yaml]
-$> python -m lagtraj.forcings.create [input_forcings.yaml]
+data
+├── domains
+│   └── eurec4a_circle_eul
+│       ├── source_data
+│       │   ├── an_model_2020-01-01.nc
+│       │   :
+│       │   └── fc_single_2020-01-03.nc
+│       └── meta.yaml
+├── forcings
+│   └── eure4a_20191209_12_eul
+│       ├── forcing.nc
+│       └── meta.yaml
+└── trajectories
+    └── eure4a_20191209_12_eul
+	    ├── trajectory.nc
+		└── meta.yaml
 ```
 
+You can either make your own domain/forcing/trajectory definition (these are
+stored in yaml-files) by creating a `meta.yaml` file in the relevant directory
+or use the ones that `lagtraj` comes with by running the following command:
+
+```bash
+$> python -m lagraj.input_examples
+
+The following domain/forcing/trajectory definitions are currently included
+with lagtraj:
+
+lagtraj://
+ ├── domains
+ │   ├── eurec4a_north_atlantic
+ │   └── eurec4a_circle_eul
+ ├── forcings
+ │   └── eurec4a_20191209_12_eul
+ └── trajectories
+     ├── eurec4a_20191209_12_lin
+     └── eurec4a_20191209_12_eul
+
+
+To use for example the `eurec4a_north_atlantic` domain definition
+for downloading domain data run lagtraj.domain.download as follows:
+
+    $> python -m lagtraj.domain.download lagtraj://eurec4a_20191209_12_eul 2020/01/01 2020/01/08
+```
+
+## 1. Making source data available
+
+`lagtraj` is based around making all data required for interpolation,
+integration and forcing calculation being available before trajectories are
+integrated. This was done to reduce the number of data requests required to the
+data storage backends (e.g. ECMWF), but does mean that *the expected extent
+that a trajetory will reach must been known before performining a trajectory
+integration*, otherwise `lagtraj` will issue a warning when the edge of the
+available domain is reached.
+
+Either create your own domain defition in `data/domains/<domain_name>/meta.yaml` and run
+
+```bash
+$> python -m lagtraj.domain.download <domain_name> [start date (yyyy-mm-dd)] [end date (yyyy-mm-dd)]
+```
+
+Or use one of the domain defitions included with `lagtraj` (e.g.
+`eurec4a_north_atlantic`
+
+
+```bash
+$> python -m lagtraj.domain.download lagtraj://eurec4a_north_atlantic [start date (yyyy-mm-dd)] [end date (yyyy-mm-dd)]
+```
+
+
+## 2. Producing a trajectory
+
+**TODO**
+
+```bash
+$> python -m lagtraj.trajectory.create <trajectory_name>
+```
+
+## 3. Producing forcing profiles
+
+**TODO**
+
+```bash
+$> python -m lagtraj.forcing.create <forcing_name>
+```
+
+# Implementation details
 
 Required utilies:
 

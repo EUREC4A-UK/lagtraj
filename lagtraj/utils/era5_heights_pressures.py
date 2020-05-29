@@ -16,11 +16,12 @@ TODO
 - Compare regression and boundary gradients
 - Look into other mean/gradient techniques (e.g. Gaussian weighted, see CSET code).
 - Further documentation
-- cfchecker compatibility
+- Check cf conventions
 """
 
 import os
 import numbers
+import datetime
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -297,11 +298,7 @@ def era5_on_height_levels(ds_pressure_levels, heights_array):
     if isinstance(heights_array[0], numbers.Integral):
         raise Exception("Heights need to be floating numbers, rather than integers")
     heights_coord = {
-        "height": (
-            "height",
-            heights_array,
-            {"long_name": "height above sea level", "units": "metres"},
-        )
+        "lev": ("lev", heights_array, {"long_name": "altitude", "units": "metres"},)
     }
     ds_height_levels = xr.Dataset(
         coords={
@@ -322,7 +319,7 @@ def era5_on_height_levels(ds_pressure_levels, heights_array):
             "longitude",
         ):
             ds_height_levels[variable] = (
-                ("time", "height", "latitude", "longitude"),
+                ("time", "lev", "latitude", "longitude"),
                 np.empty(shape_h_levels),
                 ds_pressure_levels[variable].attrs,
             )
@@ -400,8 +397,10 @@ def era_5_normalise_longitude(ds_to_normalise):
     with more decimals misalignment has happenend. Would be good to sort
     out why this is the case.
     """
-    ds_to_normalise.coords["longitude"] = np.round(
-        ds_to_normalise.coords["longitude"] % 360.0, decimals=4
+    ds_to_normalise.coords["longitude"] = (
+        "longitude",
+        np.round(ds_to_normalise.coords["longitude"] % 360.0, decimals=4),
+        ds_to_normalise.coords["longitude"].attrs,
     )
     return ds_to_normalise
 
@@ -461,9 +460,9 @@ def era5_box_mean(ds_box, dictionary):
     era5_weighted(ds_box, dictionary)
     if "mask" in dictionary:
         mask = era5_mask(ds_box, dictionary)
-        ds_mean = ds_box.where(mask).mean(("latitude", "longitude"))
+        ds_mean = ds_box.where(mask).mean(("latitude", "longitude"), keep_attrs=True)
     else:
-        ds_mean = ds_box.mean(("latitude", "longitude"))
+        ds_mean = ds_box.mean(("latitude", "longitude"), keep_attrs=True)
     return ds_mean
 
 
@@ -586,9 +585,9 @@ def era5_regression_gradients(ds_box, variable, dictionary):
     return x_gradient_array, y_gradient_array
 
 
-def era5_add_gradients_to_variables(ds_level_1, list_of_vars, dictionary):
+def era5_gradients(ds_level_1, list_of_vars, dictionary):
     """Add variables defined in list to dictionary"""
-    ds_out = xr.Dataset(coords={"time": ds_level_1.time, "height": ds_level_1.height})
+    ds_out = xr.Dataset(coords={"time": ds_level_1.time, "lev": ds_level_1.lev})
     for variable in list_of_vars:
         if dictionary["gradients_strategy"] in ["regression", "both"]:
             x_gradient_array, y_gradient_array = era5_regression_gradients(
@@ -601,25 +600,81 @@ def era5_add_gradients_to_variables(ds_level_1, list_of_vars, dictionary):
         else:
             raise NotImplementedError("Gradients strategy not implemented")
         ds_out["d" + variable + "dx"] = (
-            ("time", "height"),
+            ("time", "lev"),
             x_gradient_array,
+            {
+                "long_name": ds_level_1[variable].long_name + " x-gradient",
+                "units": ds_level_1[variable].units + " m**-1",
+            },
         )
         ds_out["d" + variable + "dy"] = (
-            ("time", "height"),
+            ("time", "lev"),
             y_gradient_array,
+            {
+                "long_name": ds_level_1[variable].long_name + " y-gradient",
+                "units": ds_level_1[variable].units + " m**-1",
+            },
         )
         if dictionary["gradients_strategy"] == "both":
             x_gradient_array, y_gradient_array = era5_boundary_gradients(
                 ds_level_1, variable, dictionary
             )
             ds_out["d" + variable + "dx_bound"] = (
-                ("time", "height"),
+                ("time", "lev"),
                 x_gradient_array,
+                {
+                    "long_name": ds_level_1[variable].long_name
+                    + " x-gradient (boundaries)",
+                    "units": ds_level_1[variable].units + " m**-1",
+                },
             )
             ds_out["d" + variable + "dy_bound"] = (
-                ("time", "height"),
+                ("time", "lev"),
                 y_gradient_array,
+                {
+                    "long_name": ds_level_1[variable].long_name
+                    + " y-gradient (boundaries)",
+                    "units": ds_level_1[variable].units + " m**-1",
+                },
             )
+    return ds_out
+
+
+def era5_adv_tendencies(ds_level_1, list_of_vars, dictionary):
+    """Add variables defined in list to dictionary"""
+    ds_out = xr.Dataset(coords={"time": ds_level_1.time, "lev": ds_level_1.lev})
+    for variable in list_of_vars:
+        tendency_array = (
+            (ds_level_1["u"].values - dictionary["u_traj"])
+            * ds_level_1["d" + variable + "dx"].values
+            + (ds_level_1["v"].values - dictionary["v_traj"])
+            * ds_level_1["d" + variable + "dy"].values
+        )
+        ds_out[variable + "_advtend"] = (
+            ("time", "lev"),
+            tendency_array,
+            {
+                "long_name": ds_level_1[variable].long_name + " tendency (advection)",
+                "units": ds_level_1[variable].units + " s**-1",
+            },
+        )
+        if dictionary["gradients_strategy"] == "both":
+            tendency_array = (
+                (ds_level_1["u"].values - dictionary["u_traj"])
+                * ds_level_1["d" + variable + "dx_bound"].values
+                + (ds_level_1["v"].values - dictionary["v_traj"])
+                * ds_level_1["d" + variable + "dy_bound"].values
+            )
+            ds_out[variable + "_advtend_bound"] = (
+                ("time", "lev"),
+                tendency_array,
+                {
+                    "long_name": ds_level_1[variable].long_name
+                    + " tendency (advection, boundaries)",
+                    "units": ds_level_1[variable].units + " s**-1",
+                },
+            )
+
     return ds_out
 
 
@@ -709,6 +764,32 @@ def dummy_trajectory(ds_trajectory):
         this_lon = previous_lon
 
 
+def add_globals_attrs_to_ds(ds_to_add_to):
+    """Adds global attributes to datasets"""
+    global_attrs = {
+        r"Conventions": r"CF-1.7",
+        r"ERA5 reference": r"Hersbach, H., Bell, B., Berrisford, P., Hirahara, S., Horányi, A., Muñoz‐Sabater, J., ... & Simmons, A. (2020). The ERA5 global reanalysis. Quarterly Journal of the Royal Meteorological Society.",
+        r"Created": datetime.datetime.now().isoformat(),
+        r"Created with": r"https://github.com/EUREC4A-UK/lagtraj",
+    }
+    for attribute in global_attrs:
+        ds_to_add_to.attrs[attribute] = global_attrs[attribute]
+
+
+def fix_units(ds_to_fix):
+    """Changes units of ERA5 data to make them compatible with the cf-checker"""
+    units_dict = {
+        "(0 - 1)": "-",
+        "m of equivalent water": "m",
+        "~": "-",
+    }
+    for variable in ds_to_fix.variables:
+        if hasattr(variable, "units"):
+            these_units = ds_to_fix[variable].units
+            if these_units in units_dict:
+                ds_to_fix[variable].units = units_dict[these_units]
+
+
 def dummy_forcings(ds_forcing):
     """Forcings example"""
     ds_out = xr.Dataset()
@@ -723,22 +804,31 @@ def dummy_forcings(ds_forcing):
             "lon": -57.717,
             "gradients_strategy": "both",
             "mask": "ocean",
+            "u_traj": -6,
+            "v_traj": 0,
         }
-        out_levels = np.arange(0, 500.0, 4.0)
+        out_levels = np.arange(0, 10000.0, 40.0)
         ds_smaller = era_5_subset(ds_time, lats_lons_dictionary)
         add_heights_and_pressures(ds_smaller)
         add_auxiliary_variables(ds_smaller, ["theta"])
         ds_time_height = era5_on_height_levels(ds_smaller, out_levels)
         era5_add_lat_lon_meshgrid(ds_time_height)
-        ds_gradients = era5_add_gradients_to_variables(
+        ds_profiles = era5_single_point(ds_time_height, lats_lons_dictionary)
+        ds_era5_mean = era5_box_mean(ds_time_height, lats_lons_dictionary)
+        for variable in ds_era5_mean.variables:
+            if variable not in ["time", "lev"]:
+                ds_profiles[variable + "_mean"] = ds_era5_mean[variable]
+        ds_gradients = era5_gradients(
             ds_time_height, ["u", "v", "p_f", "theta"], lats_lons_dictionary
         )
-        ds_single_point = era5_single_point(ds_time_height, lats_lons_dictionary)
-        ds_era5_mean = era5_box_mean(ds_time_height, lats_lons_dictionary)
-        ds_time_step = xr.merge((ds_gradients, ds_single_point))
-        for variable in ds_era5_mean.variables:
-            ds_time_step[variable + "_mean"] = ds_era5_mean[variable]
+        ds_time_step = xr.merge((ds_gradients, ds_profiles))
+        ds_tendencies = era5_adv_tendencies(
+            ds_time_step, ["u", "v", "p_f", "theta"], lats_lons_dictionary
+        )
+        ds_time_step = xr.merge((ds_time_step, ds_tendencies))
         ds_out = xr.merge((ds_out, ds_time_step))
+    fix_units(ds_out)
+    add_globals_attrs_to_ds(ds_out)
     ds_out.to_netcdf("ds_out.nc")
 
 

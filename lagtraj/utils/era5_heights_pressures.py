@@ -39,6 +39,7 @@ except ImportError:
 
     print("Running without numba")
 
+
 # ECMWF CONSTANTS
 rd = 287.06
 rg = 9.80665
@@ -473,12 +474,15 @@ def era5_add_lat_lon_meshgrid(ds_to_extend):
     ds_to_extend["lon_meshgrid"] = (
         ("latitude", "longitude"),
         lon_mesh,
-        ds_to_extend["longitude"].attrs,
+        {
+            "long_name": "longitude on meshgrid",
+            "units": ds_to_extend["longitude"].units,
+        },
     )
     ds_to_extend["lat_meshgrid"] = (
         ("latitude", "longitude"),
         lat_mesh,
-        ds_to_extend["latitude"].attrs,
+        {"long_name": "latitude on meshgrid", "units": ds_to_extend["latitude"].units},
     )
     return ds_to_extend
 
@@ -729,9 +733,36 @@ def weighted_velocity(ds_for_vel):
     return u_weighted, v_weighted
 
 
+def add_globals_attrs_to_ds(ds_to_add_to):
+    """Adds global attributes to datasets"""
+    global_attrs = {
+        r"Conventions": r"CF-1.7",
+        r"ERA5 reference": r"Hersbach, H., Bell, B., Berrisford, P., Hirahara, S., Horányi, A., Muñoz‐Sabater, J., ... & Simmons, A. (2020). The ERA5 global reanalysis. Quarterly Journal of the Royal Meteorological Society.",
+        r"Created": datetime.datetime.now().isoformat(),
+        r"Created with": r"https://github.com/EUREC4A-UK/lagtraj",
+    }
+    for attribute in global_attrs:
+        ds_to_add_to.attrs[attribute] = global_attrs[attribute]
+
+
+def fix_units(ds_to_fix):
+    """Changes units of ERA5 data to make them compatible with the cf-checker"""
+    units_dict = {
+        "(0 - 1)": "-",
+        "m of equivalent water": "m",
+        "~": "-",
+    }
+    for variable in ds_to_fix.variables:
+        if hasattr(variable, "units"):
+            these_units = ds_to_fix[variable].units
+            if these_units in units_dict:
+                ds_to_fix[variable].units = units_dict[these_units]
+
+
 def dummy_trajectory(ds_trajectory):
     """Trajectory example
     Needs to use dictionary input instead"""
+    ds_traj = xr.Dataset()
     this_lat = 13.3
     this_lon = -57.717
     nr_iterations_traj = 10
@@ -762,32 +793,7 @@ def dummy_trajectory(ds_trajectory):
             )
         this_lat = previous_lat
         this_lon = previous_lon
-
-
-def add_globals_attrs_to_ds(ds_to_add_to):
-    """Adds global attributes to datasets"""
-    global_attrs = {
-        r"Conventions": r"CF-1.7",
-        r"ERA5 reference": r"Hersbach, H., Bell, B., Berrisford, P., Hirahara, S., Horányi, A., Muñoz‐Sabater, J., ... & Simmons, A. (2020). The ERA5 global reanalysis. Quarterly Journal of the Royal Meteorological Society.",
-        r"Created": datetime.datetime.now().isoformat(),
-        r"Created with": r"https://github.com/EUREC4A-UK/lagtraj",
-    }
-    for attribute in global_attrs:
-        ds_to_add_to.attrs[attribute] = global_attrs[attribute]
-
-
-def fix_units(ds_to_fix):
-    """Changes units of ERA5 data to make them compatible with the cf-checker"""
-    units_dict = {
-        "(0 - 1)": "-",
-        "m of equivalent water": "m",
-        "~": "-",
-    }
-    for variable in ds_to_fix.variables:
-        if hasattr(variable, "units"):
-            these_units = ds_to_fix[variable].units
-            if these_units in units_dict:
-                ds_to_fix[variable].units = units_dict[these_units]
+    ds_traj.to_netcdf("ds_out.nc")
 
 
 def dummy_forcings(ds_forcing):
@@ -839,7 +845,7 @@ def main():
     files_model_fc = "output_domains/model_fc_*_eurec4a_circle_eul_domain.nc"
     files_single_fc = "output_domains/single_fc_*_eurec4a_circle_eul_domain.nc"
     ds_model_an = xr.open_mfdataset(files_model_an, combine="by_coords")
-    ds_model_an = ds_model_an.drop_vars("z")
+    ds_model_an = ds_model_an.drop_vars(["z", "lnsp"])
     ds_single_an = xr.open_mfdataset(files_single_an, combine="by_coords")
     ds_model_fc = xr.open_mfdataset(files_model_fc, combine="by_coords")
     ds_single_fc = xr.open_mfdataset(files_single_fc, combine="by_coords")
@@ -847,8 +853,8 @@ def main():
     for this_ds in ds_list:
         era_5_normalise_longitude(this_ds)
     ds_merged = xr.merge(ds_list)
-    dummy_forcings(ds_merged)
     dummy_trajectory(ds_merged)
+    dummy_forcings(ds_merged)
 
 
 if __name__ == "__main__":

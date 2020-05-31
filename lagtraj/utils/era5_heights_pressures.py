@@ -9,14 +9,19 @@ ERA5 utilities that can
 - Add auxiliary variables
 
 TODO
+- Slicing for means and gradients
 - Move some functionality (e.g. auxiliary variables) to more generic utilities
 - May want to write/use some code for degrees versus radians
-- Discuss need to check float vs double
+- Discuss need to check/convert float vs double (HIGH-TUNE expects double)
 - Discuss data filter and weight procedures
 - Compare regression and boundary gradients
 - Look into other mean/gradient techniques (e.g. Gaussian weighted, see CSET code).
 - Further documentation
 - Check cf conventions
+- Variable renaming
+- Clean up trajectory code
+- High-tune prefers netcdf3?
+- Hightune prefers longitude on [-180,180]?
 """
 
 import os
@@ -217,7 +222,7 @@ def steffen_3d(
                     input_levels[k_temp, j, i] < output_level_array[k_out]
                 ):
                     k_temp = k_temp + 1
-                if k_temp > 0 and k_temp < k_max:
+                if 0 < k_temp < k_max:
                     k_high = k_temp
                     k_low = k_high - 1
                     delta = input_levels[k_high, j, i] - input_levels[k_low, j, i]
@@ -234,10 +239,10 @@ def steffen_3d(
                     ) / delta
                     c = linear_slope[k_low, j, i]
                     d = input_data[k_low, j, i]
-                    t = output_level_array[k_out] - input_levels[k_low, j, i]
-                    t_2 = t * t
-                    t_3 = t_2 * t
-                    output_data[k_out, j, i] = a * t_3 + b * t_2 + c * t + d
+                    t_1 = output_level_array[k_out] - input_levels[k_low, j, i]
+                    t_2 = t_1 * t_1
+                    t_3 = t_2 * t_1
+                    output_data[k_out, j, i] = a * t_3 + b * t_2 + c * t_1 + d
                 elif (k_temp == 0) and (
                     output_level_array[k_out] >= lower_extrapolation_surface[j, i]
                 ):
@@ -682,26 +687,52 @@ def era5_adv_tendencies(ds_level_1, list_of_vars, dictionary):
     return ds_out
 
 
-def trace_back(lat, lon, u, v, dt):
-    """calculates previous position given lat,lon,u,v, and dt"""
-    if dt < 0.0:
-        raise Exception("Expecting positive dt in back-tracing")
-    # Angle corresponds to opposite (as back-tracing) direction of velocity bearing
-    theta = np.arctan2(v, u) % (2 * pi) - (pi / 2)
-    dist = np.sqrt(u ** 2 + v ** 2) * dt
+def trace_one_way(lat, lon, u_traj, v_traj, d_time, lforward=True):
+    """calculates previous position given lat,lon,u_traj,v_traj, and d_time
+    explicitly set d_time positive, to prevent accidental backward trajectory"""
+    if d_time < 0.0:
+        raise Exception("Expecting positive d_time in back-tracing")
+    theta = np.arctan2(v_traj, u_traj) % (2 * pi)
+    if lforward:
+        bearing = ((pi / 2) - theta) % (2 * pi)
+    else:
+        bearing = ((3 * pi / 2) - theta) % (2 * pi)
+    dist = np.sqrt(u_traj ** 2 + v_traj ** 2) * d_time
     lat_rad = lat * (2 * pi / 360.0)
     lon_rad = lon * (2 * pi / 360.0)
-    previous_lat_rad = np.arcsin(
+    traced_lat_rad = np.arcsin(
         np.sin(lat_rad) * np.cos(dist / r_earth)
-        + np.cos(lat_rad) * np.sin(dist / r_earth) * np.cos(theta)
+        + np.cos(lat_rad) * np.sin(dist / r_earth) * np.cos(bearing)
     )
-    previous_lon_rad = lon_rad + np.arctan2(
-        np.sin(theta) * np.sin(dist / r_earth) * np.cos(lat_rad),
-        np.cos(dist / r_earth) - np.sin(lat_rad) * np.sin(previous_lat_rad),
+    traced_lon_rad = lon_rad + np.arctan2(
+        np.sin(bearing) * np.sin(dist / r_earth) * np.cos(lat_rad),
+        np.cos(dist / r_earth) - np.sin(lat_rad) * np.sin(lat_rad),
     )
-    previous_lat = previous_lat_rad * (360.0 / (2 * pi))
-    previous_lon = previous_lon_rad * (360.0 / (2 * pi))
-    return previous_lat, previous_lon
+    traced_lat = traced_lat_rad * (360.0 / (2 * pi))
+    traced_lon = traced_lon_rad * (360.0 / (2 * pi))
+    return traced_lat, traced_lon
+
+
+def trace_forward(lat, lon, u_traj, v_traj, d_time):
+    """Wrapper function for forward trajectory, here d_time is positive"""
+    return trace_one_way(lat, lon, u_traj, v_traj, d_time, True)
+
+
+def trace_backward(lat, lon, u_traj, v_traj, d_time):
+    """Wrapper function for backward trajectory, here d_time is positive"""
+    return trace_one_way(lat, lon, u_traj, v_traj, d_time, False)
+
+
+def trace_two_way(lat, lon, u_traj, v_traj, d_time_forward, d_time_total):
+    """Calculates both previous and next position given a point in between"""
+    d_time_backward = d_time_total - d_time_forward
+    forward_lat, forward_lon = trace_one_way(
+        lat, lon, u_traj, v_traj, d_time_forward, True
+    )
+    backward_lat, backward_lon = trace_one_way(
+        lat, lon, u_traj, v_traj, d_time_backward, False
+    )
+    return forward_lat, forward_lon, backward_lat, backward_lon
 
 
 def cos_transition(absolute_input, transition_start, transition_end):
@@ -717,7 +748,7 @@ def cos_transition(absolute_input, transition_start, transition_end):
 
 
 def weighted_velocity(ds_for_vel):
-    """weighted velociy: needs more work"""
+    """Weighted velociy: needs more work"""
     pres_cutoff_start = 60000.0
     pres_cutoff_end = 50000.0
     height_factor = cos_transition(
@@ -759,60 +790,235 @@ def fix_units(ds_to_fix):
                 ds_to_fix[variable].units = units_dict[these_units]
 
 
-def dummy_trajectory(ds_trajectory):
-    """Trajectory example
-    Needs to use dictionary input instead"""
-    ds_traj = xr.Dataset()
-    this_lat = 13.3
-    this_lon = -57.717
-    nr_iterations_traj = 10
-    for this_time in range(30, 27, -1):
-        print(this_lat, this_lon)
-        ds_time = ds_trajectory.isel(time=[this_time])
-        dt_traj = (
-            ds_trajectory["time"][this_time].values
-            - ds_trajectory["time"][this_time - 1].values
-        ) / np.timedelta64(1, "s")
-        ds_local = era5_interp_column(ds_time, this_lat, this_lon)
-        add_heights_and_pressures(ds_local)
-        u_end, v_end = weighted_velocity(ds_local)
-        previous_lat, previous_lon = trace_back(
-            this_lat, this_lon, u_end, v_end, dt_traj
+def get_velocity_from_strategy(ds_column, trajectory_dict):
+    """wrapper routine, determine velocity according to strategy"""
+    if trajectory_dict["velocity_strategy"] == "lower_tropospher_humidity_weighted":
+        u_traj, v_traj = weighted_velocity(ds_column)
+    else:
+        raise NotImplementedError("Trajectory velocity strategy not implemented")
+    return u_traj, v_traj
+
+
+def trajectory_at_target(ds_time_selection, ds_traj, trajectory_dict):
+    """Adds data for a target point that is directly in the time series"""
+    time_target = np.datetime64(trajectory_dict["datetime_target"])
+    lat_target = trajectory_dict["lat_target"]
+    lon_target = trajectory_dict["lon_target"]
+    ds_time = ds_time_selection.sel(time=[time_target])
+    time_exact_index = np.argmax(ds_time_selection["time"] == time_target)
+    ds_local = era5_interp_column(ds_time, lat_target, lon_target)
+    add_heights_and_pressures(ds_local)
+    u_traj, v_traj = get_velocity_from_strategy(ds_local, trajectory_dict)
+    ds_traj["lat"][time_exact_index] = lat_target
+    ds_traj["lon"][time_exact_index] = lon_target
+    ds_traj["u_traj"][time_exact_index] = u_traj
+    ds_traj["v_traj"][time_exact_index] = v_traj
+    ds_traj["processed"][time_exact_index] = True
+
+
+def trajectory_around_target(ds_time_selection, ds_traj, trajectory_dict):
+    """Adds data around a target point that is not directly in the time series and 
+    needs interpolation"""
+    nr_iterations_traj = trajectory_dict["nr_iterations_traj"]
+    time_target = np.datetime64(trajectory_dict["datetime_target"])
+    lat_target = trajectory_dict["lat_target"]
+    lon_target = trajectory_dict["lon_target"]
+    # Find relevant indices
+    time_greater_index = np.argmax(ds_time_selection["time"] > time_target)
+    time_smaller_index = time_greater_index - 1
+    ds_interpolated = era5_interp_column(ds_time_selection, lat_target, lon_target)
+    add_heights_and_pressures(ds_interpolated)
+    u_guess, v_guess = get_velocity_from_strategy(ds_interpolated, trajectory_dict)
+    dt_forward = (
+        (ds_time_selection["time"][time_greater_index] - time_target)
+        / np.timedelta64(1, "s")
+    ).values
+    dt_total = (
+        (
+            ds_time_selection["time"][time_greater_index]
+            - ds_time_selection["time"][time_smaller_index]
         )
-        # iteratively find previous point
-        for _ in range(nr_iterations_traj):
-            ds_time = ds_trajectory.isel(time=[this_time - 1])
-            ds_local = era5_interp_column(ds_time, previous_lat, previous_lon)
-            add_heights_and_pressures(ds_local)
-            u_begin, v_begin = weighted_velocity(ds_local)
-            # estimate of mean velocity over hour
-            u_mean = (u_begin + u_end) / 2.0
-            v_mean = (v_begin + v_end) / 2.0
-            previous_lat, previous_lon = trace_back(
-                this_lat, this_lon, u_mean, v_mean, dt_traj
+        / np.timedelta64(1, "s")
+    ).values
+    # iteratively find velocity at adjacent points in time
+    for _ in range(nr_iterations_traj):
+        forward_lat, forward_lon, backward_lat, backward_lon = trace_two_way(
+            lat_target, lon_target, u_guess, v_guess, dt_forward, dt_total
+        )
+        ds_begin = ds_time_selection.isel(time=[time_smaller_index])
+        ds_begin_column = era5_interp_column(ds_begin, backward_lat, backward_lon)
+        add_heights_and_pressures(ds_begin_column)
+        u_begin, v_begin = get_velocity_from_strategy(ds_begin_column, trajectory_dict)
+        ds_end = ds_time_selection.isel(time=[time_greater_index])
+        ds_end_column = era5_interp_column(ds_end, forward_lat, forward_lon)
+        add_heights_and_pressures(ds_end_column)
+        u_end, v_end = get_velocity_from_strategy(ds_end_column, trajectory_dict)
+        u_guess = (u_begin + u_end) / 2.0
+        v_guess = (v_begin + v_end) / 2.0
+    ds_traj["lat"][time_smaller_index] = backward_lat
+    ds_traj["lon"][time_smaller_index] = backward_lon
+    ds_traj["u_traj"][time_smaller_index] = u_begin
+    ds_traj["v_traj"][time_smaller_index] = v_begin
+    ds_traj["processed"][time_smaller_index] = True
+    ds_traj["lat"][time_greater_index] = forward_lat
+    ds_traj["lon"][time_greater_index] = forward_lon
+    ds_traj["u_traj"][time_greater_index] = u_end
+    ds_traj["v_traj"][time_greater_index] = v_end
+    ds_traj["processed"][time_greater_index] = True
+
+
+def forward_trajectory(ds_time_selection, ds_traj, trajectory_dict):
+    """Adds data after the last index that is already initialised"""
+    # Ugly
+    last_processed_index = np.argmax(
+        ds_traj["processed"] * np.arange(len(ds_traj["processed"]))
+    ).values
+    nr_iterations_traj = trajectory_dict["nr_iterations_traj"]
+    for forward_index in range(last_processed_index + 1, len(ds_traj["processed"])):
+        dt_forward = (
+            (
+                ds_time_selection["time"][forward_index]
+                - ds_time_selection["time"][forward_index - 1]
             )
-        this_lat = previous_lat
-        this_lon = previous_lon
-    ds_traj.to_netcdf("ds_out.nc")
+            / np.timedelta64(1, "s")
+        ).values
+        u_begin = ds_traj["u_traj"][forward_index - 1]
+        v_begin = ds_traj["v_traj"][forward_index - 1]
+        lat_begin = ds_traj["lat"][forward_index - 1]
+        lon_begin = ds_traj["lon"][forward_index - 1]
+        u_guess = u_begin
+        v_guess = v_begin
+        # iteratively find velocity at adjacent points in time
+        for _ in range(nr_iterations_traj):
+            forward_lat, forward_lon = trace_forward(
+                lat_begin, lon_begin, u_guess, v_guess, dt_forward
+            )
+            ds_end = ds_time_selection.isel(time=[forward_index])
+            ds_end_column = era5_interp_column(ds_end, forward_lat, forward_lon)
+            add_heights_and_pressures(ds_end_column)
+            u_end, v_end = get_velocity_from_strategy(ds_end_column, trajectory_dict)
+            u_guess = (u_begin + u_end) / 2.0
+            v_guess = (v_begin + v_end) / 2.0
+        ds_traj["lat"][forward_index] = forward_lat
+        ds_traj["lon"][forward_index] = forward_lon
+        ds_traj["u_traj"][forward_index] = u_end
+        ds_traj["v_traj"][forward_index] = v_end
+        ds_traj["processed"][forward_index] = True
 
 
-def dummy_forcings(ds_forcing):
-    """Forcings example"""
+def backward_trajectory(ds_time_selection, ds_traj, trajectory_dict):
+    """Adds data before the first index that is already initialised"""
+    # Ugly
+    first_processed_index = np.argmax(ds_traj["processed"]).values
+    nr_iterations_traj = trajectory_dict["nr_iterations_traj"]
+    for backward_index in range(first_processed_index - 1, -1, -1):
+        dt_backward = (
+            (
+                ds_time_selection["time"][backward_index + 1]
+                - ds_time_selection["time"][backward_index]
+            )
+            / np.timedelta64(1, "s")
+        ).values
+        u_end = ds_traj["u_traj"][backward_index + 1]
+        v_end = ds_traj["v_traj"][backward_index + 1]
+        lat_end = ds_traj["lat"][backward_index + 1]
+        lon_end = ds_traj["lon"][backward_index + 1]
+        u_guess = u_end
+        v_guess = v_end
+        # iteratively find velocity at adjacent points in time
+        for _ in range(nr_iterations_traj):
+            backward_lat, backward_lon = trace_backward(
+                lat_end, lon_end, u_guess, v_guess, dt_backward
+            )
+            ds_begin = ds_time_selection.isel(time=[backward_index])
+            ds_begin_column = era5_interp_column(ds_begin, backward_lat, backward_lon)
+            add_heights_and_pressures(ds_begin_column)
+            u_begin, v_begin = get_velocity_from_strategy(
+                ds_begin_column, trajectory_dict
+            )
+            u_guess = (u_begin + u_end) / 2.0
+            v_guess = (v_begin + v_end) / 2.0
+        ds_traj["lat"][backward_index] = backward_lat
+        ds_traj["lon"][backward_index] = backward_lon
+        ds_traj["u_traj"][backward_index] = u_begin
+        ds_traj["v_traj"][backward_index] = v_begin
+        ds_traj["processed"][backward_index] = True
+
+
+def dummy_trajectory(mf_dataset, trajectory_dict):
+    """Trajectory example: needs to be integrated into main functionality"""
+    time_target = np.datetime64(trajectory_dict["datetime_target"])
+    start_date = time_target - np.timedelta64(trajectory_dict["backward_hours"], "h")
+    end_date = time_target + np.timedelta64(trajectory_dict["forward_hours"], "h")
+    ds_time_selection = mf_dataset.sel(time=slice(start_date, end_date))
+    ds_traj = xr.Dataset(coords={"time": ds_time_selection.time})
+    time_len = len(ds_time_selection["time"].values)
+    ds_traj["lat"] = (
+        ("time"),
+        np.empty((time_len)),
+        {"long_name": "trajectory latitude", "units": "degrees_east"},
+    )
+    ds_traj["lon"] = (
+        ("time"),
+        np.empty((time_len)),
+        {"long_name": "trajectory longitude", "units": "degrees_north"},
+    )
+    ds_traj["u_traj"] = (
+        ("time"),
+        np.empty((time_len)),
+        {"long_name": "trajectory U component of wind", "units": "m s**-1"},
+    )
+    ds_traj["v_traj"] = (
+        ("time"),
+        np.empty((time_len)),
+        {"long_name": "trajectory V component of wind", "units": "m s**-1"},
+    )
+    ds_traj["processed"] = (
+        ("time"),
+        np.empty((time_len)),
+        {"long_name": "Has array been processed", "units": "-"},
+    )
+    ds_traj["processed"].values[:] = False
+    time_exact_match = time_target in ds_time_selection["time"]
+    if time_exact_match:
+        trajectory_at_target(ds_time_selection, ds_traj, trajectory_dict)
+        forward_trajectory(ds_time_selection, ds_traj, trajectory_dict)
+        backward_trajectory(ds_time_selection, ds_traj, trajectory_dict)
+    else:
+        trajectory_around_target(ds_time_selection, ds_traj, trajectory_dict)
+        forward_trajectory(ds_time_selection, ds_traj, trajectory_dict)
+        backward_trajectory(ds_time_selection, ds_traj, trajectory_dict)
+    if all(ds_traj["processed"].values[:]):
+        ds_traj.drop_vars("processed")
+        ds_traj.to_netcdf("ds_traj.nc")
+    else:
+        raise Exception("Trajectory issue, not all timesteps have been filled")
+
+
+def dummy_forcings(mf_dataset, forcings_dictionary):
+    """Forcings example: needs to be integrated into main functionality"""
     ds_out = xr.Dataset()
-    for this_time in range(18, 30):
-        ds_time = ds_forcing.isel(time=[this_time])
+    ds_traj = xr.open_dataset(forcings_dictionary["traj_file"])
+    for index in range(len(ds_traj["time"])):
+        this_time = ds_traj["time"][index]
+        # Ugly
+        mf_index = np.argmax(mf_dataset["time"] == this_time).values
+        ds_time = mf_dataset.isel(time=[mf_index])
         lats_lons_dictionary = {
-            "lat_min": 11.3,
-            "lat_max": 15.3,
-            "lon_min": -59.717,
-            "lon_max": -55.717,
-            "lat": 13.3,
-            "lon": -57.717,
-            "gradients_strategy": "both",
-            "mask": "ocean",
-            "u_traj": -6,
-            "v_traj": 0,
+            "lat_min": ds_traj["lat"][index].values
+            - forcings_dictionary["averaging_width"] / 2.0,
+            "lat_max": ds_traj["lat"][index].values
+            + forcings_dictionary["averaging_width"] / 2.0,
+            "lon_min": ds_traj["lon"][index].values
+            - forcings_dictionary["averaging_width"] / 2.0,
+            "lon_max": ds_traj["lon"][index].values
+            + forcings_dictionary["averaging_width"] / 2.0,
+            "lat": ds_traj["lat"][index].values,
+            "lon": ds_traj["lon"][index].values,
+            "u_traj": ds_traj["u_traj"][index].values,
+            "v_traj": ds_traj["v_traj"][index].values,
         }
+        lats_lons_dictionary.update(forcings_dictionary)
         out_levels = np.arange(0, 10000.0, 40.0)
         ds_smaller = era_5_subset(ds_time, lats_lons_dictionary)
         add_heights_and_pressures(ds_smaller)
@@ -832,10 +1038,11 @@ def dummy_forcings(ds_forcing):
             ds_time_step, ["u", "v", "p_f", "theta"], lats_lons_dictionary
         )
         ds_time_step = xr.merge((ds_time_step, ds_tendencies))
-        ds_out = xr.merge((ds_out, ds_time_step))
+        ds_time_step.reset_coords(["latitude", "longitude"])
+        ds_out = xr.combine_by_coords((ds_out, ds_time_step))
     fix_units(ds_out)
     add_globals_attrs_to_ds(ds_out)
-    ds_out.to_netcdf("ds_out.nc")
+    ds_out.to_netcdf("ds_along_traj.nc")
 
 
 def main():
@@ -845,6 +1052,7 @@ def main():
     files_model_fc = "output_domains/model_fc_*_eurec4a_circle_eul_domain.nc"
     files_single_fc = "output_domains/single_fc_*_eurec4a_circle_eul_domain.nc"
     ds_model_an = xr.open_mfdataset(files_model_an, combine="by_coords")
+    # z needs to be dropped to prevent duplicity, lnsp is simply redundant
     ds_model_an = ds_model_an.drop_vars(["z", "lnsp"])
     ds_single_an = xr.open_mfdataset(files_single_an, combine="by_coords")
     ds_model_fc = xr.open_mfdataset(files_model_fc, combine="by_coords")
@@ -853,8 +1061,23 @@ def main():
     for this_ds in ds_list:
         era_5_normalise_longitude(this_ds)
     ds_merged = xr.merge(ds_list)
-    dummy_trajectory(ds_merged)
-    dummy_forcings(ds_merged)
+    dummy_trajectory_dictionary = {
+        "lat_target": 13.3,
+        "lon_target": -57.717,
+        "datetime_target": "2020-02-03T12:30",
+        "backward_hours": 3,
+        "forward_hours": 3,
+        "nr_iterations_traj": 10,
+        "velocity_strategy": "lower_tropospher_humidity_weighted",
+    }
+    dummy_trajectory(ds_merged, dummy_trajectory_dictionary)
+    dummy_forcings_dictionary = {
+        "gradients_strategy": "both",
+        "mask": "ocean",
+        "traj_file": "ds_traj.nc",
+        "averaging_width": 1.0,
+    }
+    dummy_forcings(ds_merged, dummy_forcings_dictionary)
 
 
 if __name__ == "__main__":

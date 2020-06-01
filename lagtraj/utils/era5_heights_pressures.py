@@ -299,7 +299,7 @@ def add_heights_and_pressures(ds_from_era5):
         ds_from_era5["p_f"][time_index] = p_f
 
 
-def era5_on_height_levels(ds_pressure_levels, heights_array):
+def era5_on_height_levels(ds_model_levels, heights_array):
     """Converts ERA5 model level data to data on height levels
     using Steffen interpolation"""
     if isinstance(heights_array[0], numbers.Integral):
@@ -309,17 +309,17 @@ def era5_on_height_levels(ds_pressure_levels, heights_array):
     }
     ds_height_levels = xr.Dataset(
         coords={
-            "time": ds_pressure_levels.time,
+            "time": ds_model_levels.time,
             **heights_coord,
-            "latitude": ds_pressure_levels.latitude,
-            "longitude": ds_pressure_levels.longitude,
+            "latitude": ds_model_levels.latitude,
+            "longitude": ds_model_levels.longitude,
         }
     )
-    time_steps = len(ds_pressure_levels["height_f"])
-    shape_p_levels = np.shape(ds_pressure_levels["height_f"])
+    time_steps = len(ds_model_levels["height_f"])
+    shape_p_levels = np.shape(ds_model_levels["height_f"])
     shape_h_levels = (shape_p_levels[0],) + (len(heights_array),) + shape_p_levels[2:]
-    for variable in ds_pressure_levels.variables:
-        if ds_pressure_levels[variable].dims == (
+    for variable in ds_model_levels.variables:
+        if ds_model_levels[variable].dims == (
             "time",
             "level",
             "latitude",
@@ -328,32 +328,32 @@ def era5_on_height_levels(ds_pressure_levels, heights_array):
             ds_height_levels[variable] = (
                 ("time", "lev", "latitude", "longitude"),
                 np.empty(shape_h_levels),
-                ds_pressure_levels[variable].attrs,
+                ds_model_levels[variable].attrs,
             )
-        elif "level" not in ds_pressure_levels[variable].dims:
+        elif "level" not in ds_model_levels[variable].dims:
             ds_height_levels[variable] = (
-                ds_pressure_levels[variable].dims,
-                ds_pressure_levels[variable],
-                ds_pressure_levels[variable].attrs,
+                ds_model_levels[variable].dims,
+                ds_model_levels[variable],
+                ds_model_levels[variable].attrs,
             )
     for time_index in range(time_steps):
-        h_f_inverse = ds_pressure_levels["height_f"][time_index, ::-1, :, :].values
-        h_h_inverse = ds_pressure_levels["height_h"][time_index, ::-1, :, :].values
+        h_f_inverse = ds_model_levels["height_f"][time_index, ::-1, :, :].values
+        h_h_inverse = ds_model_levels["height_h"][time_index, ::-1, :, :].values
         sea_mask = (
-            (ds_pressure_levels["height_h"][time_index, -1, :, :].values < 5.0)
-            * (ds_pressure_levels["height_h"][time_index, -1, :, :].values > 1.0e-6)
-            * (ds_pressure_levels["lsm"][time_index, :, :].values < 0.2)
+            (ds_model_levels["height_h"][time_index, -1, :, :].values < 5.0)
+            * (ds_model_levels["height_h"][time_index, -1, :, :].values > 1.0e-6)
+            * (ds_model_levels["lsm"][time_index, :, :].values < 0.2)
         )
         lower_extrapolation_with_mask = xr.where(
-            sea_mask, -1.0e-6, ds_pressure_levels["height_h"][time_index, -1, :, :]
+            sea_mask, -1.0e-6, ds_model_levels["height_h"][time_index, -1, :, :]
         ).values
-        for variable in ds_pressure_levels.variables:
-            if np.shape(ds_pressure_levels[variable]) == shape_p_levels:
+        for variable in ds_model_levels.variables:
+            if np.shape(ds_model_levels[variable]) == shape_p_levels:
                 if variable in ["height_h", "p_h"]:
                     h_inverse = h_h_inverse
                 else:
                     h_inverse = h_f_inverse
-                field_p_levels = ds_pressure_levels[variable][
+                field_p_levels = ds_model_levels[variable][
                     time_index, ::-1, :, :
                 ].values
                 if variable in ["p_h", "p_f", "height_h", "height_f"]:
@@ -454,6 +454,17 @@ def era5_interp_column(ds_domain, lat_to_interp, lon_to_interp):
     return ds_at_location
 
 
+def era5_time_interp_column(ds_domain, time_to_interp, lat_to_interp, lon_to_interp):
+    """Returns the dataset interpolated to given time, latitude and longitude
+    with latitude and longitude dimensions retained"""
+    ds_at_location = ds_domain.interp(
+        time=[time_to_interp],
+        latitude=[lat_to_interp],
+        longitude=[longitude_set_meridian(lon_to_interp)],
+    )
+    return ds_at_location
+
+
 def era5_mask(ds_to_mask, dictionary):
     """Returns a lat-lon mask"""
     # Only use ocean points, ensure it can be used after before or after array extensions
@@ -538,22 +549,6 @@ def lon_dist(lon1, lon2, lat):
     return np.cos(np.deg2rad(lat)) * dlon_rad * r_earth
 
 
-def lon_dist_from_meshgrids(ds_1, ds_2):
-    """Calculates distances between two datasets of the same shape"""
-    lat1_mg = ds_1["lat_meshgrid"].values
-    lon1_mg = ds_1["lon_meshgrid"].values
-    lat2_mg = ds_2["lat_meshgrid"].values
-    lon2_mg = ds_2["lon_meshgrid"].values
-    return lon_dist(lon1_mg, lon2_mg, 0.5 * (lat1_mg + lat2_mg)).flatten()
-
-
-def lat_dist_from_meshgrids(ds_1, ds_2):
-    """Calculates distances between two datasets of the same shape"""
-    lat1_mg = ds_1["lat_meshgrid"].values
-    lat2_mg = ds_2["lat_meshgrid"].values
-    return lat_dist(lat1_mg, lat2_mg).flatten()
-
-
 @njit
 def boundary_gradients(x_array, y_array, val_array):
     """Numba function to calculate gradients, dismissing filtered points"""
@@ -568,17 +563,17 @@ def boundary_gradients(x_array, y_array, val_array):
     for this_time in range(len_temp):
         for this_level in range(len_levels):
             for this_lat in range(len_lats):
-                vals = val_array[this_time, this_level, this_lat, :].flatten()
+                vals_at_lat = val_array[this_time, this_level, this_lat, :].flatten()
                 x_at_lat = x_array[this_lat, :].flatten()
-                vals_filtered = vals[~np.isnan(vals)]
-                x_filtered = x_at_lat[~np.isnan(vals)]
+                vals_filtered = vals_at_lat[~np.isnan(vals_at_lat)]
+                x_filtered = x_at_lat[~np.isnan(vals_at_lat)]
                 dvals = vals_filtered[-1] - vals_filtered[0]
                 dval_dx[this_lat] = dvals / (x_filtered[-1] - x_filtered[0])
             for this_lon in range(len_lons):
-                vals = val_array[this_time, this_level, :, this_lon].flatten()
+                vals_at_lon = val_array[this_time, this_level, :, this_lon].flatten()
                 y_at_lat = y_array[:, this_lon].flatten()
-                vals_filtered = vals[~np.isnan(vals)]
-                y_filtered = y_at_lat[~np.isnan(vals)]
+                vals_filtered = vals_at_lon[~np.isnan(vals_at_lon)]
+                y_filtered = y_at_lat[~np.isnan(vals_at_lon)]
                 dvals = vals_filtered[-1] - vals_filtered[0]
                 dval_dy[this_lon] = dvals / (y_filtered[-1] - y_filtered[0])
             x_gradient_array[this_time, this_level] = np.mean(
@@ -602,6 +597,7 @@ def era5_boundary_gradients(ds_box, variable, dictionary):
     lon1_point = longitude_set_meridian(dictionary["lon"])
     lat2_mg = ds_filtered["lat_meshgrid"].values
     lon2_mg = ds_filtered["lon_meshgrid"].values
+    # Use the distance at the actual latitude to calculate gradients between boundaries
     x_array = lon_dist(lon1_point, lon2_mg, lat2_mg)
     y_array = lat_dist(lat1_point, lat2_mg)
     val_array = ds_filtered[variable].values
@@ -619,6 +615,7 @@ def era5_regression_gradients(ds_box, variable, dictionary):
     lon1_point = longitude_set_meridian(dictionary["lon"])
     lat2_mg = ds_filtered["lat_meshgrid"].values
     lon2_mg = ds_filtered["lon_meshgrid"].values
+    # Use the center latitude for projection onto plane
     x_array = lon_dist(lon1_point, lon2_mg, lat1_point)
     y_array = lat_dist(lat1_point, lat2_mg)
     x_flat = x_array.flatten()
@@ -843,7 +840,7 @@ def cos_transition(absolute_input, transition_start, transition_end):
 
 
 def weighted_velocity(ds_for_vel, trajectory_dict):
-    """Weighted velociy: needs more work"""
+    """Weighted velocity: needs more work"""
     pres_cutoff_start = trajectory_dict["pres_cutoff_start"]
     pres_cutoff_end = trajectory_dict["pres_cutoff_end"]
     height_factor = cos_transition(
@@ -860,10 +857,20 @@ def weighted_velocity(ds_for_vel, trajectory_dict):
     return u_weighted, v_weighted
 
 
+def velocity_at_height(ds_for_vel, trajectory_dict):
+    """Velocit at one height: needs more work"""
+    single_height_level = np.array([trajectory_dict["velocity_height"]])
+    ds_on_height_level = era5_on_height_levels(ds_for_vel, single_height_level)
+    # For a single colum, data dimensions are all 1
+    return np.mean(ds_on_height_level["u"]), np.mean(ds_on_height_level["v"])
+
+
 def get_velocity_from_strategy(ds_column, trajectory_dict):
     """wrapper routine, determine velocity according to strategy"""
     if trajectory_dict["velocity_strategy"] == "lower_troposphere_humidity_weighted":
         u_traj, v_traj = weighted_velocity(ds_column, trajectory_dict)
+    elif trajectory_dict["velocity_strategy"] == "velocity_at_height":
+        u_traj, v_traj = velocity_at_height(ds_column, trajectory_dict)
     else:
         raise NotImplementedError("Trajectory velocity strategy not implemented")
     return u_traj, v_traj
@@ -966,7 +973,9 @@ def trajectory_around_origin(ds_time_selection, ds_traj, trajectory_dict):
     # Find relevant indices
     time_greater_index = np.argmax(ds_time_selection["time"] > time_origin)
     time_smaller_index = time_greater_index - 1
-    ds_interpolated = era5_interp_column(ds_time_selection, lat_origin, lon_origin)
+    ds_interpolated = era5_time_interp_column(
+        ds_time_selection, time_origin, lat_origin, lon_origin
+    )
     add_heights_and_pressures(ds_interpolated)
     u_guess, v_guess = get_velocity_from_strategy(ds_interpolated, trajectory_dict)
     d_time_forward = (
@@ -1227,6 +1236,8 @@ def main():
         # "velocity_strategy": "prescribed_velocity",
         # "u_traj" : -6.0,
         # "v_traj" : -0.25,
+        # "velocity_strategy": "velocity_at_height",
+        # "velocity_height": 1000.0,
         "pres_cutoff_start": 60000.0,
         "pres_cutoff_end": 50000.0,
     }

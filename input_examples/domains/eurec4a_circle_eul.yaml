@@ -1,4 +1,3 @@
-name      : eurec4a_circle_eul
 source    : era5
 lat_min   : 9.8
 lat_max   : 16.8

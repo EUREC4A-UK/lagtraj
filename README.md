@@ -23,20 +23,17 @@ structure is as follows:
 ```bash
 data
 ├── domains
-│   └── eurec4a_circle_eul
-│       ├── source_data
-│       │   ├── an_model_2020-01-01.nc
-│       │   :
-│       │   └── fc_single_2020-01-03.nc
-│       └── meta.yaml
+│   ├── eurec4a_circle_eul.yaml
+│   └── eurec4a_circle_eul_data
+│       ├── an_model_2020-01-01.nc
+│       :
+│       └── fc_single_2020-01-03.nc
 ├── forcings
-│   └── eure4a_20191209_12_eul
-│       ├── forcing.nc
-│       └── meta.yaml
+│   ├── eure4a_20191209_12_eul.yaml
+│   └── eure4a_20191209_12_eul.nc
 └── trajectories
-    └── eure4a_20191209_12_eul
-	    ├── trajectory.nc
-		└── meta.yaml
+    ├── eure4a_20191209_12_eul.yaml
+    └── eure4a_20191209_12_eul.nc
 ```
 
 You can either make your own domain/forcing/trajectory definition (these are

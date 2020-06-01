@@ -29,8 +29,6 @@ def attempt_load(input_name, input_type):
 
     with open(file_path) as fh:
         defn = yaml.load(fh, Loader=yaml.FullLoader)
-        # ensure the `name` attribute is set correctly
-        defn['name'] = input_name
         return defn
 
 

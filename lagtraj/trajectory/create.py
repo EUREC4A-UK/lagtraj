@@ -8,6 +8,7 @@ from .. import DEFAULT_ROOT_DATA_PATH
 from .load import load_definition
 from . import build_data_path
 from ..domain.load import load_data as load_domain_data
+from ..utils import optional_debugging
 
 # Routines for creating a trajectory
 # TODO
@@ -49,13 +50,6 @@ def main():
         root_data_path=args.data_path, name=args.trajectory
     )
 
-    if args.debug:
-        import ipdb
-
-        debug_fn = ipdb.launch_ipdb_on_exception
-    else:
-        debug_fn = lambda: None  # noqa
-
     if traj_definition.timestep == "domain_data":
         da_times = _get_times_from_domain(
             trajectory_definition=traj_definition, root_data_path=args.data_path
@@ -69,7 +63,7 @@ def main():
     else:
         raise NotImplementedError(traj_definition.timestep)
 
-    with debug_fn():
+    with optional_debugging(args.debug):
         ds_trajectory = create_trajectory(
             origin=traj_definition.origin,
             trajectory_type=traj_definition.type,

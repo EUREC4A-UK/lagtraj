@@ -1,10 +1,14 @@
-import yaml
-import datetime
-import xarray as xr
 import os
+import datetime
+from pathlib import Path
+
+import yaml
+import xarray as xr
 import numpy as np
 import pandas as pd
-from lagtraj.utils.parsers import domain_filename_parse, trajectory_filename_parse
+
+from .. import DEFAULT_ROOT_DATA_PATH
+from .load import load_definition
 
 # Routines for creating a trajectory
 # TODO
@@ -14,75 +18,78 @@ from lagtraj.utils.parsers import domain_filename_parse, trajectory_filename_par
 # - Relax assumption of hourly data?
 
 
+def create_trajectory():
+    pass
+
+
 def main():
     import argparse
 
     argparser = argparse.ArgumentParser()
-    argparser.add_argument("input_file")
-    argparser.add_argument(
-        "-f", "--file", dest="directories_file", default="directories.yaml", type=str
-    )
+    argparser.add_argument("trajectory_name")
+    argparser.add_argument("-d", "--data-path", default=DEFAULT_ROOT_DATA_PATH,
+                           type=Path)
     args = argparser.parse_args()
-    get_from_yaml(args.input_file, args.directories_file)
+
+    trajectory_params = load_definition(root_data_path=args.data_path,
+                                        trajectory_name=args.trajectory_name)
 
 
 def get_from_yaml(input_file, directories_file):
-    with open(directories_file) as this_directories_file:
-        directories_dict = yaml.load(this_directories_file, Loader=yaml.FullLoader)
     with open(input_file) as this_trajectory_file:
-        trajectory_dict = yaml.load(this_trajectory_file, Loader=yaml.FullLoader)
+        trajectory_params = yaml.load(this_trajectory_file, Loader=yaml.FullLoader)
 
-    trajectory_type = (trajectory_dict["trajectory_type"]).lower()
+    trajectory_type = (trajectory_params["trajectory_type"]).lower()
     if trajectory_type == "eulerian":
-        create_eulerian_trajectory(directories_dict, trajectory_dict)
+        create_eulerian_trajectory(directories_dict, trajectory_params)
     elif trajectory_type == "linear":
-        create_linear_trajectory(directories_dict, trajectory_dict)
+        create_linear_trajectory(directories_dict, trajectory_params)
     elif trajectory_type == "single_level":
-        create_single_level_trajectory(directories_dict, trajectory_dict)
+        create_single_level_trajectory(directories_dict, trajectory_params)
     elif trajectory_type == "weighted":
-        create_weighted_trajectory(directories_dict, trajectory_dict)
+        create_weighted_trajectory(directories_dict, trajectory_params)
     else:
         raise Exception("Trajectory_type not found")
 
 
-def create_eulerian_trajectory(directories_dict, trajectory_dict):
+def create_eulerian_trajectory(directories_dict, trajectory_params):
     times = pd.date_range(
-        np.datetime64(trajectory_dict["datetime_end"])
-        - np.timedelta64(trajectory_dict["duration_hours"], "h"),
-        periods=trajectory_dict["duration_hours"] + 1,
+        np.datetime64(trajectory_params["datetime_end"])
+        - np.timedelta64(trajectory_params["duration_hours"], "h"),
+        periods=trajectory_params["duration_hours"] + 1,
         freq="h",
     )
     nr_hours = len(times)
-    lats = np.full((nr_hours), trajectory_dict["lat_end"])
-    lons = np.full((nr_hours), trajectory_dict["lon_end"])
+    lats = np.full((nr_hours), trajectory_params["lat_end"])
+    lons = np.full((nr_hours), trajectory_params["lon_end"])
     data = trajectory_to_xarray(times, lats, lons)
-    data.to_netcdf(trajectory_filename_parse(directories_dict, trajectory_dict))
+    data.to_netcdf(trajectory_filename_parse(directories_dict, trajectory_params))
 
 
-def create_linear_trajectory(directories_dict, trajectory_dict):
+def create_linear_trajectory(directories_dict, trajectory_params):
     times = pd.date_range(
-        np.datetime64(trajectory_dict["datetime_end"])
-        - np.timedelta64(trajectory_dict["duration_hours"], "h"),
-        periods=trajectory_dict["duration_hours"] + 1,
+        np.datetime64(trajectory_params["datetime_end"])
+        - np.timedelta64(trajectory_params["duration_hours"], "h"),
+        periods=trajectory_params["duration_hours"] + 1,
         freq="h",
     )
     nr_hours = len(times)
-    lat_end = trajectory_dict["lat_end"]
-    lon_end = trajectory_dict["lon_end"]
-    dlat_dt = trajectory_dict["dlat_dt"]
-    dlon_dt = trajectory_dict["dlon_dt"]
+    lat_end = trajectory_params["lat_end"]
+    lon_end = trajectory_params["lon_end"]
+    dlat_dt = trajectory_params["dlat_dt"]
+    dlon_dt = trajectory_params["dlon_dt"]
     lats = lat_end - 3600.0 * dlat_dt * np.arange(nr_hours - 1, -1, -1)
     lons = lon_end - 3600.0 * dlon_dt * np.arange(nr_hours - 1, -1, -1)
     data = trajectory_to_xarray(times, lats, lons)
-    data.to_netcdf(trajectory_filename_parse(directories_dict, trajectory_dict))
+    data.to_netcdf(trajectory_filename_parse(directories_dict, trajectory_params))
 
 
-def create_single_level_trajectory(directories_dict, trajectory_dict):
-    pass
+def create_single_level_trajectory(directories_dict, trajectory_params):
+    raise NotImplementedError
 
 
-def create_weighted_trajectory(directories_dict, trajectory_dict):
-    pass
+def create_weighted_trajectory(directories_dict, trajectory_params):
+    raise NotImplementedError
 
 
 def trajectory_to_xarray(times, lats, lons):

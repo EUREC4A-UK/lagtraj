@@ -13,10 +13,6 @@ class LagtrajExampleDoesNotExist(Exception):
     pass
 
 
-INPUT_TYPE_PLURAL = dict(
-    trajectory="trajectories", domain="domains", forcing="forcings"
-)
-
 
 def attempt_load(input_name, input_type):
     input_type = INPUT_TYPE_PLURAL.get(input_type, input_type)

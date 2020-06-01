@@ -3,7 +3,7 @@ import dateutil.parser
 from pathlib import Path
 
 from .sources import era5
-from .. import DEFAULT_DATA_PATH
+from .. import DEFAULT_ROOT_DATA_PATH
 from . import LatLonBoundingBox, LatLonSamplingResolution, build_domain_data_path
 from .load import load_definition
 
@@ -40,13 +40,15 @@ if __name__ == "__main__":
     argparser.add_argument("domain")
     argparser.add_argument("start_date", type=dateutil.parser.parse)
     argparser.add_argument("end_date", type=dateutil.parser.parse)
-    argparser.add_argument("-d", "--data-path", default=DEFAULT_DATA_PATH, type=Path)
+    argparser.add_argument("-d", "--data-path", default=DEFAULT_ROOT_DATA_PATH,
+                           type=Path)
     argparser.add_argument(
         "-o", "--overwrite", dest="l_overwrite", action="store_true", default=False
     )
     args = argparser.parse_args()
 
-    domain_params = load_definition(domain=args.domain, data_path=args.data_path)
+    domain_params = load_definition(domain_name=args.domain,
+                                    data_path=args.data_path)
 
     bbox = LatLonBoundingBox(
         lat_min=domain_params["lat_min"],

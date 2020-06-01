@@ -1,48 +1,14 @@
+from pathlib import Path
+
 import yaml
-import datetime
 import xarray as xr
-import os
-import numpy as np
-import pandas as pd
-from lagtraj.utils.parsers import (
-    domain_filename_parse,
-    trajectory_filename_parse,
-    forcings_filename_parse,
-)
-from lagtraj.utils.levels import make_levels
 
-# from lagtraj.utils.era5 import add_heights_and_pressures
-from lagtraj.utils.hightune import hightune_variables
-
-from . import era5
+from .. import DEFAULT_DATA_PATH
+from . import era5, load
+from ..utils.levels import make_levels
 
 
-def main():
-    import argparse
-
-    argparser = argparse.ArgumentParser()
-    argparser.add_argument("forcing_name")
-    argparser.add_argument(
-        "-d", "--file", dest="directories_file", default="directories.yaml", type=str
-    )
-    args = argparser.parse_args()
-    get_from_yaml(args.input_file, args.directories_file)
-
-
-def get_from_yaml(input_file, directories_file):
-    """
-    forcing.yaml:
-        trajectory_name: ...
-        time_sampling_method: "model_timesteps"
-        domain: eul_...
-        source: era5
-    """
-
-    with open(directories_file) as this_directories_file:
-        directories_dict = yaml.load(this_directories_file, Loader=yaml.FullLoader)
-    with open(input_file) as this_forcings_file:
-        forcings_dict = yaml.load(this_forcings_file, Loader=yaml.FullLoader)
-
+def make_forcing(data_path, forcing_name, trajectory_name):
     trajectory_file = trajectory_filename_parse(
         directories_dict, forcings_dict["trajectory"]
     )
@@ -83,3 +49,32 @@ def get_from_yaml(input_file, directories_file):
     ds_forcings = xr.concat(ds_timesteps, dim="time")
 
     export_to_hightune(ds_forcings)
+
+
+def main():
+    import argparse
+
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument("forcing_name")
+    argparser.add_argument("-d", "--data-path", default=DEFAULT_DATA_PATH, type=Path)
+    args = argparser.parse_args()
+
+    forcing_params = load.load_definition(data_path=args.data_path,
+                                          forcing_name=args.forcing_name)
+    # ds_trajectory = load
+
+
+def get_from_yaml(input_file, directories_file):
+    """
+    forcing.yaml:
+        trajectory_name: ...
+        time_sampling_method: "model_timesteps"
+        domain: eul_...
+        source: era5
+    """
+
+    with open(directories_file) as this_directories_file:
+        directories_dict = yaml.load(this_directories_file, Loader=yaml.FullLoader)
+    with open(input_file) as this_forcings_file:
+        forcings_dict = yaml.load(this_forcings_file, Loader=yaml.FullLoader)
+

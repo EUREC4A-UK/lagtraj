@@ -1,5 +1,7 @@
 # lagtraj Lagragian simulations trajectories
 
+![lagtraj](https://github.com/EUREC4A-UK/lagtraj/workflows/lagtraj/badge.svg)
+
 
 ## Producing a Lagrangian forcing
 

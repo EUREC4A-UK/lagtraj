@@ -1,7 +1,8 @@
+from ..domain import load as domain_load
 
 
 def _load_domain_data(domain):
-    raise NotImplementedError
+    return domain_load.load_data()
 
 
 def get_available_timesteps(domain):

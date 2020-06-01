@@ -16,13 +16,14 @@ from lagtraj.utils.hightune import hightune_variables
 
 from . import era5
 
+
 def main():
     import argparse
 
     argparser = argparse.ArgumentParser()
-    argparser.add_argument("input_file")
+    argparser.add_argument("forcing_name")
     argparser.add_argument(
-        "-f", "--file", dest="directories_file", default="directories.yaml", type=str
+        "-d", "--file", dest="directories_file", default="directories.yaml", type=str
     )
     args = argparser.parse_args()
     get_from_yaml(args.input_file, args.directories_file)
@@ -48,42 +49,37 @@ def get_from_yaml(input_file, directories_file):
     ds_trajectory = xr.open_dataset(trajectory_file)
 
     time_sampling_method = trajectory_file.get(
-        'time_sampling_method', default="model_timesteps"
+        "time_sampling_method", default="model_timesteps"
     )
 
     if time_sampling_method == "model_timesteps":
-        if forcings_dict['source'] == "era5":
-            da_time = era5.get_available_timesteps(
-                domain=forcings_dict['source']
-            )
+        if forcings_dict["source"] == "era5":
+            da_time = era5.get_available_timesteps(domain=forcings_dict["source"])
         else:
-            raise NotImplementedError(forcings_dict['source'])
+            raise NotImplementedError(forcings_dict["source"])
 
         da_sampling = ds_trajectory.resample(time=da_time).interpolate("linear")
     elif time_sampling_method == "all_trajectory_timesteps":
         da_sampling = ds_trajectory
     else:
         raise NotImplementedError(
-            "Trajectory sampling method `{}` not implemented".format(
-            )
+            "Trajectory sampling method `{}` not implemented".format()
         )
 
-    da_sampling['levels'] = make_levels(forcings_dict)
+    da_sampling["levels"] = make_levels(forcings_dict)
 
-    ds_forcings = xr.Dataset(
-        coords=da_sampling.coords,
-    )
+    ds_forcings = xr.Dataset(coords=da_sampling.coords,)
 
-    if forcings_dict['source'] == "era5":
+    if forcings_dict["source"] == "era5":
         timestep_function = era5.calculate_timestep
     else:
-        raise NotImplementedError(forcings_dict['source'])
+        raise NotImplementedError(forcings_dict["source"])
 
     ds_timesteps = []
     for time in forcing_data.time:
-        ds_timestep = timestep_function(time, domain=forcings_dict['domain'])
+        ds_timestep = timestep_function(time, domain=forcings_dict["domain"])
         ds_timesteps.append(ds_timestep)
 
-    ds_forcings = xr.concat(ds_timesteps, dim='time')
+    ds_forcings = xr.concat(ds_timesteps, dim="time")
 
     export_to_hightune(ds_forcings)

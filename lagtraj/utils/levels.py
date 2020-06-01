@@ -18,8 +18,7 @@ def make_levels(forcings_dict):
     else:
         raise Exception("Unknown strategy for making levels")
     return xr.DataArray(
-        levels, dims=('level',),
-        attrs=dict(long_name="height", units="m")
+        levels, dims=("level",), attrs=dict(long_name="height", units="m")
     )
 
 

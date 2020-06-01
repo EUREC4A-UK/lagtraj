@@ -20,24 +20,24 @@ FILENAME_FORMAT = "{model_run_type}_{level_type}_{date}.nc"
 DATA_REQUESTS_FILENAME = "data_requests.yaml"
 
 
-def download_data(path, t_start, t_end, bbox, latlon_sampling,
-                  overwrite_existing=False):
+def download_data(
+    path, t_start, t_end, bbox, latlon_sampling, overwrite_existing=False
+):
 
     dl_queries = _build_queries(
-        t_start=t_start, t_end=t_end, bbox=bbox,
-        latlon_sampling=latlon_sampling
+        t_start=t_start, t_end=t_end, bbox=bbox, latlon_sampling=latlon_sampling
     )
 
     c = RequestFetchCDSClient()
 
     try:
-        with open(path/DATA_REQUESTS_FILENAME, "r") as fh:
+        with open(path / DATA_REQUESTS_FILENAME, "r") as fh:
             download_requests = yaml.load(fh, Loader=yaml.FullLoader)
     except FileNotFoundError:
         download_requests = {}
 
     for output_filename, query_kwargs in dl_queries:
-        file_path = Path(path)/output_filename
+        file_path = Path(path) / output_filename
         query_hash = utils.dict_to_hash(query_kwargs)
 
         download_id = str(file_path)
@@ -46,13 +46,15 @@ def download_data(path, t_start, t_end, bbox, latlon_sampling,
             if _data_valid(file_path=file_path, query_hash=query_hash):
                 should_make_request = False
             else:
-                warnings.warn("Invalid data found for ({})"
-                              ", deleting and queuing for re-download"
-                              "".format(output_filename))
+                warnings.warn(
+                    "Invalid data found for ({})"
+                    ", deleting and queuing for re-download"
+                    "".format(output_filename)
+                )
                 file_path.unlink()
 
         if download_id in download_requests:
-            if download_requests[download_id]['query_hash'] == query_hash:
+            if download_requests[download_id]["query_hash"] == query_hash:
                 should_make_request = False
             else:
                 del download_data[download_id]
@@ -70,42 +72,40 @@ def download_data(path, t_start, t_end, bbox, latlon_sampling,
     # downloads fail, etc
     if len(download_requests) > 0:
         Path(path).mkdir(exist_ok=True, parents=True)
-        with open(path/DATA_REQUESTS_FILENAME, "w") as fh:
+        with open(path / DATA_REQUESTS_FILENAME, "w") as fh:
             fh.write(yaml.dump(download_requests))
 
     files_to_download = []
     if len(download_requests) > 0:
         print("Status on current data requests:")
         for file_path, request_details in download_requests.items():
-            request_id = request_details['request_id']
+            request_id = request_details["request_id"]
             status = c.get_request_status(request_id=request_id)
             print(" {}:\n\t{} ({})".format(file_path, status, request_id))
 
-            if status == 'completed':
+            if status == "completed":
                 files_to_download.append(file_path)
 
     if len(files_to_download) > 0:
         print("Downloading files which are ready...")
         for file_path in files_to_download:
             request_details = download_requests[file_path]
-            request_id = request_details['request_id']
-            query_hash = request_details['query_hash']
+            request_id = request_details["request_id"]
+            query_hash = request_details["query_hash"]
 
             Path(file_path).parent.mkdir(exist_ok=True, parents=True)
-            c.download_data_by_request(request_id=request_id,
-                                       target=file_path)
-            _fingerprint_downloaded_file(query_hash=query_hash,
-                                         file_path=file_path)
+            c.download_data_by_request(request_id=request_id, target=file_path)
+            _fingerprint_downloaded_file(query_hash=query_hash, file_path=file_path)
 
             del download_requests[file_path]
 
     # save download requets again now we've downloaded the files that were
     # ready
     if len(download_requests) > 0:
-        with open(path/DATA_REQUESTS_FILENAME, "w") as fh:
+        with open(path / DATA_REQUESTS_FILENAME, "w") as fh:
             fh.write(yaml.dump(download_requests))
     else:
-        data_requests_file = Path(path/DATA_REQUESTS_FILENAME)
+        data_requests_file = Path(path / DATA_REQUESTS_FILENAME)
         if data_requests_file.exists():
             data_requests_file.unlink()
         print("All files downloaded!")
@@ -154,20 +154,23 @@ def _build_queries(t_start, t_end, bbox, latlon_sampling):
     level_types = ["model", "single"]  # need model and surface data
 
     for model_run_type in model_run_types:
-        query_times = _build_query_times(model_run_type=model_run_type,
-                                         t_start=t_start, t_end=t_end)
+        query_times = _build_query_times(
+            model_run_type=model_run_type, t_start=t_start, t_end=t_end
+        )
         for level_type in level_types:
             for t in query_times:
                 output_filename = FILENAME_FORMAT.format(
                     model_run_type=model_run_type,
                     level_type=level_type,
-                    date=t.strftime(DATE_FORMAT)
+                    date=t.strftime(DATE_FORMAT),
                 )
 
                 query_kwargs = _build_query(
                     model_run_type=model_run_type,
                     level_type=level_type,
-                    date=t, bbox=bbox, latlon_sampling=latlon_sampling,
+                    date=t,
+                    bbox=bbox,
+                    latlon_sampling=latlon_sampling,
                 )
 
                 yield (output_filename, query_kwargs)
@@ -240,21 +243,20 @@ def _build_single_level_an_query(date, bbox, latlon_sampling):
         "date": date.strftime(DATE_FORMAT),
         "expver": "1",
         "levtype": "sfc",
-        "param": ("31.128/32.128/33.128/34.128/35.128/39.128/40.128/41.128"
-                  "/42.128/129.128/136.128/134.128/139.128/141.128/151.128"
-                  "/159.128/164.128/170.128/172.128/183.128/186.128/187.128"
-                  "/188.128/236.128/238.128/243.128/244.128/245.128"),
+        "param": (
+            "31.128/32.128/33.128/34.128/35.128/39.128/40.128/41.128"
+            "/42.128/129.128/136.128/134.128/139.128/141.128/151.128"
+            "/159.128/164.128/170.128/172.128/183.128/186.128/187.128"
+            "/188.128/236.128/238.128/243.128/244.128/245.128"
+        ),
         "stream": "oper",
-        "time": ("00:00:00/01:00:00/02:00:00/03:00:00/04:00:00/05:00:00"
-                 "/06:00:00/07:00:00/08:00:00/09:00:00/10:00:00/11:00:00"
-                 "/12:00:00/13:00:00/14:00:00/15:00:00/16:00:00/17:00:00"
-                 "/18:00:00/19:00:00/20:00:00/21:00:00/22:00:00/23:00:00"),
-        "area": [
-            bbox.lat_max,
-            bbox.lon_min,
-            bbox.lat_min,
-            bbox.lon_min,
-        ],
+        "time": (
+            "00:00:00/01:00:00/02:00:00/03:00:00/04:00:00/05:00:00"
+            "/06:00:00/07:00:00/08:00:00/09:00:00/10:00:00/11:00:00"
+            "/12:00:00/13:00:00/14:00:00/15:00:00/16:00:00/17:00:00"
+            "/18:00:00/19:00:00/20:00:00/21:00:00/22:00:00/23:00:00"
+        ),
+        "area": [bbox.lat_max, bbox.lon_min, bbox.lat_min, bbox.lon_min,],
         "grid": "{}/{}".format(latlon_sampling.lat, latlon_sampling.lon),
         "type": "an",
         "format": "netcdf",
@@ -281,28 +283,27 @@ def _build_model_level_an_query(date, bbox, latlon_sampling):
         "class": "ea",
         "date": date.strftime(DATE_FORMAT),
         "expver": "1",
-        "levelist": ("1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/"
-                     "22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/"
-                     "40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/"
-                     "58/59/60/61/62/63/64/65/66/67/68/69/70/71/72/73/74/75/"
-                     "76/77/78/79/80/81/82/83/84/85/86/87/88/89/90/91/92/93/"
-                     "94/95/96/97/98/99/100/101/102/103/104/105/106/107/108/"
-                     "109/110/111/112/113/114/115/116/117/118/119/120/121/"
-                     "122/123/124/125/126/127/128/129/130/131/132/133/134/"
-                     "135/136/137"),
+        "levelist": (
+            "1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/"
+            "22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/"
+            "40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/"
+            "58/59/60/61/62/63/64/65/66/67/68/69/70/71/72/73/74/75/"
+            "76/77/78/79/80/81/82/83/84/85/86/87/88/89/90/91/92/93/"
+            "94/95/96/97/98/99/100/101/102/103/104/105/106/107/108/"
+            "109/110/111/112/113/114/115/116/117/118/119/120/121/"
+            "122/123/124/125/126/127/128/129/130/131/132/133/134/"
+            "135/136/137"
+        ),
         "levtype": "ml",
         "param": "75/76/77/129/130/131/132/133/135/152/203/246/247/248",
         "stream": "oper",
-        "time": ("00:00:00/01:00:00/02:00:00/03:00:00/04:00:00/05:00:00"
-                 "/06:00:00/07:00:00/08:00:00/09:00:00/10:00:00/11:00:00"
-                 "/12:00:00/13:00:00/14:00:00/15:00:00/16:00:00/17:00:00"
-                 "/18:00:00/19:00:00/20:00:00/21:00:00/22:00:00/23:00:00"),
-        "area": [
-            bbox.lat_max,
-            bbox.lon_min,
-            bbox.lat_min,
-            bbox.lon_min,
-        ],
+        "time": (
+            "00:00:00/01:00:00/02:00:00/03:00:00/04:00:00/05:00:00"
+            "/06:00:00/07:00:00/08:00:00/09:00:00/10:00:00/11:00:00"
+            "/12:00:00/13:00:00/14:00:00/15:00:00/16:00:00/17:00:00"
+            "/18:00:00/19:00:00/20:00:00/21:00:00/22:00:00/23:00:00"
+        ),
+        "area": [bbox.lat_max, bbox.lon_min, bbox.lat_min, bbox.lon_min,],
         "grid": "{}/{}".format(latlon_sampling.lat, latlon_sampling.lon),
         "type": "an",
         "format": "netcdf",
@@ -346,17 +347,14 @@ def _build_single_level_fc_query(date, bbox, latlon_sampling):
         "date": date.strftime(DATE_FORMAT),
         "expver": "1",
         "levtype": "sfc",
-        "param": ("228001/228003/228023/235033/235034/235035/235036/235037/"
-                  "235038/235039/235040/235043/235049/235050/235051/235052/"
-                  "235053/235058/235059/235068/235069/235070"),
+        "param": (
+            "228001/228003/228023/235033/235034/235035/235036/235037/"
+            "235038/235039/235040/235043/235049/235050/235051/235052/"
+            "235053/235058/235059/235068/235069/235070"
+        ),
         "stream": "oper",
         "time": "06:00:00/18:00:00",
-        "area": [
-            bbox.lat_max,
-            bbox.lon_min,
-            bbox.lat_min,
-            bbox.lon_min,
-        ],
+        "area": [bbox.lat_max, bbox.lon_min, bbox.lat_min, bbox.lon_min,],
         "grid": "{}/{}".format(latlon_sampling.lat, latlon_sampling.lon),
         "type": "fc",
         "step": "0/1/2/3/4/5/6/7/8/9/10/11",
@@ -378,27 +376,24 @@ def _build_model_level_fc_query(date, bbox, latlon_sampling):
         "class": "ea",
         "date": date.strftime(DATE_FORMAT),
         "expver": "1",
-        "levelist": ("1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/"
-                     "22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/"
-                     "40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/"
-                     "58/59/60/61/62/63/64/65/66/67/68/69/70/71/72/73/74/75/"
-                     "76/77/78/79/80/81/82/83/84/85/86/87/88/89/90/91/92/93/"
-                     "94/95/96/97/98/99/100/101/102/103/104/105/106/107/108/"
-                     "109/110/111/112/113/114/115/116/117/118/119/120/121/"
-                     "122/123/124/125/126/127/128/129/130/131/132/133/134/"
-                     "135/136/137"),
+        "levelist": (
+            "1/2/3/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/"
+            "22/23/24/25/26/27/28/29/30/31/32/33/34/35/36/37/38/39/"
+            "40/41/42/43/44/45/46/47/48/49/50/51/52/53/54/55/56/57/"
+            "58/59/60/61/62/63/64/65/66/67/68/69/70/71/72/73/74/75/"
+            "76/77/78/79/80/81/82/83/84/85/86/87/88/89/90/91/92/93/"
+            "94/95/96/97/98/99/100/101/102/103/104/105/106/107/108/"
+            "109/110/111/112/113/114/115/116/117/118/119/120/121/"
+            "122/123/124/125/126/127/128/129/130/131/132/133/134/"
+            "135/136/137"
+        ),
         "levtype": "ml",
         "param": "235001/235002/235003/235004",
         "stream": "oper",
         "time": "06:00:00/18:00:00",
         "type": "fc",
         "time": "06:00:00/18:00:00",
-        "area": [
-            bbox.lat_max,
-            bbox.lon_min,
-            bbox.lat_min,
-            bbox.lon_min,
-        ],
+        "area": [bbox.lat_max, bbox.lon_min, bbox.lat_min, bbox.lon_min,],
         "grid": "{}/{}".format(latlon_sampling.lat, latlon_sampling.lon),
         "step": "0/1/2/3/4/5/6/7/8/9/10/11",
         "format": "netcdf",

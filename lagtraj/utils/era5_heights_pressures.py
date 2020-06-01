@@ -782,7 +782,7 @@ def add_geowind_around_centre(ds_profile, dictionary):
 
 
 def trace_one_way(lat, lon, u_traj, v_traj, d_time, lforward=True):
-    """calculates previous position given lat,lon,u_traj,v_traj, and d_time
+    """Calculates previous position given lat,lon,u_traj,v_traj, and d_time
     explicitly set d_time positive, to prevent accidental backward trajectory"""
     if d_time < 0.0:
         raise Exception("Expecting positive d_time in back-tracing")
@@ -903,34 +903,34 @@ def fix_units(ds_to_fix):
 
 
 def stationary_trajectory(ds_traj, trajectory_dict):
-    """Adds data for a target point that is directly in the time series"""
-    lat_target = trajectory_dict["lat_origin"]
-    lon_target = longitude_set_meridian(trajectory_dict["lon_origin"])
-    ds_traj["lat_traj"][:] = lat_target
-    ds_traj["lon_traj"][:] = lon_target
+    """Adds data for a stationary origin point"""
+    lat_origin = trajectory_dict["lat_origin"]
+    lon_origin = longitude_set_meridian(trajectory_dict["lon_origin"])
+    ds_traj["lat_traj"][:] = lat_origin
+    ds_traj["lon_traj"][:] = lon_origin
     ds_traj["u_traj"][:] = 0.0
     ds_traj["v_traj"][:] = 0.0
     ds_traj["processed"][:] = True
 
 
 def prescribed_velocity_trajectory(ds_traj, trajectory_dict):
-    """Adds data for a target point that is directly in the time series"""
-    lat_target = trajectory_dict["lat_origin"]
-    lon_target = longitude_set_meridian(trajectory_dict["lon_origin"])
-    time_target = np.datetime64(trajectory_dict["datetime_origin"])
+    """Adds data for origin point using constant velocity"""
+    lat_origin = trajectory_dict["lat_origin"]
+    lon_origin = longitude_set_meridian(trajectory_dict["lon_origin"])
+    time_origin = np.datetime64(trajectory_dict["datetime_origin"])
     u_traj = trajectory_dict["u_traj"]
     v_traj = trajectory_dict["v_traj"]
     for index in range(len(ds_traj["time"])):
         d_time = (
-            (ds_traj["time"][index] - time_target) / np.timedelta64(1, "s")
+            (ds_traj["time"][index] - time_origin) / np.timedelta64(1, "s")
         ).values
         if d_time < 0.0:
             lat_at_time, lon_at_time = trace_backward(
-                lat_target, lon_target, u_traj, v_traj, -d_time
+                lat_origin, lon_origin, u_traj, v_traj, -d_time
             )
         else:
             lat_at_time, lon_at_time = trace_forward(
-                lat_target, lon_target, u_traj, v_traj, d_time
+                lat_origin, lon_origin, u_traj, v_traj, d_time
             )
         ds_traj["lat_traj"][index] = lat_at_time
         ds_traj["lon_traj"][index] = lon_at_time
@@ -939,38 +939,38 @@ def prescribed_velocity_trajectory(ds_traj, trajectory_dict):
         ds_traj["processed"][index] = True
 
 
-def trajectory_at_target(ds_time_selection, ds_traj, trajectory_dict):
-    """Adds data for a target point that is directly in the time series"""
-    time_target = np.datetime64(trajectory_dict["datetime_origin"])
-    lat_target = trajectory_dict["lat_origin"]
-    lon_target = longitude_set_meridian(trajectory_dict["lon_origin"])
-    ds_time = ds_time_selection.sel(time=[time_target])
-    time_exact_index = np.argmax(ds_time_selection["time"] == time_target)
-    ds_local = era5_interp_column(ds_time, lat_target, lon_target)
+def trajectory_at_origin(ds_time_selection, ds_traj, trajectory_dict):
+    """Adds data for an origin point that is directly in the time series"""
+    time_origin = np.datetime64(trajectory_dict["datetime_origin"])
+    lat_origin = trajectory_dict["lat_origin"]
+    lon_origin = longitude_set_meridian(trajectory_dict["lon_origin"])
+    ds_time = ds_time_selection.sel(time=[time_origin])
+    time_exact_index = np.argmax(ds_time_selection["time"] == time_origin)
+    ds_local = era5_interp_column(ds_time, lat_origin, lon_origin)
     add_heights_and_pressures(ds_local)
     u_traj, v_traj = get_velocity_from_strategy(ds_local, trajectory_dict)
-    ds_traj["lat_traj"][time_exact_index] = lat_target
-    ds_traj["lon_traj"][time_exact_index] = lon_target
+    ds_traj["lat_traj"][time_exact_index] = lat_origin
+    ds_traj["lon_traj"][time_exact_index] = lon_origin
     ds_traj["u_traj"][time_exact_index] = u_traj
     ds_traj["v_traj"][time_exact_index] = v_traj
     ds_traj["processed"][time_exact_index] = True
 
 
-def trajectory_around_target(ds_time_selection, ds_traj, trajectory_dict):
-    """Adds data around a target point that is not directly in the time series and 
+def trajectory_around_origin(ds_time_selection, ds_traj, trajectory_dict):
+    """Adds data around origin point that is not directly in the time series and 
     needs interpolation"""
     nr_iterations_traj = trajectory_dict["nr_iterations_traj"]
-    time_target = np.datetime64(trajectory_dict["datetime_origin"])
-    lat_target = trajectory_dict["lat_origin"]
-    lon_target = longitude_set_meridian(trajectory_dict["lon_origin"])
+    time_origin = np.datetime64(trajectory_dict["datetime_origin"])
+    lat_origin = trajectory_dict["lat_origin"]
+    lon_origin = longitude_set_meridian(trajectory_dict["lon_origin"])
     # Find relevant indices
-    time_greater_index = np.argmax(ds_time_selection["time"] > time_target)
+    time_greater_index = np.argmax(ds_time_selection["time"] > time_origin)
     time_smaller_index = time_greater_index - 1
-    ds_interpolated = era5_interp_column(ds_time_selection, lat_target, lon_target)
+    ds_interpolated = era5_interp_column(ds_time_selection, lat_origin, lon_origin)
     add_heights_and_pressures(ds_interpolated)
     u_guess, v_guess = get_velocity_from_strategy(ds_interpolated, trajectory_dict)
     d_time_forward = (
-        (ds_time_selection["time"][time_greater_index] - time_target)
+        (ds_time_selection["time"][time_greater_index] - time_origin)
         / np.timedelta64(1, "s")
     ).values
     d_time_total = (
@@ -983,7 +983,7 @@ def trajectory_around_target(ds_time_selection, ds_traj, trajectory_dict):
     # iteratively find velocity at adjacent points in time
     for _ in range(nr_iterations_traj):
         forward_lat, forward_lon, backward_lat, backward_lon = trace_two_way(
-            lat_target, lon_target, u_guess, v_guess, d_time_forward, d_time_total
+            lat_origin, lon_origin, u_guess, v_guess, d_time_forward, d_time_total
         )
         ds_begin = ds_time_selection.isel(time=[time_smaller_index])
         ds_begin_column = era5_interp_column(ds_begin, backward_lat, backward_lon)
@@ -1087,11 +1087,11 @@ def backward_trajectory(ds_time_selection, ds_traj, trajectory_dict):
 
 def dummy_trajectory(mf_dataset, trajectory_dict):
     """Trajectory example: needs to be integrated into main functionality"""
-    time_target = np.datetime64(trajectory_dict["datetime_origin"])
-    start_date = time_target - np.timedelta64(
+    time_origin = np.datetime64(trajectory_dict["datetime_origin"])
+    start_date = time_origin - np.timedelta64(
         trajectory_dict["backward_duration_hours"], "h"
     )
-    end_date = time_target + np.timedelta64(
+    end_date = time_origin + np.timedelta64(
         trajectory_dict["forward_duration_hours"], "h"
     )
     time_start_mf = np.max(mf_dataset["time"].where(mf_dataset["time"] <= start_date))
@@ -1125,17 +1125,17 @@ def dummy_trajectory(mf_dataset, trajectory_dict):
         {"long_name": "Has array been processed", "units": "-"},
     )
     ds_traj["processed"].values[:] = False
-    time_exact_match = time_target in ds_time_selection["time"]
+    time_exact_match = time_origin in ds_time_selection["time"]
     if trajectory_dict["velocity_strategy"] == "stationary":
         stationary_trajectory(ds_traj, trajectory_dict)
     if trajectory_dict["velocity_strategy"] == "prescribed_velocity":
         prescribed_velocity_trajectory(ds_traj, trajectory_dict)
     elif time_exact_match:
-        trajectory_at_target(ds_time_selection, ds_traj, trajectory_dict)
+        trajectory_at_origin(ds_time_selection, ds_traj, trajectory_dict)
         forward_trajectory(ds_time_selection, ds_traj, trajectory_dict)
         backward_trajectory(ds_time_selection, ds_traj, trajectory_dict)
     else:
-        trajectory_around_target(ds_time_selection, ds_traj, trajectory_dict)
+        trajectory_around_origin(ds_time_selection, ds_traj, trajectory_dict)
         forward_trajectory(ds_time_selection, ds_traj, trajectory_dict)
         backward_trajectory(ds_time_selection, ds_traj, trajectory_dict)
     if not all(ds_traj["processed"].values[:]):

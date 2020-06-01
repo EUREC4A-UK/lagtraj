@@ -9,6 +9,7 @@ ERA5 utilities that can
 - Add auxiliary variables
 
 TODO
+- Solve issue with zero backward time
 - Optimise code (note that interpolation is currently expensive, possibly because coordinates are not assumed to be ordered)
 - Add more auxiliary variables
 - Move some functionality (e.g. auxiliary variables) to more generic utilities
@@ -553,7 +554,39 @@ def lat_dist_from_meshgrids(ds_1, ds_2):
     lat2_mg = ds_2["lat_meshgrid"].values
     return lat_dist(lat1_mg, lat2_mg).flatten()
 
-
+@njit
+def boundary_gradients(x_array,y_array,val_array):
+    len_temp = np.shape(val_array)[0]
+    len_levels = np.shape(val_array)[1]
+    len_lats = np.shape(val_array)[2]
+    len_lons = np.shape(val_array)[3]
+    x_gradient_array = np.empty((len_temp, len_levels))
+    y_gradient_array = np.empty((len_temp, len_levels))
+    dval_dx=np.empty((len_lats))
+    dval_dy=np.empty((len_lons))
+    for this_time in range(len_temp):
+        for this_level in range(len_levels):
+            for this_lat in range(len_lats):
+                vals=val_array[this_time,this_level,this_lat,:].flatten()
+                xs=x_array[this_lat,:].flatten()
+                vals_filtered=vals[~np.isnan(vals)]
+                x_filtered=xs[~np.isnan(vals)]
+                dvals=vals_filtered[-1]-vals_filtered[0]
+                dx=x_filtered[-1]-x_filtered[0]
+                dval_dx[this_lat]=dvals/dx
+            for this_lon in range(len_lons):
+                vals=val_array[this_time,this_level,:,this_lon].flatten()
+                ys=y_array[:,this_lon].flatten()
+                vals_filtered=vals[~np.isnan(vals)]
+                y_filtered=ys[~np.isnan(vals)]
+                last_element=len(y_filtered)                
+                dvals=vals_filtered[-1]-vals_filtered[0]
+                dy=y_filtered[-1]-y_filtered[0]
+                dval_dy[this_lon]=dvals/dy
+            x_gradient_array[this_time, this_level]=np.mean(dval_dx)
+            y_gradient_array[this_time, this_level]=np.mean(dval_dy)
+    return x_gradient_array, y_gradient_array
+    
 def era5_boundary_gradients(ds_box, variable, dictionary):
     """ Calculate gradients from boundary values
     using haversine function
@@ -562,22 +595,14 @@ def era5_boundary_gradients(ds_box, variable, dictionary):
     if "mask" in dictionary:
         mask = era5_mask(ds_box, dictionary)
         ds_filtered = ds_filtered.where(mask)
-    left = ds_box.min("longitude", skipna=True)
-    right = ds_box.max("longitude", skipna=True)
-    top = ds_filtered.max("latitude", skipna=True)
-    bottom = ds_filtered.min("latitude", skipna=True)
-    x_gradient = np.mean(
-        (right[variable].values - left[variable].values)
-        / lon_dist_from_meshgrids(left, right),
-        axis=2,
-    )
-    y_gradient = np.mean(
-        (top[variable].values - bottom[variable].values)
-        / lat_dist_from_meshgrids(top, bottom),
-        axis=2,
-    )
-    return x_gradient, y_gradient
-
+    lat1_point = dictionary["lat"]
+    lon1_point = longitude_set_meridian(dictionary["lon"])
+    lat2_mg = ds_filtered["lat_meshgrid"].values
+    lon2_mg = ds_filtered["lon_meshgrid"].values
+    x_array = lon_dist(lon1_point, lon2_mg, lat2_mg)
+    y_array = lat_dist(lat1_point, lat2_mg)
+    val_array=ds_filtered[variable].values
+    return boundary_gradients(x_array,y_array,val_array)
 
 def era5_regression_gradients(ds_box, variable, dictionary):
     """ Calculate gradients using haversine function
@@ -874,8 +899,8 @@ def fix_units(ds_to_fix):
 
 def stationary_trajectory(ds_traj, trajectory_dict):
     """Adds data for a target point that is directly in the time series"""
-    lat_target = trajectory_dict["lat_target"]
-    lon_target = longitude_set_meridian(trajectory_dict["lon_target"])
+    lat_target = trajectory_dict["lat_origin"]
+    lon_target = longitude_set_meridian(trajectory_dict["lon_origin"])
     ds_traj["lat_traj"][:] = lat_target
     ds_traj["lon_traj"][:] = lon_target
     ds_traj["u_traj"][:] = 0.0
@@ -885,9 +910,9 @@ def stationary_trajectory(ds_traj, trajectory_dict):
 
 def prescribed_velocity_trajectory(ds_traj, trajectory_dict):
     """Adds data for a target point that is directly in the time series"""
-    lat_target = trajectory_dict["lat_target"]
-    lon_target = longitude_set_meridian(trajectory_dict["lon_target"])
-    time_target = np.datetime64(trajectory_dict["datetime_target"])
+    lat_target = trajectory_dict["lat_origin"]
+    lon_target = longitude_set_meridian(trajectory_dict["lon_origin"])
+    time_target = np.datetime64(trajectory_dict["datetime_origin"])
     u_traj = trajectory_dict["u_traj"]
     v_traj = trajectory_dict["v_traj"]
     for index in range(len(ds_traj["time"])):
@@ -911,9 +936,9 @@ def prescribed_velocity_trajectory(ds_traj, trajectory_dict):
 
 def trajectory_at_target(ds_time_selection, ds_traj, trajectory_dict):
     """Adds data for a target point that is directly in the time series"""
-    time_target = np.datetime64(trajectory_dict["datetime_target"])
-    lat_target = trajectory_dict["lat_target"]
-    lon_target = longitude_set_meridian(trajectory_dict["lon_target"])
+    time_target = np.datetime64(trajectory_dict["datetime_origin"])
+    lat_target = trajectory_dict["lat_origin"]
+    lon_target = longitude_set_meridian(trajectory_dict["lon_origin"])
     ds_time = ds_time_selection.sel(time=[time_target])
     time_exact_index = np.argmax(ds_time_selection["time"] == time_target)
     ds_local = era5_interp_column(ds_time, lat_target, lon_target)
@@ -930,9 +955,9 @@ def trajectory_around_target(ds_time_selection, ds_traj, trajectory_dict):
     """Adds data around a target point that is not directly in the time series and 
     needs interpolation"""
     nr_iterations_traj = trajectory_dict["nr_iterations_traj"]
-    time_target = np.datetime64(trajectory_dict["datetime_target"])
-    lat_target = trajectory_dict["lat_target"]
-    lon_target = longitude_set_meridian(trajectory_dict["lon_target"])
+    time_target = np.datetime64(trajectory_dict["datetime_origin"])
+    lat_target = trajectory_dict["lat_origin"]
+    lon_target = longitude_set_meridian(trajectory_dict["lon_origin"])
     # Find relevant indices
     time_greater_index = np.argmax(ds_time_selection["time"] > time_target)
     time_smaller_index = time_greater_index - 1
@@ -1057,9 +1082,9 @@ def backward_trajectory(ds_time_selection, ds_traj, trajectory_dict):
 
 def dummy_trajectory(mf_dataset, trajectory_dict):
     """Trajectory example: needs to be integrated into main functionality"""
-    time_target = np.datetime64(trajectory_dict["datetime_target"])
-    start_date = time_target - np.timedelta64(trajectory_dict["backward_hours"], "h")
-    end_date = time_target + np.timedelta64(trajectory_dict["forward_hours"], "h")
+    time_target = np.datetime64(trajectory_dict["datetime_origin"])
+    start_date = time_target - np.timedelta64(trajectory_dict["backward_duration_hours"], "h")
+    end_date = time_target + np.timedelta64(trajectory_dict["forward_duration_hours"], "h")
     ds_time_selection = mf_dataset.sel(time=slice(start_date, end_date))
     ds_traj = xr.Dataset(coords={"time": ds_time_selection.time})
     time_len = len(ds_time_selection["time"].values)
@@ -1181,11 +1206,11 @@ def main():
         era_5_normalise_longitude(this_ds)
     ds_merged = xr.merge(ds_list)
     dummy_trajectory_dict = {
-        "lat_target": 13.3,
-        "lon_target": -57.717,
-        "datetime_target": "2020-02-03T12:30",
-        "backward_hours": 3,
-        "forward_hours": 3,
+        "lat_origin": 13.3,
+        "lon_origin": -57.717,
+        "datetime_origin": "2020-02-03T12:30",
+        "backward_duration_hours": 1,
+        "forward_duration_hours": 3,
         "nr_iterations_traj": 10,
         "velocity_strategy": "lower_troposphere_humidity_weighted",
         # "velocity_strategy": "prescribed_velocity",
@@ -1194,12 +1219,12 @@ def main():
         "pres_cutoff_start": 60000.0,
         "pres_cutoff_end": 50000.0,
     }
-    dummy_trajectory(ds_merged, dummy_trajectory_dict)
+    #dummy_trajectory(ds_merged, dummy_trajectory_dict)
     dummy_forcings_dict = {
         "gradients_strategy": "both",
         "mask": "ocean",
         "traj_file": "ds_traj.nc",
-        "averaging_width": 2.0,
+        "averaging_width": 4.0,
     }
     dummy_forcings(ds_merged, dummy_forcings_dict)
 

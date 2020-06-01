@@ -1,137 +1,119 @@
-import yaml
-import datetime
-import xarray as xr
-import os
-import numpy as np
-import pandas as pd
-from lagtraj.utils.parsers import (
-    domain_filename_parse,
-    trajectory_filename_parse,
-    forcings_filename_parse,
-)
-from lagtraj.utils.levels import make_levels
+from pathlib import Path
 
-# from lagtraj.utils.era5 import add_heights_and_pressures
-from lagtraj.utils.hightune import hightune_variables
+import xarray as xr
+from tqdm import tqdm
+
+from .. import DEFAULT_ROOT_DATA_PATH
+from . import era5, load, build_forcing_data_path
+from .utils.levels import make_levels
+from ..utils import optional_debugging
+from ..domain.load import load_data as load_domain_data
+from ..trajectory.load import load_data as load_trajectory_data
+
+
+def _make_latlontime_sampling_points(method, ds_trajectory, ds_domain):
+    if method == "model_timesteps":
+        da_time = ds_domain.time
+        da_sampling = ds_trajectory.interp(time=da_time, method="linear")
+        # we clip the times to the interval in which the trajectory is defined
+        t_min, t_max = ds_trajectory.time.min(), ds_trajectory.time.max()
+        da_sampling = da_sampling.sel(time=slice(t_min, t_max))
+    elif method == "all_trajectory_timesteps":
+        da_sampling = ds_trajectory
+    else:
+        raise NotImplementedError(
+            "Trajectory sampling method `{}` not implemented".format()
+        )
+    return da_sampling
+
+
+def make_forcing(
+    ds_trajectory, ds_domain, levels_definition, sampling_method,
+):
+    """
+    Make a forcing profiles along ds_trajectory using data in ds_domain.
+
+    See domains.utils.levels.LevelsDefinition and domains.era5.SamplingMethodDefinition
+    for how to construct levels_definition and sampling_method objects
+    """
+
+    da_sampling = _make_latlontime_sampling_points(
+        method=sampling_method.time_sampling_method,
+        ds_trajectory=ds_trajectory,
+        ds_domain=ds_domain,
+    )
+
+    da_sampling["levels"] = make_levels(
+        method=levels_definition.method,
+        n_levels=levels_definition.n_levels,
+        z_top=levels_definition.z_top,
+        dz_min=levels_definition.dz_min,
+    )
+
+    ds_forcing = xr.Dataset(coords=da_sampling.coords,)
+
+    # XXX: eventually this will be replaced by a function which doesn't assume
+    # that the domain data is era5 data
+    timestep_function = era5.calculate_timestep
+
+    ds_timesteps = []
+    for time in tqdm(ds_forcing.time):
+        da_pt = da_sampling.sel(time=time)
+        ds_timestep = timestep_function(
+            da_pt=da_pt, ds_domain=ds_domain, sampling_method=sampling_method
+        )
+        ds_timesteps.append(ds_timestep)
+
+    return xr.concat(ds_timesteps, dim="time")
+
+
+def export(file_path, ds_forcing, format):
+    if format != "dummy_netcdf":
+        raise NotImplementedError(format)
+    # TODO: add hightune format export here
+
+    Path(file_path).parent.mkdir(parents=True, exist_ok=True)
+    ds_forcing.to_netcdf(file_path)
 
 
 def main():
     import argparse
 
     argparser = argparse.ArgumentParser()
-    argparser.add_argument("input_file")
+    argparser.add_argument("forcing")
     argparser.add_argument(
-        "-f", "--file", dest="directories_file", default="directories.yaml", type=str
+        "-d", "--data-path", default=DEFAULT_ROOT_DATA_PATH, type=Path
     )
+    argparser.add_argument("-f", "--output-format", default="dummy_netcdf", type=str)
+    argparser.add_argument("--debug", default=False, action="store_true")
     args = argparser.parse_args()
-    get_from_yaml(args.input_file, args.directories_file)
 
-
-def get_from_yaml(input_file, directories_file):
-    with open(directories_file) as this_directories_file:
-        directories_dict = yaml.load(this_directories_file, Loader=yaml.FullLoader)
-    with open(input_file) as this_forcings_file:
-        forcings_dict = yaml.load(this_forcings_file, Loader=yaml.FullLoader)
-
-    trajectory_file = trajectory_filename_parse(
-        directories_dict, forcings_dict["trajectory"]
+    forcing_defn = load.load_definition(
+        root_data_path=args.data_path, forcing_name=args.forcing
     )
-    trajectory_data = xr.open_dataset(trajectory_file)
-    times = trajectory_data["time"]
 
-    levels = make_levels(forcings_dict)
-
-    forcing_data = xr.Dataset()
-    for timestep in trajectory_data["time"]:
-        append_timestep(forcings_dict, forcing_data, trajectory_data, timestep)
-    export_to_hightune(forcing_data)
-
-
-def append_timestep(forcings_dict, forcing_data, trajectory_data, timestep):
-    if (forcings_dict["source"]).lower() == "era5":
-        append_era5_timestep(forcings_dict, forcing_data, trajectory_data, timestep)
-
-
-def append_era5_timestep(forcings_dict, forcing_data, trajectory_data, timestep):
-    # FOR EACH TIME STEP
-    # find the right input data
-    # reinterpolate data to height or pressure with effective height (tbd)
-    # create 'mask' for forcings on domain
-    # calculate profiles and forcings
-    lon_indices, lat_indices = calculate_current_lat_lon_range(
-        forcings_dict, trajectory_data, timestep
+    ds_domain = load_domain_data(
+        root_data_path=args.data_path, name=forcing_defn.domain
     )
-    timestep_input_data = xr.Dataset()
-    append_single_level_an(
-        timestep_input_data, trajectory_data, timestep, lon_indices, lat_indices
+    ds_trajectory = load_trajectory_data(
+        root_data_path=args.data_path, name=forcing_defn.trajectory
     )
-    append_single_level_fc(
-        timestep_input_data, trajectory_data, timestep, lon_indices, lat_indices
+
+    with optional_debugging(args.debug):
+        ds_forcing = make_forcing(
+            levels_definition=forcing_defn.levels,
+            ds_domain=ds_domain,
+            ds_trajectory=ds_trajectory,
+            sampling_method=forcing_defn.sampling,
+        )
+
+    output_file_path = build_forcing_data_path(
+        root_data_path=args.data_path, forcing_name=forcing_defn.name
     )
-    append_model_level_an(
-        timestep_input_data, trajectory_data, timestep, lon_indices, lat_indices
-    )
-    append_model_level_fc(
-        timestep_input_data, trajectory_data, timestep, lon_indices, lat_indices
-    )
-    add_heights_and_pressures(timestep_input_data)
-    timestep_interpolated_data = interpolate_to_height_levels(timestep_input_data)
-    timestep_forcing_data = calculate_forcings(
-        forcings_dict, timestep_interpolated_data
-    )
-    # append to forcing_data using xarray concatenation
 
+    export(ds_forcing=ds_forcing, file_path=output_file_path, format=args.output_format)
 
-def calculate_current_lat_lon_range(forcings_dict, trajectory_data, timestep):
-    lon_indices = []
-    lat_indices = []
-    return lon_indices, lat_indices
-
-
-def append_single_level_an(
-    timestep_input_data, trajectory_data, timestep, lon_indices, lat_indices
-):
-    pass
-
-
-def append_single_level_fc(
-    timestep_input_data, trajectory_data, timestep, lon_indices, lat_indices
-):
-    pass
-
-
-def append_model_level_an(
-    timestep_input_data, trajectory_data, timestep, lon_indices, lat_indices
-):
-    pass
-
-
-def append_model_level_fc(
-    timestep_input_data, trajectory_data, timestep, lon_indices, lat_indices
-):
-    pass
-
-
-def add_heights_and_pressures(timestep_input_data):
-    pass
-
-
-def interpolate_to_height_levels(timestep_input_data):
-    timestep_interpolated_data = []
-    return timestep_interpolated_data
-
-
-def calculate_forcings(forcings_dict, forcing_interpolated_data):
-    timestep_forcing_data = []
-    return timestep_forcing_data
-
-
-def export_to_hightune(forcing_data):
-    pass
-
-
-def export_to_ecmwf(forcing_data):
-    pass
+    print("Wrote forcing file to `{}`".format(output_file_path))
 
 
 if __name__ == "__main__":

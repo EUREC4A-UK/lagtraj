@@ -1,0 +1,9 @@
+trajectory      : eurec4a_20191209_12_eul
+domain          : eurec4a_circle_eul
+profile_method  : nearest_column
+gradient_method : box_degrees
+averaging_width : 2.0
+levels_method   : exponential
+levels_number   : 128
+levels_dzmin    : 40.0
+levels_ztop     : 16000.0

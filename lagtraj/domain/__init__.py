@@ -26,6 +26,6 @@ def build_domain_data_path(root_data_path, domain_name):
 
 
 def build_domain_definition_path(root_data_path, domain_name):
-    return build_input_definition_path(root_data_path=root_data_path,
-                                       input_name=domain_name,
-                                       input_type="domain")
+    return build_input_definition_path(
+        root_data_path=root_data_path, input_name=domain_name, input_type="domain"
+    )

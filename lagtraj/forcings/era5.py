@@ -1,5 +1,7 @@
 from ..domain import load as domain_load
 
+from ..domain.sources import era5
+
 
 def _load_domain_data(domain):
     return domain_load.load_data()
@@ -16,24 +18,23 @@ def calculate_timestep(da_pt, domain):
     dt_pt.lon:
 
     """
+    domain_data = _load_domain_data(domain_name=domain)
 
-    domain_data = # load up data downloaded for `domain`
-
-    if dt_pt.time is not in domain_data.time:
-        raise NotImplementedError("Forcings based on era5 data cannot be"
-                "interpolated between model data timesteps, and request time is"
-                "outside")
+    if da_pt.time not in domain_data.time:
+        raise NotImplementedError(
+            "Forcings based on era5 data cannot be"
+            "interpolated between model data timesteps, and request time is"
+            "outside"
+        )
 
     if not da_pt.levels.units == "m":
         raise InvalidLevelsDefinition(
             "ERA5 data can currently only be generated on height levels"
         )
 
-
-    ds_timestep_forcing = # extract forcing profile from domain
+    ds_timestep_forcing = None  # TODO: extract forcing profile from domain
 
     return ds_timestep_forcing
-
 
 
 def append_timestep(forcings_dict, forcing_data, trajectory_data, timestep):

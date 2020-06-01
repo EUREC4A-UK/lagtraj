@@ -59,8 +59,9 @@ def main():
     argparser.add_argument("-d", "--data-path", default=DEFAULT_DATA_PATH, type=Path)
     args = argparser.parse_args()
 
-    forcing_params = load.load_definition(data_path=args.data_path,
-                                          forcing_name=args.forcing_name)
+    forcing_params = load.load_definition(
+        data_path=args.data_path, forcing_name=args.forcing_name
+    )
     # ds_trajectory = load
 
 
@@ -77,4 +78,3 @@ def get_from_yaml(input_file, directories_file):
         directories_dict = yaml.load(this_directories_file, Loader=yaml.FullLoader)
     with open(input_file) as this_forcings_file:
         forcings_dict = yaml.load(this_forcings_file, Loader=yaml.FullLoader)
-

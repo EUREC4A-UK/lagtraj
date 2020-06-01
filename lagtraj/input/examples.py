@@ -13,7 +13,6 @@ class LagtrajExampleDoesNotExist(Exception):
     pass
 
 
-
 def attempt_load(input_name, input_type):
     input_type = INPUT_TYPE_PLURAL.get(input_type, input_type)
 

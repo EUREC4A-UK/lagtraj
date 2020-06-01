@@ -1,10 +1,7 @@
 import yaml
 import sys
 
-from . import (
-    validate_input, build_input_definition_path,
-    examples as input_examples
-)
+from . import validate_input, build_input_definition_path, examples as input_examples
 from .. import DATA_TYPE_PLURAL
 
 
@@ -18,7 +15,8 @@ def load_definition(input_name, input_type, root_data_path, required_fields):
             )
 
             input_local_path = build_input_definition_path(
-                root_data_path=root_data_path, input_name=input_name,
+                root_data_path=root_data_path,
+                input_name=input_name,
                 input_type=input_type,
             )
 
@@ -42,8 +40,7 @@ def load_definition(input_name, input_type, root_data_path, required_fields):
             sys.exit(1)
     else:
         input_local_path = build_input_definition_path(
-            root_data_path=root_data_path, input_name=input_name,
-            input_type=input_type,
+            root_data_path=root_data_path, input_name=input_name, input_type=input_type,
         )
         with open(input_local_path) as fh:
             params = yaml.load(fh, Loader=yaml.FullLoader)

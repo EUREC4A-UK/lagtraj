@@ -1,5 +1,3 @@
-
-
 INPUT_REQUIRED_FIELDS = dict(
     source=str,
     trajectory=str,
@@ -10,5 +8,5 @@ INPUT_REQUIRED_FIELDS = dict(
     levels_strategy=str,
     levels_number=int,
     levels_dzmin=float,
-    levels_top=float
+    levels_top=float,
 )

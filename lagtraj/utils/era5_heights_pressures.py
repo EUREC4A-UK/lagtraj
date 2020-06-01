@@ -554,42 +554,42 @@ def lat_dist_from_meshgrids(ds_1, ds_2):
     lat2_mg = ds_2["lat_meshgrid"].values
     return lat_dist(lat1_mg, lat2_mg).flatten()
 
+
 @njit
-def boundary_gradients(x_array,y_array,val_array):
+def boundary_gradients(x_array, y_array, val_array):
+    """Numba function to calculate gradients, dismissing filtered points"""
     len_temp = np.shape(val_array)[0]
     len_levels = np.shape(val_array)[1]
     len_lats = np.shape(val_array)[2]
     len_lons = np.shape(val_array)[3]
     x_gradient_array = np.empty((len_temp, len_levels))
     y_gradient_array = np.empty((len_temp, len_levels))
-    dval_dx=np.empty((len_lats))
-    dval_dy=np.empty((len_lons))
+    dval_dx = np.empty((len_lats))
+    dval_dy = np.empty((len_lons))
     for this_time in range(len_temp):
         for this_level in range(len_levels):
             for this_lat in range(len_lats):
-                vals=val_array[this_time,this_level,this_lat,:].flatten()
-                xs=x_array[this_lat,:].flatten()
-                vals_filtered=vals[~np.isnan(vals)]
-                x_filtered=xs[~np.isnan(vals)]
-                dvals=vals_filtered[-1]-vals_filtered[0]
-                dx=x_filtered[-1]-x_filtered[0]
-                dval_dx[this_lat]=dvals/dx
+                vals = val_array[this_time, this_level, this_lat, :].flatten()
+                x_at_lat = x_array[this_lat, :].flatten()
+                vals_filtered = vals[~np.isnan(vals)]
+                x_filtered = x_at_lat[~np.isnan(vals)]
+                dvals = vals_filtered[-1] - vals_filtered[0]
+                dval_dx[this_lat] = dvals / (x_filtered[-1] - x_filtered[0])
             for this_lon in range(len_lons):
-                vals=val_array[this_time,this_level,:,this_lon].flatten()
-                ys=y_array[:,this_lon].flatten()
-                vals_filtered=vals[~np.isnan(vals)]
-                y_filtered=ys[~np.isnan(vals)]
-                last_element=len(y_filtered)                
-                dvals=vals_filtered[-1]-vals_filtered[0]
-                dy=y_filtered[-1]-y_filtered[0]
-                dval_dy[this_lon]=dvals/dy
-            x_gradient_array[this_time, this_level]=np.mean(dval_dx)
-            y_gradient_array[this_time, this_level]=np.mean(dval_dy)
+                vals = val_array[this_time, this_level, :, this_lon].flatten()
+                y_at_lat = y_array[:, this_lon].flatten()
+                vals_filtered = vals[~np.isnan(vals)]
+                y_filtered = y_at_lat[~np.isnan(vals)]
+                dvals = vals_filtered[-1] - vals_filtered[0]
+                dval_dy[this_lon] = dvals / (y_filtered[-1] - y_filtered[0])
+            x_gradient_array[this_time, this_level] = np.mean(dval_dx)
+            y_gradient_array[this_time, this_level] = np.mean(dval_dy)
     return x_gradient_array, y_gradient_array
-    
+
+
 def era5_boundary_gradients(ds_box, variable, dictionary):
     """ Calculate gradients from boundary values
-    using haversine function
+    Using distances along latitude and longitude axes
     Weight by box size?"""
     ds_filtered = ds_box
     if "mask" in dictionary:
@@ -601,12 +601,13 @@ def era5_boundary_gradients(ds_box, variable, dictionary):
     lon2_mg = ds_filtered["lon_meshgrid"].values
     x_array = lon_dist(lon1_point, lon2_mg, lat2_mg)
     y_array = lat_dist(lat1_point, lat2_mg)
-    val_array=ds_filtered[variable].values
-    return boundary_gradients(x_array,y_array,val_array)
+    val_array = ds_filtered[variable].values
+    return boundary_gradients(x_array, y_array, val_array)
+
 
 def era5_regression_gradients(ds_box, variable, dictionary):
-    """ Calculate gradients using haversine function
-    From regression, using the normal equation"""
+    """ Calculate gradients function using local coordinate system and
+    Regression, using the normal equation"""
     ds_filtered = ds_box
     if "mask" in dictionary:
         mask = era5_mask(ds_box, dictionary)
@@ -816,6 +817,7 @@ def trace_backward(lat, lon, u_traj, v_traj, d_time):
 def trace_two_way(lat, lon, u_traj, v_traj, d_time_forward, d_time_total):
     """Calculates both previous and next position given a point in between"""
     d_time_backward = d_time_total - d_time_forward
+
     forward_lat, forward_lon = trace_one_way(
         lat, lon, u_traj, v_traj, d_time_forward, True
     )
@@ -1083,9 +1085,15 @@ def backward_trajectory(ds_time_selection, ds_traj, trajectory_dict):
 def dummy_trajectory(mf_dataset, trajectory_dict):
     """Trajectory example: needs to be integrated into main functionality"""
     time_target = np.datetime64(trajectory_dict["datetime_origin"])
-    start_date = time_target - np.timedelta64(trajectory_dict["backward_duration_hours"], "h")
-    end_date = time_target + np.timedelta64(trajectory_dict["forward_duration_hours"], "h")
-    ds_time_selection = mf_dataset.sel(time=slice(start_date, end_date))
+    start_date = time_target - np.timedelta64(
+        trajectory_dict["backward_duration_hours"], "h"
+    )
+    end_date = time_target + np.timedelta64(
+        trajectory_dict["forward_duration_hours"], "h"
+    )
+    time_start_mf = np.max(mf_dataset["time"].where(mf_dataset["time"] <= start_date))
+    time_end_mf = np.min(mf_dataset["time"].where(mf_dataset["time"] >= end_date))
+    ds_time_selection = mf_dataset.sel(time=slice(time_start_mf, time_end_mf))
     ds_traj = xr.Dataset(coords={"time": ds_time_selection.time})
     time_len = len(ds_time_selection["time"].values)
     ds_traj["lat_traj"] = (
@@ -1209,7 +1217,7 @@ def main():
         "lat_origin": 13.3,
         "lon_origin": -57.717,
         "datetime_origin": "2020-02-03T12:30",
-        "backward_duration_hours": 1,
+        "backward_duration_hours": 0,
         "forward_duration_hours": 3,
         "nr_iterations_traj": 10,
         "velocity_strategy": "lower_troposphere_humidity_weighted",
@@ -1219,7 +1227,7 @@ def main():
         "pres_cutoff_start": 60000.0,
         "pres_cutoff_end": 50000.0,
     }
-    #dummy_trajectory(ds_merged, dummy_trajectory_dict)
+    dummy_trajectory(ds_merged, dummy_trajectory_dict)
     dummy_forcings_dict = {
         "gradients_strategy": "both",
         "mask": "ocean",

@@ -10,7 +10,6 @@ ERA5 utilities that can
 
 TODO
 - Optimise code (note that interpolation is currently expensive, possibly because coordinates are not assumed to be ordered)
-- Fix potential nan-gradients?
 - Add more auxiliary variables
 - Move some functionality (e.g. auxiliary variables) to more generic utilities
 - Test/develop way of dealing with -180 degrees.
@@ -59,7 +58,7 @@ rd_over_cp = rd / cp
 p_ref_inv = 1.0 / p_ref
 r_earth = 6371000.0
 pi = np.pi
-Omega = 7.2921150e-5
+omega = 7.2921150e-5
 
 levels_file = os.path.dirname(__file__) + "/137levels.dat"
 levels_table = pd.read_table(levels_file, sep="\s+")
@@ -582,8 +581,12 @@ def boundary_gradients(x_array, y_array, val_array):
                 y_filtered = y_at_lat[~np.isnan(vals)]
                 dvals = vals_filtered[-1] - vals_filtered[0]
                 dval_dy[this_lon] = dvals / (y_filtered[-1] - y_filtered[0])
-            x_gradient_array[this_time, this_level] = np.mean(dval_dx)
-            y_gradient_array[this_time, this_level] = np.mean(dval_dy)
+            x_gradient_array[this_time, this_level] = np.mean(
+                dval_dx[~np.isnan(dval_dx)]
+            )
+            y_gradient_array[this_time, this_level] = np.mean(
+                dval_dy[~np.isnan(dval_dy)]
+            )
     return x_gradient_array, y_gradient_array
 
 
@@ -744,7 +747,7 @@ def add_geowind_around_centre(ds_profile, dictionary):
     """Calculates the geostrophic wind at the centre of the box, based
     on mean profiles of density and gradients of pressure"""
     lat_centre = dictionary["lat"]
-    f_cor = 2.0 * Omega * np.sin(np.deg2rad(lat_centre))
+    f_cor = 2.0 * omega * np.sin(np.deg2rad(lat_centre))
     u_geo = -(1.0 / (f_cor * ds_profile["rho"])) * ds_profile["dp_fdy"]
     v_geo = (1.0 / (f_cor * ds_profile["rho"])) * ds_profile["dp_fdx"]
     ds_profile["ug"] = (

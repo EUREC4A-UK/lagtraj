@@ -15,6 +15,8 @@ TODO
 - Move some functionality (e.g. auxiliary variables) to more generic utilities
 - Test/develop way of dealing with -180 degrees
 - Note: HIGH-TUNE/DEPHY prefers longitude between -180..180?
+- Implement HIGH-TUNE conventions, variable renaming
+- HIGH-TUNE/DEPHY needs netcdf3?
 - Discuss need to check/convert float vs double (HIGH-TUNE/DEPHY expects double)
 - Discuss data filter and weight procedures
 - Use more exact means and gradients based on interpolation/weights?
@@ -22,9 +24,6 @@ TODO
 - Look into other mean/gradient techniques (e.g. Gaussian weighted, see CSET code).
 - Further documentation
 - Keep checking against cf conventions
-- Variable renaming
-- Clean up trajectory code
-- HIGH-TUNE/DEPHY prefers netcdf3?
 """
 
 import os

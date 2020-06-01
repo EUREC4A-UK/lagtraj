@@ -1,7 +1,6 @@
 from collections import namedtuple
-from pathlib import Path
 
-from ..input_definitions import build_input_definition_path
+from .. import build_data_path
 
 LatLonBoundingBox = namedtuple(
     "LatLonBoundingBox", ["lat_min", "lat_max", "lon_min", "lon_max"]
@@ -22,10 +21,6 @@ INPUT_REQUIRED_FIELDS = dict(
 
 
 def build_domain_data_path(root_data_path, domain_name):
-    return Path(root_data_path) / "domains" / (domain_name + "_data")
-
-
-def build_domain_definition_path(root_data_path, domain_name):
-    return build_input_definition_path(
-        root_data_path=root_data_path, input_name=domain_name, input_type="domain"
+    return build_data_path(root_data_path=root_data_path, data_type="domain") / (
+        domain_name + "_data"
     )

@@ -1,80 +1,120 @@
 from pathlib import Path
 
-import yaml
 import xarray as xr
+from tqdm import tqdm
 
-from .. import DEFAULT_DATA_PATH
-from . import era5, load
-from ..utils.levels import make_levels
+from .. import DEFAULT_ROOT_DATA_PATH
+from . import era5, load, build_forcing_data_path
+from .utils.levels import make_levels
+from ..utils import optional_debugging
+from ..domain.load import load_data as load_domain_data
+from ..trajectory.load import load_data as load_trajectory_data
 
 
-def make_forcing(data_path, forcing_name, trajectory_name):
-    trajectory_file = trajectory_filename_parse(
-        directories_dict, forcings_dict["trajectory"]
-    )
-    ds_trajectory = xr.open_dataset(trajectory_file)
-
-    time_sampling_method = trajectory_file.get(
-        "time_sampling_method", default="model_timesteps"
-    )
-
-    if time_sampling_method == "model_timesteps":
-        if forcings_dict["source"] == "era5":
-            da_time = era5.get_available_timesteps(domain=forcings_dict["source"])
-        else:
-            raise NotImplementedError(forcings_dict["source"])
-
-        da_sampling = ds_trajectory.resample(time=da_time).interpolate("linear")
-    elif time_sampling_method == "all_trajectory_timesteps":
+def _make_latlontime_sampling_points(method, ds_trajectory, ds_domain):
+    if method == "model_timesteps":
+        da_time = ds_domain.time
+        da_sampling = ds_trajectory.interp(time=da_time, method="linear")
+        # we clip the times to the interval in which the trajectory is defined
+        t_min, t_max = ds_trajectory.time.min(), ds_trajectory.time.max()
+        da_sampling = da_sampling.sel(time=slice(t_min, t_max))
+    elif method == "all_trajectory_timesteps":
         da_sampling = ds_trajectory
     else:
         raise NotImplementedError(
             "Trajectory sampling method `{}` not implemented".format()
         )
+    return da_sampling
 
-    da_sampling["levels"] = make_levels(forcings_dict)
 
-    ds_forcings = xr.Dataset(coords=da_sampling.coords,)
+def make_forcing(
+    ds_trajectory, ds_domain, levels_definition, sampling_method,
+):
+    """
+    Make a forcing profiles along ds_trajectory using data in ds_domain.
 
-    if forcings_dict["source"] == "era5":
-        timestep_function = era5.calculate_timestep
-    else:
-        raise NotImplementedError(forcings_dict["source"])
+    See domains.utils.levels.LevelsDefinition and domains.era5.SamplingMethodDefinition
+    for how to construct levels_definition and sampling_method objects
+    """
+
+    da_sampling = _make_latlontime_sampling_points(
+        method=sampling_method.time_sampling_method,
+        ds_trajectory=ds_trajectory,
+        ds_domain=ds_domain,
+    )
+
+    da_sampling["levels"] = make_levels(
+        method=levels_definition.method,
+        n_levels=levels_definition.n_levels,
+        z_top=levels_definition.z_top,
+        dz_min=levels_definition.dz_min,
+    )
+
+    ds_forcing = xr.Dataset(coords=da_sampling.coords,)
+
+    # XXX: eventually this will be replaced by a function which doesn't assume
+    # that the domain data is era5 data
+    timestep_function = era5.calculate_timestep
 
     ds_timesteps = []
-    for time in forcing_data.time:
-        ds_timestep = timestep_function(time, domain=forcings_dict["domain"])
+    for time in tqdm(ds_forcing.time):
+        da_pt = da_sampling.sel(time=time)
+        ds_timestep = timestep_function(
+            da_pt=da_pt, ds_domain=ds_domain, sampling_method=sampling_method
+        )
         ds_timesteps.append(ds_timestep)
 
-    ds_forcings = xr.concat(ds_timesteps, dim="time")
+    return xr.concat(ds_timesteps, dim="time")
 
-    export_to_hightune(ds_forcings)
+
+def export(file_path, ds_forcing, format):
+    if format != "dummy_netcdf":
+        raise NotImplementedError(format)
+    # TODO: add hightune format export here
+
+    Path(file_path).parent.mkdir(parents=True, exist_ok=True)
+    ds_forcing.to_netcdf(file_path)
 
 
 def main():
     import argparse
 
     argparser = argparse.ArgumentParser()
-    argparser.add_argument("forcing_name")
-    argparser.add_argument("-d", "--data-path", default=DEFAULT_DATA_PATH, type=Path)
+    argparser.add_argument("forcing")
+    argparser.add_argument(
+        "-d", "--data-path", default=DEFAULT_ROOT_DATA_PATH, type=Path
+    )
+    argparser.add_argument("-f", "--output-format", default="dummy_netcdf", type=str)
+    argparser.add_argument("--debug", default=False, action="store_true")
     args = argparser.parse_args()
 
-    forcing_params = load.load_definition(
-        data_path=args.data_path, forcing_name=args.forcing_name
+    forcing_defn = load.load_definition(
+        root_data_path=args.data_path, forcing_name=args.forcing
     )
-    # ds_trajectory = load
+
+    ds_domain = load_domain_data(
+        root_data_path=args.data_path, name=forcing_defn.domain
+    )
+    ds_trajectory = load_trajectory_data(
+        root_data_path=args.data_path, name=forcing_defn.trajectory
+    )
+
+    with optional_debugging(args.debug):
+        ds_forcing = make_forcing(
+            levels_definition=forcing_defn.levels,
+            ds_domain=ds_domain,
+            ds_trajectory=ds_trajectory,
+            sampling_method=forcing_defn.sampling,
+        )
+
+    output_file_path = build_forcing_data_path(
+        root_data_path=args.data_path, forcing_name=forcing_defn.name
+    )
+
+    export(ds_forcing=ds_forcing, file_path=output_file_path, format=args.output_format)
+
+    print("Wrote forcing file to `{}`".format(output_file_path))
 
 
-def get_from_yaml(input_file, directories_file):
-    """
-    forcing.yaml:
-        trajectory_name: ...
-        time_sampling_method: "model_timesteps"
-        domain: eul_...
-        source: era5
-    """
-
-    with open(directories_file) as this_directories_file:
-        directories_dict = yaml.load(this_directories_file, Loader=yaml.FullLoader)
-    with open(input_file) as this_forcings_file:
-        forcings_dict = yaml.load(this_forcings_file, Loader=yaml.FullLoader)
+if __name__ == "__main__":
+    main()

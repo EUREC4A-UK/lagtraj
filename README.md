@@ -90,15 +90,11 @@ $> python -m lagtraj.domain.download lagtraj://eurec4a_north_atlantic [start dat
 
 ## 2. Producing a trajectory
 
-**TODO**
-
 ```bash
 $> python -m lagtraj.trajectory.create <trajectory_name>
 ```
 
 ## 3. Producing forcing profiles
-
-**TODO**
 
 ```bash
 $> python -m lagtraj.forcing.create <forcing_name>

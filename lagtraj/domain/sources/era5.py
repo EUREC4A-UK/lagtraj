@@ -443,4 +443,6 @@ def load_data(data_path):
             ds_ = _era_5_normalise_longitude(ds=ds_)
             datasets.append(ds_)
 
-    return xr.merge(datasets, compat="override")
+    ds = xr.merge(datasets, compat="override")
+    ds = ds.rename(dict(latitude="lat", longitude="lon"))
+    return ds

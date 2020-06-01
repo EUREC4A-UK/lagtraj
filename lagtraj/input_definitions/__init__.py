@@ -13,7 +13,13 @@ class InvalidInputDefinition(Exception):
 
 def validate_input(input_params, required_fields):
     def _check_field(f_name, f_option):
-        if f_name not in input_params:
+        # allows for an optional parameter by putting `None` in the list of
+        # options
+        missing_allowed = type(f_option) in [list, tuple] and None in f_option
+
+        if missing_allowed:
+            pass
+        elif f_name not in input_params:
             raise InvalidInputDefinition("Missing `{}` field".format(f_name))
         elif type(f_option) == type and type(input_params[f_name]) != f_option:
             raise InvalidInputDefinition(

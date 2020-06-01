@@ -9,19 +9,22 @@ ERA5 utilities that can
 - Add auxiliary variables
 
 TODO
-- Slicing for means and gradients
+- Better constant velocity trajectories (do less work for these)
+- Inclusion of trajectory data on forcings
 - Move some functionality (e.g. auxiliary variables) to more generic utilities
 - May want to write/use some code for degrees versus radians
-- Discuss need to check/convert float vs double (HIGH-TUNE expects double)
+- Note: HIGH-TUNE/DEPHY prefers longitude between -180..180?
+- Test/develop way of dealing with -180 degrees
+- Discuss need to check/convert float vs double (HIGH-TUNE/DEPHY expects double)
 - Discuss data filter and weight procedures
+- Use more exact means and gradients based on interpolation/weights?
 - Compare regression and boundary gradients
 - Look into other mean/gradient techniques (e.g. Gaussian weighted, see CSET code).
 - Further documentation
-- Check cf conventions
+- Keep checking against cf conventions
 - Variable renaming
 - Clean up trajectory code
-- High-tune prefers netcdf3?
-- Hightune prefers longitude on [-180,180]?
+- HIGH-TUNE/DEPHY prefers netcdf3?
 """
 
 import os
@@ -295,7 +298,6 @@ def add_heights_and_pressures(ds_from_era5):
         ds_from_era5["height_f"][time_index] = height_f
         ds_from_era5["p_h"][time_index] = p_h
         ds_from_era5["p_f"][time_index] = p_f
-    return ds_from_era5
 
 
 def era5_on_height_levels(ds_pressure_levels, heights_array):
@@ -373,28 +375,28 @@ def era5_on_height_levels(ds_pressure_levels, heights_array):
     return ds_height_levels
 
 
-def add_auxiliary_variable(ds_level_2, var):
+def add_auxiliary_variable(ds_to_expand, var):
     """Adds auxiliary variables to arrays.
     Alternatively, the equations could be separated out to another utility
     I think this may be adding a 'black box layer' though
     To be discussed"""
     if var == "theta":
         attr_dict = {"units": "K", "long_name": "potential temperature"}
-        ds_level_2[var] = (
-            ds_level_2["t"] * (ds_level_2["p_f"] * p_ref_inv) ** rd_over_cp
+        ds_to_expand[var] = (
+            ds_to_expand["t"] * (ds_to_expand["p_f"] * p_ref_inv) ** rd_over_cp
         )
     else:
         raise NotImplementedError("Variable not implemented")
-    ds_level_2[var] = ds_level_2[var].assign_attrs(**attr_dict)
-    return ds_level_2
+    ds_to_expand[var] = ds_to_expand[var].assign_attrs(**attr_dict)
 
 
-def add_auxiliary_variables(ds_level_1, list_of_vars):
+def add_auxiliary_variables(ds_to_expand, list_of_vars):
     """Wrapper for auxiliary variable calculation"""
     for var in list_of_vars:
-        add_auxiliary_variable(ds_level_1, var)
-    return ds_level_1
+        add_auxiliary_variable(ds_to_expand, var)
 
+def longitude_set_meridian(longitude):
+    return (longitude+180.) % 360.0 - 180.
 
 def era_5_normalise_longitude(ds_to_normalise):
     """Normalise longitudes to be between 0 and 360 degrees
@@ -405,7 +407,7 @@ def era_5_normalise_longitude(ds_to_normalise):
     """
     ds_to_normalise.coords["longitude"] = (
         "longitude",
-        np.round(ds_to_normalise.coords["longitude"] % 360.0, decimals=4),
+        np.round(longitude_set_meridian(ds_to_normalise.coords["longitude"]), decimals=4),
         ds_to_normalise.coords["longitude"].attrs,
     )
     return ds_to_normalise
@@ -416,7 +418,7 @@ def era_5_subset(ds_full, dictionary):
     Note: data order is North to South"""
     ds_subset = ds_full.sel(
         latitude=slice(dictionary["lat_max"], dictionary["lat_min"]),
-        longitude=slice(dictionary["lon_min"] % 360, dictionary["lon_max"] % 360),
+        longitude=slice(longitude_set_meridian(dictionary["lon_min"]),longitude_set_meridian(dictionary["lon_max"])),
     )
     return ds_subset
 
@@ -424,7 +426,7 @@ def era_5_subset(ds_full, dictionary):
 def era5_single_point(ds_domain, dictionary):
     """Extracts a local profile at the nearest point"""
     ds_at_location = ds_domain.sel(
-        latitude=dictionary["lat"], longitude=dictionary["lon"] % 360, method="nearest"
+        latitude=dictionary["lat"], longitude=longitude_set_meridian(dictionary["lon"]), method="nearest"
     )
     return ds_at_location
 
@@ -433,7 +435,7 @@ def era5_interp_column(ds_domain, lat_to_interp, lon_to_interp):
     """Returns the dataset interpolated to given latitude and longitude
     with latitude and longitude dimensions retained"""
     ds_at_location = ds_domain.interp(
-        latitude=[lat_to_interp], longitude=[lon_to_interp % 360]
+        latitude=[lat_to_interp], longitude=[longitude_set_meridian(lon_to_interp)]
     )
     return ds_at_location
 
@@ -453,7 +455,6 @@ def era5_weighted(ds_to_weigh, dictionary):
             ds_to_weigh.weigths = np.cos(np.deg2rad(ds_to_weigh.lat_meshgrid))
         else:
             raise Exception("weight strategy not implemented")
-    return ds_to_weigh
 
 
 def era5_box_mean(ds_box, dictionary):
@@ -489,7 +490,6 @@ def era5_add_lat_lon_meshgrid(ds_to_extend):
         lat_mesh,
         {"long_name": "latitude on meshgrid", "units": ds_to_extend["latitude"].units},
     )
-    return ds_to_extend
 
 
 def calc_haver_dist(lat1, lon1, lat2, lon2):
@@ -512,23 +512,36 @@ def calc_lat_lon_angle(lat1, lon1, lat2, lon2):
     return lat_lon_angle
 
 
-def dist_from_meshgrids(ds_1, ds_2):
+def lat_dist(lat1,lat2):
+    return (2*pi/360.)*(lat2-lat1)*r_earth
+    
+    
+def lon_dist(lon1,lon2,lat):
+    dlon_rad=(2*pi/360.)*(lon2-lon1)
+    dlon_rad=(dlon_rad+pi)%(2*pi)-pi
+    return np.cos(np.deg2rad(lat))*dlon_rad*r_earth
+    
+
+def lon_dist_from_meshgrids(ds_1, ds_2):
     """Calculates distances between two datasets of the same shape"""
-    # convert to degrees
-    lat1_mg = ds_1["lat_meshgrid"].values * (2 * pi / 360)
-    lon1_mg = ds_1["lon_meshgrid"].values * (2 * pi / 360)
-    lat2_mg = ds_2["lat_meshgrid"].values * (2 * pi / 360)
-    lon2_mg = ds_2["lon_meshgrid"].values * (2 * pi / 360)
-    dist_from_mg = calc_haver_dist(lat1_mg, lon1_mg, lat2_mg, lon2_mg)
-    return dist_from_mg.flatten()
+    lat1_mg = ds_1["lat_meshgrid"].values
+    lon1_mg = ds_1["lon_meshgrid"].values
+    lat2_mg = ds_2["lat_meshgrid"].values
+    lon2_mg = ds_2["lon_meshgrid"].values
+    return lon_dist(lon1_mg,lon2_mg,0.5*(lat1_mg+lat2_mg)).flatten()
 
 
+def lat_dist_from_meshgrids(ds_1, ds_2):
+    """Calculates distances between two datasets of the same shape"""
+    lat1_mg = ds_1["lat_meshgrid"].values
+    lat2_mg = ds_2["lat_meshgrid"].values
+    return lat_dist(lat1_mg,lat2_mg).flatten()
+
+        
 def era5_boundary_gradients(ds_box, variable, dictionary):
     """ Calculate gradients from boundary values
     using haversine function
     Weight by box size?"""
-    # left = left.where(left.longitude > [dictionary["lon_min"] % 360])
-    # left = left.sel(latitude=slice(dictionary["lat_max"], dictionary["lat_min"]))
     ds_filtered = ds_box
     if "mask" in dictionary:
         mask = era5_mask(ds_box, dictionary)
@@ -539,12 +552,12 @@ def era5_boundary_gradients(ds_box, variable, dictionary):
     bottom = ds_filtered.min("latitude", skipna=True)
     x_gradient = np.mean(
         (right[variable].values - left[variable].values)
-        / dist_from_meshgrids(left, right),
+        / lon_dist_from_meshgrids(left, right),
         axis=2,
     )
     y_gradient = np.mean(
         (top[variable].values - bottom[variable].values)
-        / dist_from_meshgrids(top, bottom),
+        / lat_dist_from_meshgrids(top, bottom),
         axis=2,
     )
     return x_gradient, y_gradient
@@ -557,14 +570,12 @@ def era5_regression_gradients(ds_box, variable, dictionary):
     if "mask" in dictionary:
         mask = era5_mask(ds_box, dictionary)
         ds_filtered = ds_filtered.where(mask)
-    lat1_point = dictionary["lat"] * (2 * pi / 360)
-    lon1_point = dictionary["lon"] * (2 * pi / 360)
-    lat2_mg = ds_filtered["lat_meshgrid"].values * (2 * pi / 360)
-    lon2_mg = ds_filtered["lon_meshgrid"].values * (2 * pi / 360)
-    dist_array = calc_haver_dist(lat1_point, lon1_point, lat2_mg, lon2_mg)
-    theta_array = calc_lat_lon_angle(lat1_point, lon1_point, lat2_mg, lon2_mg)
-    x_array = dist_array * np.cos(theta_array)
-    y_array = dist_array * np.sin(theta_array)
+    lat1_point = dictionary["lat"]
+    lon1_point = longitude_set_meridian(dictionary["lon"])
+    lat2_mg = ds_filtered["lat_meshgrid"].values
+    lon2_mg = ds_filtered["lon_meshgrid"].values
+    x_array=lon_dist(lon1_point,lon2_mg,lat1_point)
+    y_array=lat_dist(lat1_point,lat2_mg)
     x_flat = x_array.flatten()
     y_flat = y_array.flatten()
     ones_flat = np.ones(np.shape(x_flat))
@@ -594,17 +605,17 @@ def era5_regression_gradients(ds_box, variable, dictionary):
     return x_gradient_array, y_gradient_array
 
 
-def era5_gradients(ds_level_1, list_of_vars, dictionary):
+def era5_gradients(ds_field, list_of_vars, dictionary):
     """Add variables defined in list to dictionary"""
-    ds_out = xr.Dataset(coords={"time": ds_level_1.time, "lev": ds_level_1.lev})
+    ds_out = xr.Dataset(coords={"time": ds_field.time, "lev": ds_field.lev})
     for variable in list_of_vars:
         if dictionary["gradients_strategy"] in ["regression", "both"]:
             x_gradient_array, y_gradient_array = era5_regression_gradients(
-                ds_level_1, variable, dictionary
+                ds_field, variable, dictionary
             )
         elif dictionary["gradients_strategy"] == "boundary":
             x_gradient_array, y_gradient_array = era5_boundary_gradients(
-                ds_level_1, variable, dictionary
+                ds_field, variable, dictionary
             )
         else:
             raise NotImplementedError("Gradients strategy not implemented")
@@ -612,75 +623,75 @@ def era5_gradients(ds_level_1, list_of_vars, dictionary):
             ("time", "lev"),
             x_gradient_array,
             {
-                "long_name": ds_level_1[variable].long_name + " x-gradient",
-                "units": ds_level_1[variable].units + " m**-1",
+                "long_name": ds_field[variable].long_name + " x-gradient",
+                "units": ds_field[variable].units + " m**-1",
             },
         )
         ds_out["d" + variable + "dy"] = (
             ("time", "lev"),
             y_gradient_array,
             {
-                "long_name": ds_level_1[variable].long_name + " y-gradient",
-                "units": ds_level_1[variable].units + " m**-1",
+                "long_name": ds_field[variable].long_name + " y-gradient",
+                "units": ds_field[variable].units + " m**-1",
             },
         )
         if dictionary["gradients_strategy"] == "both":
             x_gradient_array, y_gradient_array = era5_boundary_gradients(
-                ds_level_1, variable, dictionary
+                ds_field, variable, dictionary
             )
             ds_out["d" + variable + "dx_bound"] = (
                 ("time", "lev"),
                 x_gradient_array,
                 {
-                    "long_name": ds_level_1[variable].long_name
+                    "long_name": ds_field[variable].long_name
                     + " x-gradient (boundaries)",
-                    "units": ds_level_1[variable].units + " m**-1",
+                    "units": ds_field[variable].units + " m**-1",
                 },
             )
             ds_out["d" + variable + "dy_bound"] = (
                 ("time", "lev"),
                 y_gradient_array,
                 {
-                    "long_name": ds_level_1[variable].long_name
+                    "long_name": ds_field[variable].long_name
                     + " y-gradient (boundaries)",
-                    "units": ds_level_1[variable].units + " m**-1",
+                    "units": ds_field[variable].units + " m**-1",
                 },
             )
     return ds_out
 
 
-def era5_adv_tendencies(ds_level_1, list_of_vars, dictionary):
+def era5_adv_tendencies(ds_profile, list_of_vars, dictionary):
     """Add variables defined in list to dictionary"""
-    ds_out = xr.Dataset(coords={"time": ds_level_1.time, "lev": ds_level_1.lev})
+    ds_out = xr.Dataset(coords={"time": ds_profile.time, "lev": ds_profile.lev})
     for variable in list_of_vars:
         tendency_array = (
-            (ds_level_1["u"].values - dictionary["u_traj"])
-            * ds_level_1["d" + variable + "dx"].values
-            + (ds_level_1["v"].values - dictionary["v_traj"])
-            * ds_level_1["d" + variable + "dy"].values
+            (ds_profile["u"].values - dictionary["u_traj"])
+            * ds_profile["d" + variable + "dx"].values
+            + (ds_profile["v"].values - dictionary["v_traj"])
+            * ds_profile["d" + variable + "dy"].values
         )
         ds_out[variable + "_advtend"] = (
             ("time", "lev"),
             tendency_array,
             {
-                "long_name": ds_level_1[variable].long_name + " tendency (advection)",
-                "units": ds_level_1[variable].units + " s**-1",
+                "long_name": ds_profile[variable].long_name + " tendency (advection)",
+                "units": ds_profile[variable].units + " s**-1",
             },
         )
         if dictionary["gradients_strategy"] == "both":
             tendency_array = (
-                (ds_level_1["u"].values - dictionary["u_traj"])
-                * ds_level_1["d" + variable + "dx_bound"].values
-                + (ds_level_1["v"].values - dictionary["v_traj"])
-                * ds_level_1["d" + variable + "dy_bound"].values
+                (ds_profile["u"].values - dictionary["u_traj"])
+                * ds_profile["d" + variable + "dx_bound"].values
+                + (ds_profile["v"].values - dictionary["v_traj"])
+                * ds_profile["d" + variable + "dy_bound"].values
             )
             ds_out[variable + "_advtend_bound"] = (
                 ("time", "lev"),
                 tendency_array,
                 {
-                    "long_name": ds_level_1[variable].long_name
+                    "long_name": ds_profile[variable].long_name
                     + " tendency (advection, boundaries)",
-                    "units": ds_level_1[variable].units + " s**-1",
+                    "units": ds_profile[variable].units + " s**-1",
                 },
             )
 
@@ -698,8 +709,8 @@ def trace_one_way(lat, lon, u_traj, v_traj, d_time, lforward=True):
     else:
         bearing = ((3 * pi / 2) - theta) % (2 * pi)
     dist = np.sqrt(u_traj ** 2 + v_traj ** 2) * d_time
-    lat_rad = lat * (2 * pi / 360.0)
-    lon_rad = lon * (2 * pi / 360.0)
+    lat_rad = np.deg2rad(lat)
+    lon_rad = np.deg2rad(lon)
     traced_lat_rad = np.arcsin(
         np.sin(lat_rad) * np.cos(dist / r_earth)
         + np.cos(lat_rad) * np.sin(dist / r_earth) * np.cos(bearing)
@@ -708,8 +719,8 @@ def trace_one_way(lat, lon, u_traj, v_traj, d_time, lforward=True):
         np.sin(bearing) * np.sin(dist / r_earth) * np.cos(lat_rad),
         np.cos(dist / r_earth) - np.sin(lat_rad) * np.sin(lat_rad),
     )
-    traced_lat = traced_lat_rad * (360.0 / (2 * pi))
-    traced_lon = traced_lon_rad * (360.0 / (2 * pi))
+    traced_lat = np.rad2deg(traced_lat_rad)
+    traced_lon = longitude_set_meridian(np.rad2deg(traced_lon_rad))
     return traced_lat, traced_lon
 
 
@@ -747,10 +758,10 @@ def cos_transition(absolute_input, transition_start, transition_end):
     return weight_factor
 
 
-def weighted_velocity(ds_for_vel):
+def weighted_velocity(ds_for_vel, trajectory_dict):
     """Weighted velociy: needs more work"""
-    pres_cutoff_start = 60000.0
-    pres_cutoff_end = 50000.0
+    pres_cutoff_start = trajectory_dict["pres_cutoff_start"]
+    pres_cutoff_end = trajectory_dict["pres_cutoff_end"]
     height_factor = cos_transition(
         ds_for_vel["p_f"][:, 1:, :, :].values, pres_cutoff_start, pres_cutoff_end
     )
@@ -759,9 +770,21 @@ def weighted_velocity(ds_for_vel):
         * ds_for_vel["q"][:, 1:, :, :].values
         * height_factor
     )
-    u_weighted = np.sum(ds_for_vel["u"][:, 1:, :, :].values * weights) / np.sum(weights)
-    v_weighted = np.sum(ds_for_vel["v"][:, 1:, :, :].values * weights) / np.sum(weights)
+    inv_weights = 1.0 / np.sum(weights)
+    u_weighted = inv_weights * np.sum(ds_for_vel["u"][:, 1:, :, :].values * weights)
+    v_weighted = inv_weights * np.sum(ds_for_vel["v"][:, 1:, :, :].values * weights)
     return u_weighted, v_weighted
+
+
+def get_velocity_from_strategy(ds_column, trajectory_dict):
+    """wrapper routine, determine velocity according to strategy"""
+    if trajectory_dict["velocity_strategy"] == "lower_troposphere_humidity_weighted":
+        u_traj, v_traj = weighted_velocity(ds_column, trajectory_dict)
+    elif trajectory_dict["velocity_strategy"] == "constant":
+        u_traj, v_traj = trajectory_dict["u_traj"], trajectory_dict["v_traj"]
+    else:
+        raise NotImplementedError("Trajectory velocity strategy not implemented")
+    return u_traj, v_traj
 
 
 def add_globals_attrs_to_ds(ds_to_add_to):
@@ -784,26 +807,27 @@ def fix_units(ds_to_fix):
         "~": "-",
     }
     for variable in ds_to_fix.variables:
-        if hasattr(variable, "units"):
+        if hasattr(ds_to_fix[variable], "units"):
             these_units = ds_to_fix[variable].units
             if these_units in units_dict:
-                ds_to_fix[variable].units = units_dict[these_units]
+                ds_to_fix[variable].attrs['units'] = units_dict[these_units]
 
 
-def get_velocity_from_strategy(ds_column, trajectory_dict):
-    """wrapper routine, determine velocity according to strategy"""
-    if trajectory_dict["velocity_strategy"] == "lower_tropospher_humidity_weighted":
-        u_traj, v_traj = weighted_velocity(ds_column)
-    else:
-        raise NotImplementedError("Trajectory velocity strategy not implemented")
-    return u_traj, v_traj
-
-
+def stationary_trajectory(ds_time_selection, ds_traj, trajectory_dict):
+    """Adds data for a target point that is directly in the time series"""
+    lat_target = trajectory_dict["lat_target"]
+    lon_target = longitude_set_meridian(trajectory_dict["lon_target"])
+    ds_traj["lat"][:] = lat_target
+    ds_traj["lon"][:] = lon_target
+    ds_traj["u_traj"][:] = 0.0
+    ds_traj["v_traj"][:] = 0.0
+    ds_traj["processed"][:] = True
+    
 def trajectory_at_target(ds_time_selection, ds_traj, trajectory_dict):
     """Adds data for a target point that is directly in the time series"""
     time_target = np.datetime64(trajectory_dict["datetime_target"])
     lat_target = trajectory_dict["lat_target"]
-    lon_target = trajectory_dict["lon_target"]
+    lon_target = longitude_set_meridian(trajectory_dict["lon_target"])
     ds_time = ds_time_selection.sel(time=[time_target])
     time_exact_index = np.argmax(ds_time_selection["time"] == time_target)
     ds_local = era5_interp_column(ds_time, lat_target, lon_target)
@@ -822,7 +846,7 @@ def trajectory_around_target(ds_time_selection, ds_traj, trajectory_dict):
     nr_iterations_traj = trajectory_dict["nr_iterations_traj"]
     time_target = np.datetime64(trajectory_dict["datetime_target"])
     lat_target = trajectory_dict["lat_target"]
-    lon_target = trajectory_dict["lon_target"]
+    lon_target = longitude_set_meridian(trajectory_dict["lon_target"])
     # Find relevant indices
     time_greater_index = np.argmax(ds_time_selection["time"] > time_target)
     time_smaller_index = time_greater_index - 1
@@ -853,8 +877,8 @@ def trajectory_around_target(ds_time_selection, ds_traj, trajectory_dict):
         ds_end_column = era5_interp_column(ds_end, forward_lat, forward_lon)
         add_heights_and_pressures(ds_end_column)
         u_end, v_end = get_velocity_from_strategy(ds_end_column, trajectory_dict)
-        u_guess = (u_begin + u_end) / 2.0
-        v_guess = (v_begin + v_end) / 2.0
+        u_guess = 0.5 * (u_begin + u_end)
+        v_guess = 0.5 * (v_begin + v_end)
     ds_traj["lat"][time_smaller_index] = backward_lat
     ds_traj["lon"][time_smaller_index] = backward_lon
     ds_traj["u_traj"][time_smaller_index] = u_begin
@@ -897,8 +921,8 @@ def forward_trajectory(ds_time_selection, ds_traj, trajectory_dict):
             ds_end_column = era5_interp_column(ds_end, forward_lat, forward_lon)
             add_heights_and_pressures(ds_end_column)
             u_end, v_end = get_velocity_from_strategy(ds_end_column, trajectory_dict)
-            u_guess = (u_begin + u_end) / 2.0
-            v_guess = (v_begin + v_end) / 2.0
+            u_guess = 0.5 * (u_begin + u_end)
+            v_guess = 0.5 * (v_begin + v_end)
         ds_traj["lat"][forward_index] = forward_lat
         ds_traj["lon"][forward_index] = forward_lon
         ds_traj["u_traj"][forward_index] = u_end
@@ -936,8 +960,8 @@ def backward_trajectory(ds_time_selection, ds_traj, trajectory_dict):
             u_begin, v_begin = get_velocity_from_strategy(
                 ds_begin_column, trajectory_dict
             )
-            u_guess = (u_begin + u_end) / 2.0
-            v_guess = (v_begin + v_end) / 2.0
+            u_guess = 0.5 * (u_begin + u_end)
+            v_guess = 0.5 * (v_begin + v_end)
         ds_traj["lat"][backward_index] = backward_lat
         ds_traj["lon"][backward_index] = backward_lon
         ds_traj["u_traj"][backward_index] = u_begin
@@ -980,7 +1004,9 @@ def dummy_trajectory(mf_dataset, trajectory_dict):
     )
     ds_traj["processed"].values[:] = False
     time_exact_match = time_target in ds_time_selection["time"]
-    if time_exact_match:
+    if trajectory_dict["velocity_strategy"] == "constant":
+        stationary_trajectory(ds_time_selection, ds_traj, trajectory_dict)        
+    elif time_exact_match:
         trajectory_at_target(ds_time_selection, ds_traj, trajectory_dict)
         forward_trajectory(ds_time_selection, ds_traj, trajectory_dict)
         backward_trajectory(ds_time_selection, ds_traj, trajectory_dict)
@@ -988,11 +1014,13 @@ def dummy_trajectory(mf_dataset, trajectory_dict):
         trajectory_around_target(ds_time_selection, ds_traj, trajectory_dict)
         forward_trajectory(ds_time_selection, ds_traj, trajectory_dict)
         backward_trajectory(ds_time_selection, ds_traj, trajectory_dict)
-    if all(ds_traj["processed"].values[:]):
-        ds_traj.drop_vars("processed")
-        ds_traj.to_netcdf("ds_traj.nc")
-    else:
+    if not all(ds_traj["processed"].values[:]):
         raise Exception("Trajectory issue, not all timesteps have been filled")
+    ds_traj=ds_traj.drop_vars(["processed"])
+    fix_units(ds_traj)
+    add_globals_attrs_to_ds(ds_traj)
+    ds_traj.to_netcdf("ds_traj.nc")
+
 
 
 def dummy_forcings(mf_dataset, forcings_dictionary):
@@ -1004,17 +1032,14 @@ def dummy_forcings(mf_dataset, forcings_dictionary):
         # Ugly
         mf_index = np.argmax(mf_dataset["time"] == this_time).values
         ds_time = mf_dataset.isel(time=[mf_index])
+        half_averaging_width = 0.5 * forcings_dictionary["averaging_width"]
         lats_lons_dictionary = {
-            "lat_min": ds_traj["lat"][index].values
-            - forcings_dictionary["averaging_width"] / 2.0,
-            "lat_max": ds_traj["lat"][index].values
-            + forcings_dictionary["averaging_width"] / 2.0,
-            "lon_min": ds_traj["lon"][index].values
-            - forcings_dictionary["averaging_width"] / 2.0,
-            "lon_max": ds_traj["lon"][index].values
-            + forcings_dictionary["averaging_width"] / 2.0,
+            "lat_min": ds_traj["lat"][index].values - half_averaging_width,
+            "lat_max": ds_traj["lat"][index].values + half_averaging_width,
+            "lon_min": longitude_set_meridian(ds_traj["lon"][index].values) - half_averaging_width,
+            "lon_max": longitude_set_meridian(ds_traj["lon"][index].values) + half_averaging_width,
             "lat": ds_traj["lat"][index].values,
-            "lon": ds_traj["lon"][index].values,
+            "lon": longitude_set_meridian(ds_traj["lon"][index].values),
             "u_traj": ds_traj["u_traj"][index].values,
             "v_traj": ds_traj["v_traj"][index].values,
         }
@@ -1068,14 +1093,16 @@ def main():
         "backward_hours": 3,
         "forward_hours": 3,
         "nr_iterations_traj": 10,
-        "velocity_strategy": "lower_tropospher_humidity_weighted",
+        "velocity_strategy": "lower_troposphere_humidity_weighted",
+        "pres_cutoff_start": 60000.0,
+        "pres_cutoff_end": 50000.0,
     }
     dummy_trajectory(ds_merged, dummy_trajectory_dictionary)
     dummy_forcings_dictionary = {
         "gradients_strategy": "both",
         "mask": "ocean",
         "traj_file": "ds_traj.nc",
-        "averaging_width": 1.0,
+        "averaging_width": 2.0,
     }
     dummy_forcings(ds_merged, dummy_forcings_dictionary)
 

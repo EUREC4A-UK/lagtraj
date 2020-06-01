@@ -719,7 +719,7 @@ def add_geowind_around_centre(ds_profile, dictionary):
     on mean profiles of density and gradients of pressure"""
     lat_centre = dictionary["lat"]
     f_cor = 2.0 * Omega * np.sin(np.deg2rad(lat_centre))
-    u_geo = - (1.0 / (f_cor * ds_profile["rho"])) * ds_profile["dp_fdy"]
+    u_geo = -(1.0 / (f_cor * ds_profile["rho"])) * ds_profile["dp_fdy"]
     v_geo = (1.0 / (f_cor * ds_profile["rho"])) * ds_profile["dp_fdx"]
     ds_profile["ug"] = (
         ("time", "lev"),
@@ -732,7 +732,7 @@ def add_geowind_around_centre(ds_profile, dictionary):
         {"long_name": "V component of geostrophic wind", "units": "m s**-1",},
     )
     if dictionary["gradients_strategy"] == "both":
-        u_geo_bound = - (1.0 / (f_cor * ds_profile["rho"])) * ds_profile["dp_fdy_bound"]
+        u_geo_bound = -(1.0 / (f_cor * ds_profile["rho"])) * ds_profile["dp_fdy_bound"]
         v_geo_bound = (1.0 / (f_cor * ds_profile["rho"])) * ds_profile["dp_fdx_bound"]
         ds_profile["ug_bound"] = (
             ("time", "lev"),
@@ -850,6 +850,12 @@ def add_globals_attrs_to_ds(ds_to_add_to):
     }
     for attribute in global_attrs:
         ds_to_add_to.attrs[attribute] = global_attrs[attribute]
+
+
+def add_dict_to_global_attrs(ds_to_add_to, dictionary):
+    """Adds global attributes to datasets"""
+    for attribute in dictionary:
+        ds_to_add_to.attrs[attribute] = dictionary[attribute]
 
 
 def fix_units(ds_to_fix):
@@ -1101,20 +1107,21 @@ def dummy_trajectory(mf_dataset, trajectory_dict):
     ds_traj = ds_traj.drop_vars(["processed"])
     fix_units(ds_traj)
     add_globals_attrs_to_ds(ds_traj)
+    add_dict_to_global_attrs(ds_traj, trajectory_dict)
     ds_traj.to_netcdf("ds_traj.nc")
 
 
-def dummy_forcings(mf_dataset, forcings_dictionary):
+def dummy_forcings(mf_dataset, forcings_dict):
     """Forcings example: needs to be integrated into main functionality"""
     ds_out = xr.Dataset()
-    ds_traj = xr.open_dataset(forcings_dictionary["traj_file"])
+    ds_traj = xr.open_dataset(forcings_dict["traj_file"])
     for index in range(len(ds_traj["time"])):
         this_time = ds_traj["time"][index]
         # Ugly
         mf_index = np.argmax(mf_dataset["time"] == this_time).values
         ds_time = mf_dataset.isel(time=[mf_index])
-        half_averaging_width = 0.5 * forcings_dictionary["averaging_width"]
-        lats_lons_dictionary = {
+        half_averaging_width = 0.5 * forcings_dict["averaging_width"]
+        lats_lons_dict = {
             "lat_min": ds_traj["lat_traj"][index].values - half_averaging_width,
             "lat_max": ds_traj["lat_traj"][index].values + half_averaging_width,
             "lon_min": longitude_set_meridian(ds_traj["lon_traj"][index].values)
@@ -1126,33 +1133,34 @@ def dummy_forcings(mf_dataset, forcings_dictionary):
             "u_traj": ds_traj["u_traj"][index].values,
             "v_traj": ds_traj["v_traj"][index].values,
         }
-        lats_lons_dictionary.update(forcings_dictionary)
+        lats_lons_dict.update(forcings_dict)
         out_levels = np.arange(0, 10000.0, 40.0)
-        ds_smaller = era_5_subset(ds_time, lats_lons_dictionary)
+        ds_smaller = era_5_subset(ds_time, lats_lons_dict)
         add_heights_and_pressures(ds_smaller)
-        add_auxiliary_variables(ds_smaller, ["theta","rho"])
+        add_auxiliary_variables(ds_smaller, ["theta", "rho"])
         ds_time_height = era5_on_height_levels(ds_smaller, out_levels)
         era5_add_lat_lon_meshgrid(ds_time_height)
-        ds_profiles = era5_single_point(ds_time_height, lats_lons_dictionary)
-        ds_era5_mean = era5_box_mean(ds_time_height, lats_lons_dictionary)
+        ds_profiles = era5_single_point(ds_time_height, lats_lons_dict)
+        ds_era5_mean = era5_box_mean(ds_time_height, lats_lons_dict)
         for variable in ds_era5_mean.variables:
             if variable not in ["time", "lev"]:
                 ds_profiles[variable + "_mean"] = ds_era5_mean[variable]
         ds_gradients = era5_gradients(
-            ds_time_height, ["u", "v", "p_f", "theta"], lats_lons_dictionary
+            ds_time_height, ["u", "v", "p_f", "theta"], lats_lons_dict
         )
         ds_time_step = xr.merge((ds_gradients, ds_profiles))
         ds_tendencies = era5_adv_tendencies(
-            ds_time_step, ["u", "v", "theta"], lats_lons_dictionary
+            ds_time_step, ["u", "v", "theta"], lats_lons_dict
         )
         ds_time_step = xr.merge((ds_time_step, ds_tendencies))
-        add_geowind_around_centre(ds_time_step, lats_lons_dictionary)
+        add_geowind_around_centre(ds_time_step, lats_lons_dict)
         ds_time_step.reset_coords(["latitude", "longitude"])
         ds_out = xr.combine_by_coords((ds_out, ds_time_step))
     # Add trajectory information
     ds_out = xr.combine_by_coords((ds_out, ds_traj))
     fix_units(ds_out)
     add_globals_attrs_to_ds(ds_out)
+    add_dict_to_global_attrs(ds_out, forcings_dict)
     ds_out.to_netcdf("ds_along_traj.nc")
 
 
@@ -1172,7 +1180,7 @@ def main():
     for this_ds in ds_list:
         era_5_normalise_longitude(this_ds)
     ds_merged = xr.merge(ds_list)
-    dummy_trajectory_dictionary = {
+    dummy_trajectory_dict = {
         "lat_target": 13.3,
         "lon_target": -57.717,
         "datetime_target": "2020-02-03T12:30",
@@ -1180,20 +1188,20 @@ def main():
         "forward_hours": 3,
         "nr_iterations_traj": 10,
         "velocity_strategy": "lower_troposphere_humidity_weighted",
-        #  "velocity_strategy": "prescribed_velocity",
+        # "velocity_strategy": "prescribed_velocity",
         # "u_traj" : -6.0,
         # "v_traj" : -0.25,
         "pres_cutoff_start": 60000.0,
         "pres_cutoff_end": 50000.0,
     }
-    dummy_trajectory(ds_merged, dummy_trajectory_dictionary)
-    dummy_forcings_dictionary = {
+    dummy_trajectory(ds_merged, dummy_trajectory_dict)
+    dummy_forcings_dict = {
         "gradients_strategy": "both",
         "mask": "ocean",
         "traj_file": "ds_traj.nc",
         "averaging_width": 2.0,
     }
-    dummy_forcings(ds_merged, dummy_forcings_dictionary)
+    dummy_forcings(ds_merged, dummy_forcings_dict)
 
 
 if __name__ == "__main__":

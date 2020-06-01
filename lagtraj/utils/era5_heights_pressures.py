@@ -9,8 +9,8 @@ ERA5 utilities that can
 - Add auxiliary variables
 
 TODO
-- Solve issue with zero backward time
 - Optimise code (note that interpolation is currently expensive, possibly because coordinates are not assumed to be ordered)
+- Fix potential nan-gradients?
 - Add more auxiliary variables
 - Move some functionality (e.g. auxiliary variables) to more generic utilities
 - Test/develop way of dealing with -180 degrees.
@@ -1217,8 +1217,8 @@ def main():
         "lat_origin": 13.3,
         "lon_origin": -57.717,
         "datetime_origin": "2020-02-03T12:30",
-        "backward_duration_hours": 0,
-        "forward_duration_hours": 3,
+        "backward_duration_hours": 3,
+        "forward_duration_hours": 1,
         "nr_iterations_traj": 10,
         "velocity_strategy": "lower_troposphere_humidity_weighted",
         # "velocity_strategy": "prescribed_velocity",

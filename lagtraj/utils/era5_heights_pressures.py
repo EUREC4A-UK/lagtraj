@@ -9,16 +9,16 @@ ERA5 utilities that can
 - Add auxiliary variables
 
 TODO
-- Better constant velocity trajectories (do less work for these)
 - Inclusion of trajectory data on forcings
+- Add more forcings (like geostrophic winds)
+- Optimise code
 - Move some functionality (e.g. auxiliary variables) to more generic utilities
-- May want to write/use some code for degrees versus radians
-- Note: HIGH-TUNE/DEPHY prefers longitude between -180..180?
 - Test/develop way of dealing with -180 degrees
+- Note: HIGH-TUNE/DEPHY prefers longitude between -180..180?
 - Discuss need to check/convert float vs double (HIGH-TUNE/DEPHY expects double)
 - Discuss data filter and weight procedures
 - Use more exact means and gradients based on interpolation/weights?
-- Compare regression and boundary gradients
+- Compare regression and boundary gradients for data
 - Look into other mean/gradient techniques (e.g. Gaussian weighted, see CSET code).
 - Further documentation
 - Keep checking against cf conventions
@@ -395,8 +395,11 @@ def add_auxiliary_variables(ds_to_expand, list_of_vars):
     for var in list_of_vars:
         add_auxiliary_variable(ds_to_expand, var)
 
+
 def longitude_set_meridian(longitude):
-    return (longitude+180.) % 360.0 - 180.
+    """Sets longitude to be between -180 and 180 degrees"""
+    return (longitude + 180.0) % 360.0 - 180.0
+
 
 def era_5_normalise_longitude(ds_to_normalise):
     """Normalise longitudes to be between 0 and 360 degrees
@@ -407,7 +410,9 @@ def era_5_normalise_longitude(ds_to_normalise):
     """
     ds_to_normalise.coords["longitude"] = (
         "longitude",
-        np.round(longitude_set_meridian(ds_to_normalise.coords["longitude"]), decimals=4),
+        np.round(
+            longitude_set_meridian(ds_to_normalise.coords["longitude"]), decimals=4
+        ),
         ds_to_normalise.coords["longitude"].attrs,
     )
     return ds_to_normalise
@@ -418,7 +423,10 @@ def era_5_subset(ds_full, dictionary):
     Note: data order is North to South"""
     ds_subset = ds_full.sel(
         latitude=slice(dictionary["lat_max"], dictionary["lat_min"]),
-        longitude=slice(longitude_set_meridian(dictionary["lon_min"]),longitude_set_meridian(dictionary["lon_max"])),
+        longitude=slice(
+            longitude_set_meridian(dictionary["lon_min"]),
+            longitude_set_meridian(dictionary["lon_max"]),
+        ),
     )
     return ds_subset
 
@@ -426,7 +434,9 @@ def era_5_subset(ds_full, dictionary):
 def era5_single_point(ds_domain, dictionary):
     """Extracts a local profile at the nearest point"""
     ds_at_location = ds_domain.sel(
-        latitude=dictionary["lat"], longitude=longitude_set_meridian(dictionary["lon"]), method="nearest"
+        latitude=dictionary["lat"],
+        longitude=longitude_set_meridian(dictionary["lon"]),
+        method="nearest",
     )
     return ds_at_location
 
@@ -512,15 +522,17 @@ def calc_lat_lon_angle(lat1, lon1, lat2, lon2):
     return lat_lon_angle
 
 
-def lat_dist(lat1,lat2):
-    return (2*pi/360.)*(lat2-lat1)*r_earth
-    
-    
-def lon_dist(lon1,lon2,lat):
-    dlon_rad=(2*pi/360.)*(lon2-lon1)
-    dlon_rad=(dlon_rad+pi)%(2*pi)-pi
-    return np.cos(np.deg2rad(lat))*dlon_rad*r_earth
-    
+def lat_dist(lat1, lat2):
+    """Distance for difference in latitude only, at constant longitude"""
+    return np.deg2rad(lat2 - lat1) * r_earth
+
+
+def lon_dist(lon1, lon2, lat):
+    """Distance for difference in longitude, for given latitude"""
+    dlon_rad = np.deg2rad(lon2 - lon1)
+    dlon_rad = (dlon_rad + pi) % (2 * pi) - pi
+    return np.cos(np.deg2rad(lat)) * dlon_rad * r_earth
+
 
 def lon_dist_from_meshgrids(ds_1, ds_2):
     """Calculates distances between two datasets of the same shape"""
@@ -528,16 +540,16 @@ def lon_dist_from_meshgrids(ds_1, ds_2):
     lon1_mg = ds_1["lon_meshgrid"].values
     lat2_mg = ds_2["lat_meshgrid"].values
     lon2_mg = ds_2["lon_meshgrid"].values
-    return lon_dist(lon1_mg,lon2_mg,0.5*(lat1_mg+lat2_mg)).flatten()
+    return lon_dist(lon1_mg, lon2_mg, 0.5 * (lat1_mg + lat2_mg)).flatten()
 
 
 def lat_dist_from_meshgrids(ds_1, ds_2):
     """Calculates distances between two datasets of the same shape"""
     lat1_mg = ds_1["lat_meshgrid"].values
     lat2_mg = ds_2["lat_meshgrid"].values
-    return lat_dist(lat1_mg,lat2_mg).flatten()
+    return lat_dist(lat1_mg, lat2_mg).flatten()
 
-        
+
 def era5_boundary_gradients(ds_box, variable, dictionary):
     """ Calculate gradients from boundary values
     using haversine function
@@ -574,8 +586,8 @@ def era5_regression_gradients(ds_box, variable, dictionary):
     lon1_point = longitude_set_meridian(dictionary["lon"])
     lat2_mg = ds_filtered["lat_meshgrid"].values
     lon2_mg = ds_filtered["lon_meshgrid"].values
-    x_array=lon_dist(lon1_point,lon2_mg,lat1_point)
-    y_array=lat_dist(lat1_point,lat2_mg)
+    x_array = lon_dist(lon1_point, lon2_mg, lat1_point)
+    y_array = lat_dist(lat1_point, lat2_mg)
     x_flat = x_array.flatten()
     y_flat = y_array.flatten()
     ones_flat = np.ones(np.shape(x_flat))
@@ -780,8 +792,6 @@ def get_velocity_from_strategy(ds_column, trajectory_dict):
     """wrapper routine, determine velocity according to strategy"""
     if trajectory_dict["velocity_strategy"] == "lower_troposphere_humidity_weighted":
         u_traj, v_traj = weighted_velocity(ds_column, trajectory_dict)
-    elif trajectory_dict["velocity_strategy"] == "constant":
-        u_traj, v_traj = trajectory_dict["u_traj"], trajectory_dict["v_traj"]
     else:
         raise NotImplementedError("Trajectory velocity strategy not implemented")
     return u_traj, v_traj
@@ -802,18 +812,18 @@ def add_globals_attrs_to_ds(ds_to_add_to):
 def fix_units(ds_to_fix):
     """Changes units of ERA5 data to make them compatible with the cf-checker"""
     units_dict = {
-        "(0 - 1)": "-",
-        "m of equivalent water": "m",
-        "~": "-",
+        "(0 - 1)": "1",
+        "m of water equivalent": "m",
+        "~": "1",
     }
     for variable in ds_to_fix.variables:
         if hasattr(ds_to_fix[variable], "units"):
             these_units = ds_to_fix[variable].units
             if these_units in units_dict:
-                ds_to_fix[variable].attrs['units'] = units_dict[these_units]
+                ds_to_fix[variable].attrs["units"] = units_dict[these_units]
 
 
-def stationary_trajectory(ds_time_selection, ds_traj, trajectory_dict):
+def stationary_trajectory(ds_traj, trajectory_dict):
     """Adds data for a target point that is directly in the time series"""
     lat_target = trajectory_dict["lat_target"]
     lon_target = longitude_set_meridian(trajectory_dict["lon_target"])
@@ -822,7 +832,34 @@ def stationary_trajectory(ds_time_selection, ds_traj, trajectory_dict):
     ds_traj["u_traj"][:] = 0.0
     ds_traj["v_traj"][:] = 0.0
     ds_traj["processed"][:] = True
-    
+
+
+def prescribed_velocity_trajectory(ds_traj, trajectory_dict):
+    """Adds data for a target point that is directly in the time series"""
+    lat_target = trajectory_dict["lat_target"]
+    lon_target = longitude_set_meridian(trajectory_dict["lon_target"])
+    time_target = np.datetime64(trajectory_dict["datetime_target"])
+    u_traj = trajectory_dict["u_traj"]
+    v_traj = trajectory_dict["v_traj"]
+    for index in range(len(ds_traj["time"])):
+        d_time = (
+            (ds_traj["time"][index] - time_target) / np.timedelta64(1, "s")
+        ).values
+        if d_time < 0.0:
+            lat_at_time, lon_at_time = trace_backward(
+                lat_target, lon_target, u_traj, v_traj, -d_time
+            )
+        else:
+            lat_at_time, lon_at_time = trace_forward(
+                lat_target, lon_target, u_traj, v_traj, d_time
+            )
+        ds_traj["lat"][index] = lat_at_time
+        ds_traj["lon"][index] = lon_at_time
+        ds_traj["u_traj"][index] = u_traj
+        ds_traj["v_traj"][index] = v_traj
+        ds_traj["processed"][index] = True
+
+
 def trajectory_at_target(ds_time_selection, ds_traj, trajectory_dict):
     """Adds data for a target point that is directly in the time series"""
     time_target = np.datetime64(trajectory_dict["datetime_target"])
@@ -853,11 +890,11 @@ def trajectory_around_target(ds_time_selection, ds_traj, trajectory_dict):
     ds_interpolated = era5_interp_column(ds_time_selection, lat_target, lon_target)
     add_heights_and_pressures(ds_interpolated)
     u_guess, v_guess = get_velocity_from_strategy(ds_interpolated, trajectory_dict)
-    dt_forward = (
+    d_time_forward = (
         (ds_time_selection["time"][time_greater_index] - time_target)
         / np.timedelta64(1, "s")
     ).values
-    dt_total = (
+    d_time_total = (
         (
             ds_time_selection["time"][time_greater_index]
             - ds_time_selection["time"][time_smaller_index]
@@ -867,7 +904,7 @@ def trajectory_around_target(ds_time_selection, ds_traj, trajectory_dict):
     # iteratively find velocity at adjacent points in time
     for _ in range(nr_iterations_traj):
         forward_lat, forward_lon, backward_lat, backward_lon = trace_two_way(
-            lat_target, lon_target, u_guess, v_guess, dt_forward, dt_total
+            lat_target, lon_target, u_guess, v_guess, d_time_forward, d_time_total
         )
         ds_begin = ds_time_selection.isel(time=[time_smaller_index])
         ds_begin_column = era5_interp_column(ds_begin, backward_lat, backward_lon)
@@ -899,7 +936,7 @@ def forward_trajectory(ds_time_selection, ds_traj, trajectory_dict):
     ).values
     nr_iterations_traj = trajectory_dict["nr_iterations_traj"]
     for forward_index in range(last_processed_index + 1, len(ds_traj["processed"])):
-        dt_forward = (
+        d_time_forward = (
             (
                 ds_time_selection["time"][forward_index]
                 - ds_time_selection["time"][forward_index - 1]
@@ -915,7 +952,7 @@ def forward_trajectory(ds_time_selection, ds_traj, trajectory_dict):
         # iteratively find velocity at adjacent points in time
         for _ in range(nr_iterations_traj):
             forward_lat, forward_lon = trace_forward(
-                lat_begin, lon_begin, u_guess, v_guess, dt_forward
+                lat_begin, lon_begin, u_guess, v_guess, d_time_forward
             )
             ds_end = ds_time_selection.isel(time=[forward_index])
             ds_end_column = era5_interp_column(ds_end, forward_lat, forward_lon)
@@ -936,7 +973,7 @@ def backward_trajectory(ds_time_selection, ds_traj, trajectory_dict):
     first_processed_index = np.argmax(ds_traj["processed"]).values
     nr_iterations_traj = trajectory_dict["nr_iterations_traj"]
     for backward_index in range(first_processed_index - 1, -1, -1):
-        dt_backward = (
+        d_time_backward = (
             (
                 ds_time_selection["time"][backward_index + 1]
                 - ds_time_selection["time"][backward_index]
@@ -952,7 +989,7 @@ def backward_trajectory(ds_time_selection, ds_traj, trajectory_dict):
         # iteratively find velocity at adjacent points in time
         for _ in range(nr_iterations_traj):
             backward_lat, backward_lon = trace_backward(
-                lat_end, lon_end, u_guess, v_guess, dt_backward
+                lat_end, lon_end, u_guess, v_guess, d_time_backward
             )
             ds_begin = ds_time_selection.isel(time=[backward_index])
             ds_begin_column = era5_interp_column(ds_begin, backward_lat, backward_lon)
@@ -1004,8 +1041,10 @@ def dummy_trajectory(mf_dataset, trajectory_dict):
     )
     ds_traj["processed"].values[:] = False
     time_exact_match = time_target in ds_time_selection["time"]
-    if trajectory_dict["velocity_strategy"] == "constant":
-        stationary_trajectory(ds_time_selection, ds_traj, trajectory_dict)        
+    if trajectory_dict["velocity_strategy"] == "stationary":
+        stationary_trajectory(ds_traj, trajectory_dict)
+    if trajectory_dict["velocity_strategy"] == "prescribed_velocity":
+        prescribed_velocity_trajectory(ds_traj, trajectory_dict)
     elif time_exact_match:
         trajectory_at_target(ds_time_selection, ds_traj, trajectory_dict)
         forward_trajectory(ds_time_selection, ds_traj, trajectory_dict)
@@ -1016,11 +1055,10 @@ def dummy_trajectory(mf_dataset, trajectory_dict):
         backward_trajectory(ds_time_selection, ds_traj, trajectory_dict)
     if not all(ds_traj["processed"].values[:]):
         raise Exception("Trajectory issue, not all timesteps have been filled")
-    ds_traj=ds_traj.drop_vars(["processed"])
+    ds_traj = ds_traj.drop_vars(["processed"])
     fix_units(ds_traj)
     add_globals_attrs_to_ds(ds_traj)
     ds_traj.to_netcdf("ds_traj.nc")
-
 
 
 def dummy_forcings(mf_dataset, forcings_dictionary):
@@ -1036,8 +1074,10 @@ def dummy_forcings(mf_dataset, forcings_dictionary):
         lats_lons_dictionary = {
             "lat_min": ds_traj["lat"][index].values - half_averaging_width,
             "lat_max": ds_traj["lat"][index].values + half_averaging_width,
-            "lon_min": longitude_set_meridian(ds_traj["lon"][index].values) - half_averaging_width,
-            "lon_max": longitude_set_meridian(ds_traj["lon"][index].values) + half_averaging_width,
+            "lon_min": longitude_set_meridian(ds_traj["lon"][index].values)
+            - half_averaging_width,
+            "lon_max": longitude_set_meridian(ds_traj["lon"][index].values)
+            + half_averaging_width,
             "lat": ds_traj["lat"][index].values,
             "lon": longitude_set_meridian(ds_traj["lon"][index].values),
             "u_traj": ds_traj["u_traj"][index].values,
@@ -1094,6 +1134,9 @@ def main():
         "forward_hours": 3,
         "nr_iterations_traj": 10,
         "velocity_strategy": "lower_troposphere_humidity_weighted",
+        #  "velocity_strategy": "prescribed_velocity",
+        # "u_traj" : -6.0,
+        # "v_traj" : -0.25,
         "pres_cutoff_start": 60000.0,
         "pres_cutoff_end": 50000.0,
     }

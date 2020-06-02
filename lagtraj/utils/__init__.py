@@ -26,7 +26,7 @@ def optional_debugging(with_debugger):
             def __enter__(self):
                 pass
 
-            def __exit__(self):
+            def __exit__(self, *args, **kwargs):
                 pass
 
         return NoDebug()

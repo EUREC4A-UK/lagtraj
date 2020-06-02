@@ -32,6 +32,13 @@ def calculate_timestep(da_pt, ds_domain, sampling_method):
     if sampling_method.profile_method == "nearest_column":
         dvdt = ds_domain.differentiate(coord='time').sel(time=da_pt.time)
         ds_timestep_forcing = dvdt.sel(lat=da_pt.lat, lon=da_pt.lon, method="nearest")
+
+        for v in ds_timestep_forcing.data_vars:
+            attrs = dict(
+                long_name="{} rate of change".format(ds_domain[v].long_name),
+                units="{} s**-1".format(ds_domain[v].units),
+            )
+            ds_timestep_forcing[v].attrs.update(attrs)
     else:
         raise NotImplementedError(sampling_method)
 

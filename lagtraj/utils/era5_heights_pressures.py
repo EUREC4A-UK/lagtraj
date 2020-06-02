@@ -9,6 +9,8 @@ ERA5 utilities that can
 - Add auxiliary variables
 
 TODO
+- Better way to do longitude normalisation without rounding (based on differences)
+- Use local versus averaged velocity?
 - Optimise code (note that interpolation is currently expensive, possibly because coordinates are not assumed to be ordered)
 - Add more auxiliary variables
 - Move some functionality (e.g. auxiliary variables) to more generic utilities

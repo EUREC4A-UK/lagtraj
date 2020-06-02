@@ -43,7 +43,7 @@ stored in yaml-files) by creating a `meta.yaml` file in the relevant directory
 or use the ones that `lagtraj` comes with by running the following command:
 
 ```bash
-$> python -m lagraj.input_examples
+$> python -m lagraj.input_definitions.examples
 
 The following domain/forcing/trajectory definitions are currently included
 with lagtraj:
@@ -75,13 +75,13 @@ that a trajetory will reach must been known before performining a trajectory
 integration*, otherwise `lagtraj` will issue a warning when the edge of the
 available domain is reached.
 
-Either create your own domain defition in `data/domains/<domain_name>/meta.yaml` and run
+Either create your own domain definition in `data/domains/<domain_name>/meta.yaml` and run
 
 ```bash
 $> python -m lagtraj.domain.download <domain_name> [start date (yyyy-mm-dd)] [end date (yyyy-mm-dd)]
 ```
 
-Or use one of the domain defitions included with `lagtraj` (e.g.
+Or use one of the domain definitions included with `lagtraj` (e.g.
 `eurec4a_north_atlantic`
 
 

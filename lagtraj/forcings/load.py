@@ -36,7 +36,7 @@ def load_definition(root_data_path, forcing_name):
         domain=forcing_params["domain"],
         sampling=sampling_definition,
         levels=forcing_levels_definition,
-        name=forcing_params['name'],
+        name=forcing_params["name"],
     )
 
     return forcing_definition

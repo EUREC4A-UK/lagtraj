@@ -9,18 +9,21 @@ ERA5 utilities that can
 - Add auxiliary variables
 
 TODO
-- Better way to do longitude normalisation without rounding (based on differences)
-- Use local versus averaged velocity?
+- More focings/variable (e.g. humidity forcings and large-scale tendencies).
+- Use of local versus averaged velocity in trajectories
+- Distinguish box sizes for averages, gradients and trajectory calculations.
+- Implement selection as ciricle with radius, rather than box? M
 - Optimise code (note that interpolation is currently expensive, possibly because coordinates are not assumed to be ordered)
 - Add more auxiliary variables
 - Move some functionality (e.g. auxiliary variables) to more generic utilities
-- Test/develop way of dealing with -180 degrees.
+- Test/develop way of dealing with antimeridian (and poles, for circular boxes).
   Note: HIGH-TUNE/DEPHY prefers longitude between -180..180?
 - Implement HIGH-TUNE conventions, variable renaming, attributes
 - HIGH-TUNE/DEPHY needs netcdf3?
 - Discuss need to check/convert float vs double (HIGH-TUNE/DEPHY expects double)
 - Discuss data filter and weight procedures
-- Use more exact means and gradients based on interpolation/weights?
+- Use more exact location for means and gradients based on interpolation/weights?
+- Use budgets over boundarie instead of gradients for large-scale tendencies?
 - Compare regression and boundary gradients for data
 - Look into other mean/gradient techniques (e.g. Gaussian weighted, see CSET code).
 - Further documentation
@@ -61,6 +64,8 @@ p_ref_inv = 1.0 / p_ref
 r_earth = 6371000.0
 pi = np.pi
 omega = 7.2921150e-5
+
+longitude_tolerance = 0.001  # (about 100m)
 
 levels_file = os.path.dirname(__file__) + "/137levels.dat"
 levels_table = pd.read_table(levels_file, sep="\s+")
@@ -376,7 +381,7 @@ def era5_on_height_levels(ds_model_levels, heights_array):
     return ds_height_levels
 
 
-def add_auxiliary_variable(ds_to_expand, var):
+def add_auxiliary_variable(ds_to_expand, var, settings_dictionary):
     """Adds auxiliary variables to arrays.
     Alternatively, the equations could be separated out to another utility
     I think this may be adding a 'black box layer' though
@@ -391,15 +396,32 @@ def add_auxiliary_variable(ds_to_expand, var):
         ds_to_expand[var] = ds_to_expand["p_f"] / (
             rd * ds_to_expand["t"] * (1.0 + rv_over_rd_minus_one * ds_to_expand["q"])
         )
+    elif var == "w_pressure_corr":
+        attr_dict = {
+            "units": ds_to_expand["w"].units,
+            "long_name": "Corrected pressure vertical velocity",
+        }
+        ds_to_expand[var] = ds_to_expand["w"] - ds_to_expand["w"][
+            :, [-1], :, :
+        ].values * cos_transition(
+            ds_to_expand["p_f"][:, :, :, :].values,
+            settings_dictionary["w_cutoff_start"],
+            settings_dictionary["w_cutoff_end"],
+        )
+    elif var == "w_corr":
+        attr_dict = {"units": "m s**-1", "long_name": "Corrected vertical velocity"}
+        ds_to_expand[var] = -ds_to_expand["w_pressure_corr"] / (
+            rg * ds_to_expand["rho"]
+        )
     else:
         raise NotImplementedError("Variable not implemented")
     ds_to_expand[var] = ds_to_expand[var].assign_attrs(**attr_dict)
 
 
-def add_auxiliary_variables(ds_to_expand, list_of_vars):
+def add_auxiliary_variables(ds_to_expand, list_of_vars, settings_dictionary):
     """Wrapper for auxiliary variable calculation"""
     for var in list_of_vars:
-        add_auxiliary_variable(ds_to_expand, var)
+        add_auxiliary_variable(ds_to_expand, var, settings_dictionary)
 
 
 def longitude_set_meridian(longitude):
@@ -407,24 +429,36 @@ def longitude_set_meridian(longitude):
     return (longitude + 180.0) % 360.0 - 180.0
 
 
-def era_5_normalise_longitude(ds_to_normalise):
+def era5_normalise_longitude(ds_to_normalise, ds_ref):
     """Normalise longitudes to be between 0 and 360 degrees
     This is needed because these are stored differently in the surface
     and model level data. Rounding up to 4 decimals seems to work for now,
     with more decimals misalignment has happenend. Would be good to sort
     out why this is the case.
     """
+    ref_longitudes = longitude_set_meridian(ds_ref.coords["longitude"])
+    these_longidues = longitude_set_meridian(ds_to_normalise.coords["longitude"])
+    if len(ref_longitudes) == len(these_longidues):
+        mean_square_error = np.mean(
+            np.sqrt(
+                (ref_longitudes - these_longidues) * (ref_longitudes - these_longidues)
+            )
+        )
+        if mean_square_error < longitude_tolerance:
+            out_longitudes = ref_longitudes
+        else:
+            out_longitudes = these_longidues
+    else:
+        out_longitudes = these_longidues
     ds_to_normalise.coords["longitude"] = (
         "longitude",
-        np.round(
-            longitude_set_meridian(ds_to_normalise.coords["longitude"]), decimals=4
-        ),
+        out_longitudes,
         ds_to_normalise.coords["longitude"].attrs,
     )
     return ds_to_normalise
 
 
-def era_5_subset(ds_full, dictionary):
+def era5_subset(ds_full, dictionary):
     """Utility to select era5 data by latitude and longitude
     Note: data order is North to South"""
     ds_subset = ds_full.sel(
@@ -451,7 +485,7 @@ def era5_interp_column(ds_domain, lat_to_interp, lon_to_interp):
     """Returns the dataset interpolated to given latitude and longitude
     with latitude and longitude dimensions retained"""
     ds_at_location = ds_domain.interp(
-        latitude=[lat_to_interp], longitude=[longitude_set_meridian(lon_to_interp)]
+        latitude=[lat_to_interp], longitude=[longitude_set_meridian(lon_to_interp)],
     )
     return ds_at_location
 
@@ -1182,9 +1216,11 @@ def dummy_forcings(mf_dataset, forcings_dict):
         }
         lats_lons_dict.update(forcings_dict)
         out_levels = np.arange(0, 10000.0, 40.0)
-        ds_smaller = era_5_subset(ds_time, lats_lons_dict)
+        ds_smaller = era5_subset(ds_time, lats_lons_dict)
         add_heights_and_pressures(ds_smaller)
-        add_auxiliary_variables(ds_smaller, ["theta", "rho"])
+        add_auxiliary_variables(
+            ds_smaller, ["theta", "rho", "w_pressure_corr", "w_corr"], lats_lons_dict
+        )
         ds_time_height = era5_on_height_levels(ds_smaller, out_levels)
         era5_add_lat_lon_meshgrid(ds_time_height)
         ds_profiles = era5_single_point(ds_time_height, lats_lons_dict)
@@ -1193,11 +1229,11 @@ def dummy_forcings(mf_dataset, forcings_dict):
             if variable not in ["time", "lev"]:
                 ds_profiles[variable + "_mean"] = ds_era5_mean[variable]
         ds_gradients = era5_gradients(
-            ds_time_height, ["u", "v", "p_f", "theta"], lats_lons_dict
+            ds_time_height, ["u", "v", "p_f", "theta", "q"], lats_lons_dict
         )
         ds_time_step = xr.merge((ds_gradients, ds_profiles))
         ds_tendencies = era5_adv_tendencies(
-            ds_time_step, ["u", "v", "theta"], lats_lons_dict
+            ds_time_step, ["u", "v", "theta", "q"], lats_lons_dict
         )
         ds_time_step = xr.merge((ds_time_step, ds_tendencies))
         add_geowind_around_centre(ds_time_step, lats_lons_dict)
@@ -1225,7 +1261,7 @@ def main():
     ds_single_fc = xr.open_mfdataset(files_single_fc, combine="by_coords")
     ds_list = [ds_model_an, ds_single_an, ds_model_fc, ds_single_fc]
     for this_ds in ds_list:
-        era_5_normalise_longitude(this_ds)
+        era5_normalise_longitude(this_ds, ds_model_an)
     ds_merged = xr.merge(ds_list)
     dummy_trajectory_dict = {
         "lat_origin": 13.3,
@@ -1249,6 +1285,8 @@ def main():
         "mask": "ocean",
         "traj_file": "ds_traj.nc",
         "averaging_width": 4.0,
+        "w_cutoff_start": 70000.0,
+        "w_cutoff_end": 40000.0,
     }
     dummy_forcings(ds_merged, dummy_forcings_dict)
 

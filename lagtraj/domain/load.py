@@ -3,11 +3,11 @@ from . import INPUT_REQUIRED_FIELDS, build_domain_data_path
 from .sources import era5
 
 
-def load_definition(root_data_path, name):
+def load_definition(domain_name, data_path):
     return load.load_definition(
-        root_data_path=root_data_path,
-        input_name=name,
+        input_name=domain_name,
         input_type="domain",
+        root_data_path=data_path,
         required_fields=INPUT_REQUIRED_FIELDS,
     )
 

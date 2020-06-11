@@ -187,11 +187,11 @@ def _build_query(model_run_type, level_type, date, bbox, latlon_sampling):
             date=date, bbox=bbox, latlon_sampling=latlon_sampling
         )
     elif model_run_type == "fc" and level_type == "single":
-        return _build_single_level_an_query(
+        return _build_single_level_fc_query(
             date=date, bbox=bbox, latlon_sampling=latlon_sampling
         )
     elif model_run_type == "fc" and level_type == "model":
-        return _build_model_level_an_query(
+        return _build_model_level_fc_query(
             date=date, bbox=bbox, latlon_sampling=latlon_sampling
         )
     else:

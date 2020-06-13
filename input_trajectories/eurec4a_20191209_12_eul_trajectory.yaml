@@ -1,7 +1,0 @@
-name            : eurec4a_20191209_12_eul_trajectory
-trajectory_type : eulerian
-domain          : eurec4a_eul_circle_domain
-lat_end         : 13.3
-lon_end         : -57.717
-datetime_end    : "2020-01-03T12:00"
-duration_hours  : 24

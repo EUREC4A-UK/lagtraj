@@ -37,13 +37,9 @@ def get_available(input_types="all"):
         for p_sub in subpaths:
             if p_sub.is_file():
                 if p_sub.name.endswith(".yaml"):
-                    valid_paths.append(
-                        (p_sub.name.replace(".yaml", ""), OD())
-                    )
+                    valid_paths.append((p_sub.name.replace(".yaml", ""), OD()))
             else:
-                valid_paths.append(
-                    (p_sub.name, OD(_visit_path(p_sub)))
-                )
+                valid_paths.append((p_sub.name, OD(_visit_path(p_sub))))
 
         return OD(valid_paths)
 

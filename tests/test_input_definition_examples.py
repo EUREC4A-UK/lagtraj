@@ -11,7 +11,7 @@ from lagtraj.trajectory import INPUT_REQUIRED_FIELDS as TRAJECTORY_REQUIRED_FIEL
 INPUT_TYPES = {
     "forcing": FORCING_REQUIRED_FIELDS,
     "domain": DOMAIN_REQUIRED_FIELDS,
-    "trajectory": TRAJECTORY_REQUIRED_FIELDS
+    "trajectory": TRAJECTORY_REQUIRED_FIELDS,
 }
 
 
@@ -45,9 +45,9 @@ INPUT_DEFN_EXAMPLES = _get_examples()
 
 @pytest.mark.parametrize("input_example", INPUT_DEFN_EXAMPLES)
 def test_load_example(input_example):
-    i = input_example.index('/')
+    i = input_example.index("/")
     input_type_plural = input_example[:i]
-    input_name = input_example[i+1:]
+    input_name = input_example[i + 1 :]
 
     input_type = None
     for k, v in DATA_TYPE_PLURAL.items():

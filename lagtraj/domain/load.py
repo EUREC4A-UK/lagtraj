@@ -16,7 +16,7 @@ def load_data(root_data_path, name):
     # check that the domain data definition exists first, might be needed to
     # read the data in
     try:
-        domain_def = load_definition(root_data_path=root_data_path, name=name)
+        domain_def = load_definition(data_path=root_data_path, domain_name=name)
     except FileNotFoundError:
         print("The domain definition for `{}` couldn't be found".format(name))
         raise

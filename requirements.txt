@@ -9,3 +9,4 @@ cdsapi
 pandas
 scipy
 argparse
+dask[array]

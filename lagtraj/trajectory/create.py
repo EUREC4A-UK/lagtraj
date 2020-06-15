@@ -19,7 +19,7 @@ from ..utils import optional_debugging
 # - Relax assumption of hourly data?
 
 
-def create_trajectory(origin, trajectory_type, da_times):
+def create_trajectory(origin, trajectory_type, da_times, **kwargs):
     trajectory_fn = None
     if trajectory_type == "eulerian":
         trajectory_fn = create_eulerian_trajectory
@@ -32,7 +32,7 @@ def create_trajectory(origin, trajectory_type, da_times):
     else:
         raise Exception("Trajectory_type not found")
 
-    return trajectory_fn(origin=origin, da_times=da_times)
+    return trajectory_fn(origin=origin, da_times=da_times, **kwargs)
 
 
 def main():
@@ -46,13 +46,17 @@ def main():
     argparser.add_argument("--debug", default=False, action="store_true")
     args = argparser.parse_args()
 
-    traj_definition = load_definition(
-        root_data_path=args.data_path, name=args.trajectory
+    cli(
+        data_path=args.data_path, trajectory_name=args.trajectory_name, debug=args.debug
     )
+
+
+def cli(data_path, trajectory_name, debug):
+    traj_definition = load_definition(root_data_path=data_path, name=trajectory_name)
 
     if traj_definition.timestep == "domain_data":
         da_times = _get_times_from_domain(
-            trajectory_definition=traj_definition, root_data_path=args.data_path
+            trajectory_definition=traj_definition, root_data_path=data_path
         )
     elif type(traj_definition.timestep) == datetime.timedelta:
         da_times = _build_times_dataarray(
@@ -63,7 +67,7 @@ def main():
     else:
         raise NotImplementedError(traj_definition.timestep)
 
-    with optional_debugging(args.debug):
+    with optional_debugging(debug):
         ds_trajectory = create_trajectory(
             origin=traj_definition.origin,
             trajectory_type=traj_definition.type,
@@ -71,7 +75,7 @@ def main():
         )
 
     trajectory_data_path = build_data_path(
-        root_data_path=args.data_path, trajectory_name=traj_definition.name
+        root_data_path=data_path, trajectory_name=traj_definition.name
     )
 
     ds_trajectory.to_netcdf(trajectory_data_path)
@@ -117,7 +121,7 @@ def _build_times_dataarray(origin, duration, dt):
     return xr.DataArray(times, name="time", dims=("time"))
 
 
-def create_eulerian_trajectory(origin, da_times):
+def create_eulerian_trajectory(origin, da_times, ds_domain=None):
     ds = xr.Dataset(coords=dict(time=da_times))
 
     lat0 = origin.lat
@@ -136,7 +140,7 @@ def create_eulerian_trajectory(origin, da_times):
     return ds
 
 
-def create_linear_trajectory(duration, origin):
+def create_linear_trajectory(duration, origin, ds_domain=None):
     raise NotImplementedError
 
     # times = pd.date_range(

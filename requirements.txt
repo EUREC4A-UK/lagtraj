@@ -9,3 +9,5 @@ cdsapi
 pandas
 scipy
 argparse
+asciitree
+isodate

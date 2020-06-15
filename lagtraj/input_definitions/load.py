@@ -10,7 +10,7 @@ def load_definition(input_name, input_type, root_data_path, required_fields):
         try:
             input_name = input_name.replace("lagtraj://", "")
 
-            params = input_examples.attempt_load(
+            params = input_examples.attempt_read(
                 input_name=input_name, input_type=input_type
             )
 

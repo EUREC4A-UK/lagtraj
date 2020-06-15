@@ -14,13 +14,15 @@ TrajectoryDefinition = namedtuple(
 
 
 INPUT_REQUIRED_FIELDS = {
-    "trajectory_type": str,
+    "trajectory_type": ["linear", "stationary"],
     "domain": str,
     "lat_origin": float,
     "lon_origin": float,
     "datetime_origin": isodate.parse_datetime,
     "forward_duration|backward_duration": isodate.parse_duration,
     "timestep": ("domain_data", isodate.parse_duration),
+    "dlat_dt": (None, lambda trajectory_type: trajectory_type == "linear"),
+    "dlon_dt": (None, lambda trajectory_type: trajectory_type == "linear"),
 }
 
 

@@ -159,6 +159,99 @@ def create_linear_trajectory(duration, origin, ds_domain=None):
     # return trajectory_to_xarray(times, lats, lons)
 
 
+def stationary_trajectory(ds_traj, trajectory_dict):
+    """Adds data for a stationary origin point"""
+    lat_origin = trajectory_dict["lat_origin"]
+    lon_origin = longitude_set_meridian(trajectory_dict["lon_origin"])
+    ds_traj["lat_traj"][:] = lat_origin
+    ds_traj["lon_traj"][:] = lon_origin
+    ds_traj["u_traj"][:] = 0.0
+    ds_traj["v_traj"][:] = 0.0
+    ds_traj["processed"][:] = True
+
+
+def prescribed_velocity_trajectory(ds_traj, trajectory_dict):
+    """Adds data for origin point using constant velocity"""
+    lat_origin = trajectory_dict["lat_origin"]
+    lon_origin = longitude_set_meridian(trajectory_dict["lon_origin"])
+    time_origin = np.datetime64(trajectory_dict["datetime_origin"])
+    u_traj = trajectory_dict["u_traj"]
+    v_traj = trajectory_dict["v_traj"]
+    for index in range(len(ds_traj["time"])):
+        d_time = (
+            (ds_traj["time"][index] - time_origin) / np.timedelta64(1, "s")
+        ).values
+        if d_time < 0.0:
+            lat_at_time, lon_at_time = trace_backward(
+                lat_origin, lon_origin, u_traj, v_traj, -d_time
+            )
+        else:
+            lat_at_time, lon_at_time = trace_forward(
+                lat_origin, lon_origin, u_traj, v_traj, d_time
+            )
+        ds_traj["lat_traj"][index] = lat_at_time
+        ds_traj["lon_traj"][index] = lon_at_time
+        ds_traj["u_traj"][index] = u_traj
+        ds_traj["v_traj"][index] = v_traj
+        ds_traj["processed"][index] = True
+
+
+
+def dummy_trajectory(mf_dataset, trajectory_dict):
+    """Trajectory example: needs to be integrated into main functionality"""
+    time_origin = np.datetime64(trajectory_dict["datetime_origin"])
+    start_date = time_origin - np.timedelta64(
+        trajectory_dict["backward_duration_hours"], "h"
+    )
+    end_date = time_origin + np.timedelta64(
+        trajectory_dict["forward_duration_hours"], "h"
+    )
+    time_start_mf = np.max(mf_dataset["time"].where(mf_dataset["time"] <= start_date))
+    time_end_mf = np.min(mf_dataset["time"].where(mf_dataset["time"] >= end_date))
+    ds_time_selection = mf_dataset.sel(time=slice(time_start_mf, time_end_mf))
+    ds_traj = xr.Dataset(coords={"time": ds_time_selection.time})
+    time_len = len(ds_time_selection["time"].values)
+    ds_traj["lat_traj"] = (
+        ("time"),
+        np.empty((time_len)),
+        {"long_name": "trajectory latitude", "units": "degrees_east"},
+    )
+    ds_traj["lon_traj"] = (
+        ("time"),
+        np.empty((time_len)),
+        {"long_name": "trajectory longitude", "units": "degrees_north"},
+    )
+    ds_traj["u_traj"] = (
+        ("time"),
+        np.empty((time_len)),
+        {"long_name": "trajectory U component of wind", "units": "m s**-1"},
+    )
+    ds_traj["v_traj"] = (
+        ("time"),
+        np.empty((time_len)),
+        {"long_name": "trajectory V component of wind", "units": "m s**-1"},
+    )
+    ds_traj["processed"] = (
+        ("time"),
+        np.empty((time_len)),
+        {"long_name": "Has array been processed", "units": "-"},
+    )
+    ds_traj["processed"].values[:] = False
+    time_exact_match = time_origin in ds_time_selection["time"]
+
+    trajectory_at_origin(ds_time_selection, ds_traj, trajectory_dict)
+    forward_trajectory(ds_time_selection, ds_traj, trajectory_dict)
+    backward_trajectory(ds_time_selection, ds_traj, trajectory_dict)
+
+    if not all(ds_traj["processed"].values[:]):
+        raise Exception("Trajectory issue, not all timesteps have been filled")
+    ds_traj = ds_traj.drop_vars(["processed"])
+    fix_units(ds_traj)
+    add_globals_attrs_to_ds(ds_traj)
+    add_dict_to_global_attrs(ds_traj, trajectory_dict)
+    ds_traj.to_netcdf("ds_traj.nc")
+
+
 def create_single_level_trajectory(duration, origin):
     raise NotImplementedError
 

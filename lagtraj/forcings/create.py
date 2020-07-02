@@ -1,16 +1,3 @@
-from pathlib import Path
-from pkg_resources import resource_filename
-from lagtraj.utils.levels import make_levels
-# from lagtraj.utils.era5 import add_heights_and_pressures
-from lagtraj.utils.hightune import hightune_variables
-Todo
-- Implement the routines in the ERA5 time stepping"""
-
-levelsfile = resource_filename('lagtraj', 'utils/137levels.dat')
-df = pd.read_table(levelsfile, sep="\s+") 
-levA=df['a[Pa]'].values
-levB=df['b'].values
-
 import xarray as xr
 from tqdm import tqdm
 

@@ -4,21 +4,18 @@ Routines for downloading era5 data for a given domain and storing it locally
 import datetime
 import warnings
 from pathlib import Path
-import xarray as xr
-import numpy as np
 
 import netCDF4
 import yaml
 
-from ... import utils
+from .... import utils
 from .cdsapi_request import RequestFetchCDSClient
+from . import FILENAME_FORMAT
 
-
+DATA_REQUESTS_FILENAME = "data_requests.yaml"
 DATE_FORMAT = "%Y-%m-%d"
 TIME_FORMAT = "%h:%M:%s"
 REPOSITORY_NAME = "reanalysis-era5-complete"
-FILENAME_FORMAT = "{model_run_type}_{level_type}_{date}.nc"
-DATA_REQUESTS_FILENAME = "data_requests.yaml"
 
 
 def download_data(
@@ -414,54 +411,3 @@ def _build_model_level_fc_query(date, bbox, latlon_sampling):
         "step": "0/1/2/3/4/5/6/7/8/9/10/11",
         "format": "netcdf",
     }
-
-
-def _era_5_normalise_longitude(ds):
-    """Normalise longitudes to be between 0 and 360 degrees
-    This is needed because these are stored differently in the surface
-    and model level data. Rounding up to 4 decimals seems to work for now,
-    with more decimals misalignment has happenend. Would be good to sort
-    out why this is the case.
-    """
-
-    def longitude_set_meridian(longitude):
-        """Sets longitude to be between -180 and 180 degrees"""
-        return (longitude + 180.0) % 360.0 - 180.0
-
-    ds.coords["longitude"] = (
-        "longitude",
-        np.round(longitude_set_meridian(ds.coords["longitude"]), decimals=4),
-        ds.coords["longitude"].attrs,
-    )
-    return ds
-
-
-def load_data(data_path):
-    datasets = {}
-
-    model_run_types = ["an", "fc"]  # analysis and forecast runs
-    level_types = ["model", "single"]  # need model and surface data
-
-    for model_run_type in model_run_types:
-        datasets_run = []
-        for level_type in level_types:
-            filename_format = FILENAME_FORMAT.format(
-                model_run_type=model_run_type, level_type=level_type, date="*"
-            )
-
-            files = data_path.glob(filename_format)
-
-            ds_ = xr.open_mfdataset(files, combine="by_coords")
-            # z needs to be dropped to prevent duplicity, lnsp is simply
-            # redundant
-            if model_run_type == "an" and level_type == "model":
-                ds_ = ds_.drop_vars(["lnsp"])
-            ds_ = _era_5_normalise_longitude(ds=ds_)
-            datasets_run.append(ds_)
-        ds_run = xr.merge(datasets_run, compat="override")
-        datasets[model_run_type] = ds_run
-
-    ds = xr.merge(datasets, compat="override")
-    ds = ds.rename(dict(latitude="lat", longitude="lon"))
-
-    return ds

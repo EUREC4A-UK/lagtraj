@@ -422,12 +422,13 @@ def _era_5_normalise_longitude(ds):
 
 
 def load_data(data_path):
-    datasets = []
+    datasets = {}
 
     model_run_types = ["an", "fc"]  # analysis and forecast runs
     level_types = ["model", "single"]  # need model and surface data
 
     for model_run_type in model_run_types:
+        datasets_run = []
         for level_type in level_types:
             filename_format = FILENAME_FORMAT.format(
                 model_run_type=model_run_type, level_type=level_type, date="*"
@@ -441,8 +442,11 @@ def load_data(data_path):
             if model_run_type == "an" and level_type == "model":
                 ds_ = ds_.drop_vars(["lnsp"])
             ds_ = _era_5_normalise_longitude(ds=ds_)
-            datasets.append(ds_)
+            datasets_run.append(ds_)
+        ds_run = xr.merge(datasets_run, compat="override")
+        datasets[model_run_type] = ds_run
 
     ds = xr.merge(datasets, compat="override")
     ds = ds.rename(dict(latitude="lat", longitude="lon"))
+
     return ds

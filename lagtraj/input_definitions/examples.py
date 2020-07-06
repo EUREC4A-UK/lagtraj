@@ -15,7 +15,7 @@ class LagtrajExampleDoesNotExist(Exception):
     pass
 
 
-def attempt_load(input_name, input_type):
+def attempt_read(input_name, input_type):
     input_type = DATA_TYPE_PLURAL.get(input_type, input_type)
 
     file_path = P_ROOT / input_type / (input_name + ".yaml")
@@ -27,20 +27,30 @@ def attempt_load(input_name, input_type):
         return defn
 
 
+def get_available(input_types="all"):
+    def _visit_path(p_current):
+        subpaths = p_current.glob("*")
+        if p_current == P_ROOT and input_types != "all":
+            subpaths = filter(lambda p_: p_.name in input_types, subpaths)
+
+        valid_paths = []
+        for p_sub in subpaths:
+            if p_sub.is_file():
+                if p_sub.name.endswith(".yaml"):
+                    valid_paths.append((p_sub.name.replace(".yaml", ""), OD()))
+            else:
+                valid_paths.append((p_sub.name, OD(_visit_path(p_sub))))
+
+        return OD(valid_paths)
+
+    return _visit_path(P_ROOT)
+
+
 def print_available(input_types="all"):
-    def _print_node(p):
-        dirs = p.glob("*")
-        if p == P_ROOT and input_types != "all":
-            dirs = filter(lambda p_: p_.name in input_types, dirs)
-
-        return OD(
-            [(p_node.name.replace(".yaml", ""), _print_node(p_node)) for p_node in dirs]
-        )
-
-    tree = {"lagtraj://": _print_node(P_ROOT)}
+    examples_tree = {"lagtraj://": get_available(input_types=input_types)}
 
     box_tr = LeftAligned(draw=drawing.BoxStyle(gfx=drawing.BOX_LIGHT))
-    print(box_tr(tree))
+    print(box_tr(examples_tree))
 
 
 def main():

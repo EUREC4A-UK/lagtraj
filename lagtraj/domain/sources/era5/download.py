@@ -370,7 +370,7 @@ def _build_single_level_fc_query(date, bbox, latlon_sampling):
         "area": [bbox.lat_max, bbox.lon_min, bbox.lat_min, bbox.lon_max],
         "grid": "{}/{}".format(latlon_sampling.lat, latlon_sampling.lon),
         "type": "fc",
-        "step": "0/1/2/3/4/5/6/7/8/9/10/11",
+        "step": "1/2/3/4/5/6/7/8/9/10/11/12",
         "format": "netcdf",
     }
 
@@ -405,9 +405,8 @@ def _build_model_level_fc_query(date, bbox, latlon_sampling):
         "stream": "oper",
         "time": "06:00:00/18:00:00",
         "type": "fc",
-        "time": "06:00:00/18:00:00",
         "area": [bbox.lat_max, bbox.lon_min, bbox.lat_min, bbox.lon_max,],
         "grid": "{}/{}".format(latlon_sampling.lat, latlon_sampling.lon),
-        "step": "0/1/2/3/4/5/6/7/8/9/10/11",
+        "step": "1/2/3/4/5/6/7/8/9/10/11/12",
         "format": "netcdf",
     }

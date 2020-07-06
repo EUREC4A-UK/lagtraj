@@ -55,7 +55,7 @@ def download_data(
             if download_requests[download_id]["query_hash"] == query_hash:
                 should_make_request = False
             else:
-                del download_data[download_id]
+                del download_requests[download_id]
 
         if should_make_request:
             request_id = c.queue_data_request(

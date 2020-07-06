@@ -6,7 +6,7 @@ import numpy as np
 
 from .. import DEFAULT_ROOT_DATA_PATH
 from .load import load_definition
-from . import build_data_path
+from . import build_data_path, extrapolation
 from ..domain.load import load_data as load_domain_data
 from ..utils import optional_debugging
 
@@ -20,19 +20,17 @@ from ..utils import optional_debugging
 
 
 def create_trajectory(origin, trajectory_type, da_times, **kwargs):
-    trajectory_fn = None
     if trajectory_type == "eulerian":
-        trajectory_fn = create_eulerian_trajectory
+        return create_eulerian_trajectory(origin=origin, da_times=da_times)
     elif trajectory_type == "linear":
-        trajectory_fn = create_linear_trajectory
-    elif trajectory_type == "single_level":
-        trajectory_fn = create_single_level_trajectory
-    elif trajectory_type == "weighted":
-        trajectory_fn = create_weighted_trajectory
+        if "U" not in kwargs:
+            raise Exception(
+                "To use the `linear` trajectory integration you"
+                " must provide a velocity `U`"
+            )
+        return create_linear_trajectory(origin=origin, da_times=da_times, U=kwargs["U"])
     else:
-        raise Exception("Trajectory_type not found")
-
-    return trajectory_fn(origin=origin, da_times=da_times, **kwargs)
+        raise NotImplementedError("`{}` trajectory type not available")
 
 
 def main():
@@ -121,7 +119,7 @@ def _build_times_dataarray(origin, duration, dt):
     return xr.DataArray(times, name="time", dims=("time"))
 
 
-def create_eulerian_trajectory(origin, da_times, ds_domain=None):
+def create_eulerian_trajectory(origin, da_times):
     ds = xr.Dataset(coords=dict(time=da_times))
 
     lat0 = origin.lat
@@ -140,61 +138,55 @@ def create_eulerian_trajectory(origin, da_times, ds_domain=None):
     return ds
 
 
-def create_linear_trajectory(duration, origin, ds_domain=None):
-    raise NotImplementedError
+def create_linear_trajectory(origin, da_times, U):
+    """Create linear trajectory from origin point using constant velocity"""
+    ds_start_posn = xr.Dataset(coords=dict(time=origin.datetime))
+    ds_start_posn["lat"] = origin.lat
+    ds_start_posn["lon"] = origin.lon
 
-    # times = pd.date_range(
-    #     np.datetime64(trajectory_params["datetime_end"])
-    #     - np.timedelta64(trajectory_params["duration_hours"], "h"),
-    #     periods=trajectory_params["duration_hours"] + 1,
-    #     freq="h",
-    # )
-    # nr_hours = len(times)
-    # lat_end = trajectory_params["lat_end"]
-    # lon_end = trajectory_params["lon_end"]
-    # dlat_dt = trajectory_params["dlat_dt"]
-    # dlon_dt = trajectory_params["dlon_dt"]
-    # lats = lat_end - 3600.0 * dlat_dt * np.arange(nr_hours - 1, -1, -1)
-    # lons = lon_end - 3600.0 * dlon_dt * np.arange(nr_hours - 1, -1, -1)
-    # return trajectory_to_xarray(times, lats, lons)
+    da_times_backward = da_times.sel(time=slice(None, origin.datetime))
+    da_times_forward = da_times.sel(time=slice(origin.datetime, None))
 
+    # xarray doesn't have a `total_seconds` accessor for datetime objects yet
+    def _calculate_seconds(da):
+        return da.dt.seconds + da.dt.days * 24 * 60 * 60
 
-def stationary_trajectory(ds_traj, trajectory_dict):
-    """Adds data for a stationary origin point"""
-    lat_origin = trajectory_dict["lat_origin"]
-    lon_origin = longitude_set_meridian(trajectory_dict["lon_origin"])
-    ds_traj["lat_traj"][:] = lat_origin
-    ds_traj["lon_traj"][:] = lon_origin
-    ds_traj["u_traj"][:] = 0.0
-    ds_traj["v_traj"][:] = 0.0
-    ds_traj["processed"][:] = True
+    points = [ds_start_posn]
 
-
-def prescribed_velocity_trajectory(ds_traj, trajectory_dict):
-    """Adds data for origin point using constant velocity"""
-    lat_origin = trajectory_dict["lat_origin"]
-    lon_origin = longitude_set_meridian(trajectory_dict["lon_origin"])
-    time_origin = np.datetime64(trajectory_dict["datetime_origin"])
-    u_traj = trajectory_dict["u_traj"]
-    v_traj = trajectory_dict["v_traj"]
-    for index in range(len(ds_traj["time"])):
-        d_time = (
-            (ds_traj["time"][index] - time_origin) / np.timedelta64(1, "s")
-        ).values
-        if d_time < 0.0:
-            lat_at_time, lon_at_time = trace_backward(
-                lat_origin, lon_origin, u_traj, v_traj, -d_time
-            )
+    for dir in ["backward", "forward"]:
+        if dir == "backward":
+            da_integrate_times = da_times_backward.values[::-1]
+            s = -1.0
+        elif dir == "forward":
+            da_integrate_times = da_times_forward.values
+            s = 1.0
         else:
-            lat_at_time, lon_at_time = trace_forward(
-                lat_origin, lon_origin, u_traj, v_traj, d_time
-            )
-        ds_traj["lat_traj"][index] = lat_at_time
-        ds_traj["lon_traj"][index] = lon_at_time
-        ds_traj["u_traj"][index] = u_traj
-        ds_traj["v_traj"][index] = v_traj
-        ds_traj["processed"][index] = True
+            raise Exception
 
+        # first we integrated backwards from the start point
+        for t in da_integrate_times:
+            ds_prev_posn = points[-1]
+            dt = _calculate_seconds(t - ds_prev_posn.time)
+            if int(dt) == 0:
+                continue
+            lat, lon = extrapolation.extrapolate_posn_with_fixed_velocity(
+                lat=points[-1].lat,
+                lon=points[-1].lon,
+                u_vel=s * U[0],
+                v_vel=s * U[1],
+                dt=s * dt,
+            )
+            ds_next_posn = xr.Dataset(coords=dict(time=t))
+            ds_next_posn["lat"] = lat
+            ds_next_posn["lon"] = lon
+            points.append(ds_next_posn)
+
+        if dir == "backward":
+            # now we've integrated backwards we reverse the points
+            points = points[::-1]
+
+    ds_traj = xr.concat(points, dim="time").sortby("time")
+    return ds_traj
 
 
 def dummy_trajectory(mf_dataset, trajectory_dict):

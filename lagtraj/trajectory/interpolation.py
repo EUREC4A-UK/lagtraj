@@ -4,6 +4,7 @@ try:
 
     print("Running with numba")
 except ImportError:
+
     def njit(numba_function):
         """Dummy numba function"""
         return numba_function

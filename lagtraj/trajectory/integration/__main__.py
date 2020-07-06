@@ -76,19 +76,20 @@ def main(data_path):
     integrate_trajectory(ds_merged, dummy_trajectory_dict)
 
     # dummy_forcings_dict = {
-        # "gradients_strategy": "both",
-        # "mask": "ocean",
-        # "traj_file": "ds_traj.nc",
-        # "averaging_width": 4.0,
-        # "w_cutoff_start": 70000.0,
-        # "w_cutoff_end": 40000.0,
+    # "gradients_strategy": "both",
+    # "mask": "ocean",
+    # "traj_file": "ds_traj.nc",
+    # "averaging_width": 4.0,
+    # "w_cutoff_start": 70000.0,
+    # "w_cutoff_end": 40000.0,
     # }
     # dummy_forcings(ds_merged, dummy_forcings_dict)
 
 
 import argparse
+
 argparser = argparse.ArgumentParser()
-argparser.add_argument('data_path')
+argparser.add_argument("data_path")
 args = argparser.parse_args()
 
 main(args.data_path)

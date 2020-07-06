@@ -38,9 +38,6 @@ import pandas as pd
 import xarray as xr
 
 
-
-
-
 def add_auxiliary_variable(ds_to_expand, var, settings_dictionary):
     """Adds auxiliary variables to arrays.
     Alternatively, the equations could be separated out to another utility
@@ -242,6 +239,7 @@ def add_geowind_around_centre(ds_profile, dictionary):
                 "units": "m s**-1",
             },
         )
+
 
 def add_globals_attrs_to_ds(ds_to_add_to):
     """Adds global attributes to datasets"""

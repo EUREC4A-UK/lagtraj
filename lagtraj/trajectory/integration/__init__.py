@@ -5,55 +5,6 @@ from .velocity_estimation import get_velocity_from_strategy
 from .constants import *  # shouldn't to this, make explicit what is used
 
 
-def trace_one_way(lat, lon, u_traj, v_traj, d_time, lforward=True):
-    """Calculates previous position given lat,lon,u_traj,v_traj, and d_time
-    explicitly set d_time positive, to prevent accidental backward trajectory"""
-    if d_time < 0.0:
-        raise Exception("Expecting positive d_time in back-tracing")
-    theta = np.arctan2(v_traj, u_traj) % (2 * pi)
-    if lforward:
-        bearing = ((pi / 2) - theta) % (2 * pi)
-    else:
-        bearing = ((3 * pi / 2) - theta) % (2 * pi)
-    dist = np.sqrt(u_traj ** 2 + v_traj ** 2) * d_time
-    lat_rad = np.deg2rad(lat)
-    lon_rad = np.deg2rad(lon)
-    traced_lat_rad = np.arcsin(
-        np.sin(lat_rad) * np.cos(dist / r_earth)
-        + np.cos(lat_rad) * np.sin(dist / r_earth) * np.cos(bearing)
-    )
-    traced_lon_rad = lon_rad + np.arctan2(
-        np.sin(bearing) * np.sin(dist / r_earth) * np.cos(lat_rad),
-        np.cos(dist / r_earth) - np.sin(lat_rad) * np.sin(lat_rad),
-    )
-    traced_lat = np.rad2deg(traced_lat_rad)
-    traced_lon = longitude_set_meridian(np.rad2deg(traced_lon_rad))
-    return traced_lat, traced_lon
-
-
-def trace_forward(lat, lon, u_traj, v_traj, d_time):
-    """Wrapper function for forward trajectory, here d_time is positive"""
-    return trace_one_way(lat, lon, u_traj, v_traj, d_time, True)
-
-
-def trace_backward(lat, lon, u_traj, v_traj, d_time):
-    """Wrapper function for backward trajectory, here d_time is positive"""
-    return trace_one_way(lat, lon, u_traj, v_traj, d_time, False)
-
-
-def trace_two_way(lat, lon, u_traj, v_traj, d_time_forward, d_time_total):
-    """Calculates both previous and next position given a point in between"""
-    d_time_backward = d_time_total - d_time_forward
-
-    forward_lat, forward_lon = trace_one_way(
-        lat, lon, u_traj, v_traj, d_time_forward, True
-    )
-    backward_lat, backward_lon = trace_one_way(
-        lat, lon, u_traj, v_traj, d_time_backward, False
-    )
-    return forward_lat, forward_lon, backward_lat, backward_lon
-
-
 def forward_trajectory(ds_time_selection, ds_traj, trajectory_dict):
     """Adds data after the last index that is already initialised"""
     # Ugly

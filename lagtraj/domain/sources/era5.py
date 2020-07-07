@@ -233,7 +233,7 @@ def _build_single_level_an_query(date, bbox, latlon_sampling):
     # 151 Mean sea level pressure [Pa], msl
     # 159 Boundary layer height [m],  blh
     # 160 Standard deviation of orography [~], sdor
-    # 161 Anisotropy of sub-gridscale orography [~], isor 
+    # 161 Anisotropy of sub-gridscale orography [~], isor
     # 162 Angle of sub-gridscale orography [radians], anor
     # 163 Slope of sub-gridscale orography [~], slor
     # 164 Total cloud cover [(0 - 1)],  tcc

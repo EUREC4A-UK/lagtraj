@@ -140,18 +140,18 @@ def _get_times_from_domain(trajectory_definition, root_data_path):
 
 def _build_times_dataarray(origin, duration, dt):
     t0 = origin.datetime
-    t_min = origin.datetime + duration.backward
+    t_min = origin.datetime - duration.backward
     t_max = origin.datetime + duration.forward
 
     times = [t0]
     while times[0] > t_min:
-        t_new = times[-1] + dt
+        t_new = times[0] - dt
         times.insert(0, t_new)
     while times[-1] < t_max:
         t_new = times[-1] + dt
         times.append(t_new)
 
-    return xr.DataArray(times, name="time", dims=("time"))
+    return xr.DataArray(times, name="time", dims=("time"), coords=dict(time=times))
 
 
 def create_eulerian_trajectory(origin, da_times):

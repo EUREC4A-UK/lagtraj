@@ -59,7 +59,7 @@ def test_integrated_linear_trajectory(ds_domain_test):
 
     ds_traj = lagtraj.trajectory.create.create_trajectory(
         origin=origin,
-        trajectory_type="integrated",
+        trajectory_type="lagrangian",
         velocity_method="single_height_level",
         velocity_method_kwargs=dict(height=700.0, time_space_interpolation="nearest",),
         da_times=da_times,

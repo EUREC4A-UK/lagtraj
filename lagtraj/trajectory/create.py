@@ -36,7 +36,7 @@ def create_trajectory(origin, trajectory_type, da_times, **kwargs):
                 " must provide a velocity `U`"
             )
         return create_linear_trajectory(origin=origin, da_times=da_times, **kwargs)
-    elif trajectory_type == "integrated":
+    elif trajectory_type == "lagrangian":
         if "ds_domain" not in kwargs:
             raise Exception(
                 "To integrate a trajectory using velocities from model data"
@@ -49,7 +49,7 @@ def create_trajectory(origin, trajectory_type, da_times, **kwargs):
             )
         return create_integrated_trajectory(origin=origin, da_times=da_times, **kwargs)
     else:
-        raise NotImplementedError("`{}` trajectory type not available")
+        raise NotImplementedError(f"`{trajectory_type}` trajectory type not available")
 
 
 def main():
@@ -82,12 +82,22 @@ def cli(data_path, trajectory_name, debug):
     else:
         raise NotImplementedError(traj_definition.timestep)
 
-    with optional_debugging(debug):
-        ds_trajectory = create_trajectory(
-            origin=traj_definition.origin,
-            trajectory_type=traj_definition.type,
-            da_times=da_times,
+    kwargs = dict(
+        origin=traj_definition.origin,
+        trajectory_type=traj_definition.type,
+        da_times=da_times,
+        # TODO: work out how to pass these once we know which we will be using
+        **traj_definition.extra_kwargs,
+    )
+
+    if traj_definition.type == "lagrangian":
+        ds_domain = load_domain_data(
+            root_data_path=data_path, name=traj_definition.domain
         )
+        kwargs["ds_domain"] = ds_domain
+
+    with optional_debugging(debug):
+        ds_trajectory = create_trajectory(**kwargs)
 
     trajectory_data_path = build_data_path(
         root_data_path=data_path, trajectory_name=traj_definition.name

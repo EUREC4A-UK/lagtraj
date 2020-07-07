@@ -9,12 +9,13 @@ TrajectoryOrigin = namedtuple("TrajectoryOrigin", ["lat", "lon", "datetime"])
 TrajectoryDuration = namedtuple("TrajectoryDuration", ["forward", "backward"])
 
 TrajectoryDefinition = namedtuple(
-    "TrajectoryDefinition", ["domain", "duration", "origin", "name", "type", "timestep"]
+    "TrajectoryDefinition",
+    ["domain", "duration", "origin", "name", "type", "timestep", "extra_kwargs"],
 )
 
 
 INPUT_REQUIRED_FIELDS = {
-    "trajectory_type": ["linear", "stationary"],
+    "trajectory_type": ["linear", "eulerian", "lagrangian"],
     "domain": str,
     "lat_origin": float,
     "lon_origin": float,
@@ -23,6 +24,13 @@ INPUT_REQUIRED_FIELDS = {
     "timestep": ("domain_data", isodate.parse_duration),
     "u_vel": [None, float],  # TODO: remove when velocity defn is improved
     "v_vel": [None, float],  # TODO: remove when velocity defn is imporved
+    "velocity_method": [
+        None,
+        "lower_troposphere_humidity_weighted",
+        "single_height_level",
+        "column_mean",
+    ],
+    "velocity_method_height": [None, float],
 }
 
 

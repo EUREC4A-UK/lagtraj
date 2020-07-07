@@ -3,6 +3,7 @@ from pathlib import Path
 
 import xarray as xr
 import numpy as np
+import tqdm
 
 from .. import DEFAULT_ROOT_DATA_PATH
 from .load import load_definition
@@ -16,7 +17,12 @@ from ..utils import optional_debugging
 #   future possibly hysplit)
 - Add metadata to NetCDF output
 - Improve linear trajectory to work with haversine functions and actual velocities
-- Relax assumption of hourly data?"""
+- Relax assumption of hourly data?
+# fix_units(ds_traj)
+# add_globals_attrs_to_ds(ds_traj)
+# add_dict_to_global_attrs(ds_traj, trajectory_dict)
+# ds_traj.to_netcdf("ds_traj.nc")
+"""
 
 
 def create_trajectory(origin, trajectory_type, da_times, **kwargs):
@@ -28,7 +34,19 @@ def create_trajectory(origin, trajectory_type, da_times, **kwargs):
                 "To use the `linear` trajectory integration you"
                 " must provide a velocity `U`"
             )
-        return create_linear_trajectory(origin=origin, da_times=da_times, U=kwargs["U"])
+        return create_linear_trajectory(origin=origin, da_times=da_times, **kwargs)
+    elif trajectory_type == "integrated":
+        if "ds_domain" not in kwargs:
+            raise Exception(
+                "To integrate a trajectory using velocities from model data"
+                " you must provide the `ds_domain` kwargs"
+            )
+        if "velocity_method" not in kwargs:
+            raise Exception(
+                "To integrate a trajectory using velocities from model data"
+                " you must select a `velocity_method`"
+            )
+        return create_integrated_trajectory(origin=origin, da_times=da_times, **kwargs)
     else:
         raise NotImplementedError("`{}` trajectory type not available")
 
@@ -140,6 +158,50 @@ def create_eulerian_trajectory(origin, da_times):
 
 def create_linear_trajectory(origin, da_times, U):
     """Create linear trajectory from origin point using constant velocity"""
+
+    def extrapolation_func(lat, lon, t0, dt):
+        if dt > 0:
+            s = 1.0
+        else:
+            s = -1.0
+
+        return extrapolation.extrapolate_posn_with_fixed_velocity(
+            lat=lat, lon=lon, u_vel=s * U[0], v_vel=s * U[1], dt=s * dt,
+        )
+
+    return _create_extrapolated_trajectory(
+        origin=origin, da_times=da_times, extrapolation_func=extrapolation_func
+    )
+
+
+def create_integrated_trajectory(
+    origin, da_times, ds_domain, velocity_method, velocity_method_kwargs={}
+):
+    """Create trajectory from origin point using extracting the velocity field
+    from domain data"""
+
+    def extrapolation_func(lat, lon, t0, dt):
+        if dt > 0:
+            s = 1.0
+        else:
+            s = -1.0
+
+        return extrapolation.extrapolate_using_domain_data(
+            lat=lat,
+            lon=lon,
+            dt=s * dt,
+            ds_domain=ds_domain,
+            t0=t0,
+            velocity_method=velocity_method,
+            velocity_method_kwargs=velocity_method_kwargs,
+        )
+
+    return _create_extrapolated_trajectory(
+        origin=origin, da_times=da_times, extrapolation_func=extrapolation_func
+    )
+
+
+def _create_extrapolated_trajectory(origin, da_times, extrapolation_func):
     ds_start_posn = xr.Dataset(coords=dict(time=origin.datetime))
     ds_start_posn["lat"] = origin.lat
     ds_start_posn["lon"] = origin.lon
@@ -156,25 +218,18 @@ def create_linear_trajectory(origin, da_times, U):
     for dir in ["backward", "forward"]:
         if dir == "backward":
             da_integrate_times = da_times_backward.values[::-1]
-            s = -1.0
         elif dir == "forward":
             da_integrate_times = da_times_forward.values
-            s = 1.0
         else:
             raise Exception
 
-        # first we integrated backwards from the start point
-        for t in da_integrate_times:
+        for t in tqdm.tqdm(da_integrate_times):
             ds_prev_posn = points[-1]
             dt = _calculate_seconds(t - ds_prev_posn.time)
             if int(dt) == 0:
                 continue
-            lat, lon = extrapolation.extrapolate_posn_with_fixed_velocity(
-                lat=points[-1].lat,
-                lon=points[-1].lon,
-                u_vel=s * U[0],
-                v_vel=s * U[1],
-                dt=s * dt,
+            lat, lon = extrapolation_func(
+                lat=points[-1].lat, lon=points[-1].lon, dt=dt, t0=ds_prev_posn.time
             )
             ds_next_posn = xr.Dataset(coords=dict(time=t))
             ds_next_posn["lat"] = lat

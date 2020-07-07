@@ -21,8 +21,8 @@ INPUT_REQUIRED_FIELDS = {
     "datetime_origin": isodate.parse_datetime,
     "forward_duration|backward_duration": isodate.parse_duration,
     "timestep": ("domain_data", isodate.parse_duration),
-    "dlat_dt": (None, lambda trajectory_type: trajectory_type == "linear"),
-    "dlon_dt": (None, lambda trajectory_type: trajectory_type == "linear"),
+    "u_vel": [None, float],  # TODO: remove when velocity defn is improved
+    "v_vel": [None, float],  # TODO: remove when velocity defn is imporved
 }
 
 

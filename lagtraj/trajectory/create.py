@@ -99,7 +99,7 @@ def cli(data_path, trajectory_name, debug):
 
 def _get_times_from_domain(trajectory_definition, root_data_path):
     if not download_complete(
-        data_path=root_data_path, domain_name=trajectory_definition.domain
+        root_data_path=root_data_path, domain_name=trajectory_definition.domain
     ):
         raise Exception(
             "Some of the data for the selected domain"

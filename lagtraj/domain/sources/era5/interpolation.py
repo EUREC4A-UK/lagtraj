@@ -82,8 +82,7 @@ def interpolate_to_height_levels(ds_model_levels, height, mask_method="sea"):
                     interp_kwargs["lower_extrapolation_with_gradient"] = True
 
                 da_v_height_levels = xr.DataArray(
-                    steffen_3d(**interp_kwargs),
-                    dims=("height", "lat", "lon")
+                    steffen_3d(**interp_kwargs), dims=("height", "lat", "lon")
                 )
                 ds_timestep_height_levels[v] = da_v_height_levels
 

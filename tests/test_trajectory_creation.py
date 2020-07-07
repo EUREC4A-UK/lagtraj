@@ -52,10 +52,10 @@ def test_integrated_linear_trajectory(ds_domain_test):
     )
 
     t_min = t0.values
-    dt = np.timedelta64('10', 'm')
-    t_max = t_min + dt*3.0
+    dt = np.timedelta64("10", "m")
+    t_max = t_min + dt * 3.0
     t_ = np.arange(t_min, t_max, dt)
-    da_times = xr.DataArray(t_, dims=('time',), coords=dict(time=t_))
+    da_times = xr.DataArray(t_, dims=("time",), coords=dict(time=t_))
 
     ds_traj = lagtraj.trajectory.create.create_trajectory(
         origin=origin,

@@ -23,7 +23,9 @@ def main(
         start_date=t_min,
         end_date=t_max,
     )
-    if not domain_download.download_complete(data_path=p_root, domain_name=domain_name):
+    if not domain_download.download_complete(
+        root_data_path=p_root, domain_name=domain_name
+    ):
         raise Exception(
             "Some data still isn't downloaded, check the download"
             " requests have completed and run again"

@@ -258,6 +258,9 @@ def _create_extrapolated_trajectory(origin, da_times, extrapolation_func):
             points = points[::-1]
 
     ds_traj = xr.concat(points, dim="time").sortby("time")
+    ds_traj["origin_lat"] = origin.lat
+    ds_traj["origin_lon"] = origin.lon
+    ds_traj["origin_datetime"] = origin.datetime
     return ds_traj
 
 

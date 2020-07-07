@@ -94,7 +94,7 @@ if __name__ == "__main__":
 
     download_named_domain(
         data_path=args.data_path,
-        name=args.name,
+        name=args.domain,
         start_date=args.start_date,
         end_date=args.end_date,
         overwrite_existing=args.l_overwrite,

@@ -9,6 +9,7 @@ from .. import DEFAULT_ROOT_DATA_PATH
 from .load import load_definition
 from . import build_data_path, extrapolation
 from ..domain.load import load_data as load_domain_data
+from ..domain.download import download_complete
 from ..utils import optional_debugging
 
 """ Routines for creating a trajectory
@@ -62,9 +63,7 @@ def main():
     argparser.add_argument("--debug", default=False, action="store_true")
     args = argparser.parse_args()
 
-    cli(
-        data_path=args.data_path, trajectory_name=args.trajectory_name, debug=args.debug
-    )
+    cli(data_path=args.data_path, trajectory_name=args.trajectory, debug=args.debug)
 
 
 def cli(data_path, trajectory_name, debug):
@@ -99,6 +98,14 @@ def cli(data_path, trajectory_name, debug):
 
 
 def _get_times_from_domain(trajectory_definition, root_data_path):
+    if not download_complete(
+        data_path=root_data_path, domain_name=trajectory_definition.domain
+    ):
+        raise Exception(
+            "Some of the data for the selected domain"
+            f" ({trajectory_definition.domain}) hasn't been"
+            " downloaded yet"
+        )
     ds_domain = load_domain_data(
         root_data_path=root_data_path, name=trajectory_definition.domain
     )

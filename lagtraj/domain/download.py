@@ -61,12 +61,12 @@ def download_named_domain(
     )
 
 
-def download_complete(data_path, domain_name):
-    domain_params = load_definition(domain_name=domain_name, data_path=data_path)
+def download_complete(root_data_path, domain_name):
+    domain_params = load_definition(domain_name=domain_name, data_path=root_data_path)
     source = domain_params["source"]
 
     domain_data_path = build_domain_data_path(
-        root_data_path=data_path, domain_name=domain_params["name"]
+        root_data_path=root_data_path, domain_name=domain_params["name"]
     )
 
     if source.lower() == "era5":

@@ -75,13 +75,23 @@ def extrapolate_using_domain_data(
         method=velocity_method,
         **velocity_method_kwargs
     )
+    # the extrapolation function requires positive time increment for the
+    # integration, so we simply reverse the time and velocities
+    if dt < 0:
+        s = -1.0
+    else:
+        s = 1.0
 
     u_guess, v_guess = u_start, v_start
     for n in range(num_velocity_integrations):
         if np.any(np.isnan([u_guess, v_guess])):
             raise Exception
         lat_end, lon_end = extrapolate_posn_with_fixed_velocity(
-            lat=lat_start, lon=lon_start, u_vel=u_guess, v_vel=v_guess, dt=dt
+            lat=lat_start,
+            lon=lon_start,
+            u_vel=s * u_guess,
+            v_vel=s * v_guess,
+            dt=s * dt,
         )
         ds_column_interpolated = _extract_column_at_time(
             t=t0,

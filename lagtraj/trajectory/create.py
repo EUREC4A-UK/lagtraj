@@ -47,7 +47,7 @@ def create_trajectory(origin, trajectory_type, da_times, **kwargs):
                 "To integrate a trajectory using velocities from model data"
                 " you must select a `velocity_method`"
             )
-        return create_integrated_trajectory(origin=origin, da_times=da_times, **kwargs)
+        return create_lagrangian_trajectory(origin=origin, da_times=da_times, **kwargs)
     else:
         raise NotImplementedError(f"`{trajectory_type}` trajectory type not available")
 
@@ -191,22 +191,17 @@ def create_linear_trajectory(origin, da_times, U):
     )
 
 
-def create_integrated_trajectory(
+def create_lagrangian_trajectory(
     origin, da_times, ds_domain, velocity_method, velocity_method_kwargs={}
 ):
     """Create trajectory from origin point using extracting the velocity field
     from domain data"""
 
     def extrapolation_func(lat, lon, t0, dt):
-        if dt > 0:
-            s = 1.0
-        else:
-            s = -1.0
-
         return extrapolation.extrapolate_using_domain_data(
             lat=lat,
             lon=lon,
-            dt=s * dt,
+            dt=dt,
             ds_domain=ds_domain,
             t0=t0,
             velocity_method=velocity_method,

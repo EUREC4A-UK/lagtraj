@@ -2,6 +2,8 @@
 
 ![lagtraj](https://github.com/EUREC4A-UK/lagtraj/workflows/lagtraj/badge.svg)
 
+![trajectory example](eurec4a_20191209_12_lag.png)
+
 
 ## Producing a Lagrangian forcing
 

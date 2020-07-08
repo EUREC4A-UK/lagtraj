@@ -103,6 +103,16 @@ def cli(data_path, trajectory_name):
         root_data_path=data_path, trajectory_name=traj_definition.name
     )
 
+    ds_trajectory.attrs['name'] = trajectory_name
+    ds_trajectory.attrs['domain_name'] = traj_definition.domain
+    ds_trajectory.attrs['trajectory_type'] = traj_definition.type
+    for k, v in traj_definition.extra_kwargs.items():
+        if type(v) == dict:
+            for k_, v_ in v.items():
+                ds_trajectory.attrs[f"{k}_{k_}"] = v_
+        else:
+            ds_trajectory.attrs[k] = str(v)
+
     ds_trajectory.to_netcdf(trajectory_data_path)
     print("Saved trajectory to `{}`".format(trajectory_data_path))
 

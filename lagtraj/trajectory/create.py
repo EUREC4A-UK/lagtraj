@@ -122,7 +122,7 @@ def _get_times_from_domain(trajectory_definition, root_data_path):
     t0 = trajectory_definition.origin.datetime
     t_min = t0 - trajectory_definition.duration.backward
     t_max = t0 + trajectory_definition.duration.forward
-    da_times = ds_domain.sel(time=slice(t_min, t_max)).time
+    da_times = ds_domain.time.sel(time=slice(t_min, t_max))
     if da_times.count() == 0:
         raise Exception(
             "You selected to use the domain data for timesteps"

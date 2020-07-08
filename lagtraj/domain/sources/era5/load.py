@@ -1,7 +1,14 @@
 import xarray as xr
 import numpy as np
 
+import functools
+import operator
+
 from . import FILENAME_FORMAT
+
+
+MODEL_RUN_TYPES = ["an", "fc"]  # analysis and forecast runs
+LEVEL_TYPES = ["model", "single"]  # need model and surface data
 
 
 def _era_5_normalise_longitude(ds):
@@ -24,15 +31,11 @@ def _era_5_normalise_longitude(ds):
     return ds
 
 
-def load_data(data_path):
+def _find_datasets(data_path):
     datasets = {}
 
-    model_run_types = ["an", "fc"]  # analysis and forecast runs
-    level_types = ["model", "single"]  # need model and surface data
-
-    for model_run_type in model_run_types:
-        datasets_run = []
-        for level_type in level_types:
+    for model_run_type in MODEL_RUN_TYPES:
+        for level_type in LEVEL_TYPES:
             filename_format = FILENAME_FORMAT.format(
                 model_run_type=model_run_type, level_type=level_type, date="*"
             )
@@ -45,11 +48,116 @@ def load_data(data_path):
             if model_run_type == "an" and level_type == "model":
                 ds_ = ds_.drop_vars(["lnsp"])
             ds_ = _era_5_normalise_longitude(ds=ds_)
-            datasets_run.append(ds_)
-        ds_run = xr.merge(datasets_run, compat="override")
-        datasets[model_run_type] = ds_run
+            ds_ = ds_.rename(dict(latitude="lat", longitude="lon"))
+
+            dataset_identifier = f"{model_run_type}__{level_type}"
+            datasets[dataset_identifier] = ds_
+    return datasets
+
+
+class ERA5DataSet(object):
+    """
+    Mimicks a xarray.Dataset containing files from ERA5, but without merging
+    the individual files. Instead the files are sliced separately before
+    merging each time a specific operation (for exameple interpolation) is
+    applied
+    """
+
+    def __init__(self, data_path):
+        self.data_path = data_path
+        self.datasets = _find_datasets(data_path=data_path)
+
+    def _extra_var(self, v):
+        das = [ds[(v)] for (ds_identifier, ds) in self.datasets.items()]
+        da_combined = functools.reduce(
+            lambda da0, da: da.combine_first(da0), das[1:], das[0]
+        )
+        return da_combined
+
+    @property
+    def time(self):
+        return self._extra_var(v="time")
+
+    @property
+    def lon(self):
+        return self._extra_var(v="lon")
+
+    @property
+    def lat(self):
+        return self._extra_var(v="lat")
+
+    @property
+    def data_vars(self):
+        v = set()
+        for ds in self.datasets.values():
+            v = v.union(ds.data_vars)
+        return v
+
+    def interp(self, kwargs, **interp_to):
+        """
+        Implements xarray.interp by first slicing out the necessary data from
+        individual era5 files, merging these and then interpolating
+        """
+        idx_padding = 1
+        interp_dims = interp_to.keys()
+        datasets_slices = []
+        for ds in self.datasets.values():
+            das = []
+            for v in ds.data_vars:
+                da_v = ds[v]
+                dims = set(interp_dims).intersection(da_v.dims)
+
+                slices = {}
+                for d in dims:
+                    # need to handle case where order isn't monototnically
+                    # increasing
+                    if da_v[d].values[0] > da_v[d].values[-1]:
+                        dir = -1
+                    else:
+                        dir = 1
+                    da_coord_left = da_v[d].sel(**{d: slice(None, interp_to[d], dir)})
+                    da_coord_right = da_v[d].sel(**{d: slice(interp_to[d], None, dir)})
+
+                    at_left_edge = da_coord_left.count() <= idx_padding
+                    at_right_edge = da_coord_right.count() <= idx_padding
+                    if at_left_edge or at_right_edge:
+                        raise Exception("Requested interpolation at edge of domain")
+
+                    d_edge_min = da_coord_left.isel(**{d: -1 - idx_padding})
+                    d_edge_max = da_coord_right.isel(**{d: idx_padding})
+                    if dir == -1:
+                        slices[d] = slice(d_edge_max, d_edge_min)
+                    else:
+                        slices[d] = slice(d_edge_min, d_edge_max)
+                    assert d_edge_min <= interp_to[d] <= d_edge_max
+                    # make sure we've actually selected some data
+                    assert functools.reduce(operator.mul, da_v.shape) > 0
+
+                da_v_slice = da_v.sel(**slices)
+                das.append(da_v_slice)
+
+            ds_slice = xr.merge(das)
+            datasets_slices.append(ds_slice)
+
+        ds_slice = xr.merge(datasets_slices, compat="override").compute()
+        return ds_slice.interp(**interp_to, kwargs=kwargs)
+
+
+def _load_naive(data_path):
+    """
+    Load and merge all era5 files at once. NOTE: this uses a lot more memory
+    and is slower than using the ERA5Dataset method
+    """
+    datasets = _find_datasets(data_path=data_path)
 
     ds = xr.merge(datasets.values(), compat="override")
-    ds = ds.rename(dict(latitude="lat", longitude="lon"))
+    return ds
+
+
+def load_data(data_path, use_lazy_loading=False):
+    if use_lazy_loading:
+        ds = _load_naive(data_path)
+    else:
+        ds = ERA5DataSet(data_path)
 
     return ds

@@ -61,7 +61,6 @@ def extrapolate_using_domain_data(
     estimated velocities at the start and end point converge
 
     TODO: check for convergence"""
-    ds_domain = ds_domain.compute()
     time_space_interpolation = velocity_method_kwargs.pop(
         "time_space_interpolation", "linear"
     )

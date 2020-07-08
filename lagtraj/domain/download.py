@@ -70,7 +70,7 @@ def download_complete(root_data_path, domain_name):
     )
 
     if source.lower() == "era5":
-        era5.all_data_is_downloaded(path=domain_data_path)
+        return era5.all_data_is_downloaded(path=domain_data_path)
     else:
         raise NotImplementedError(
             "Source type `{}` unknown. Should for example be 'era5'".format(source)

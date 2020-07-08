@@ -106,7 +106,11 @@ def all_data_is_downloaded(path):
 
 
 def _get_files_to_download(path, c, debug=False):
-    with open(path / DATA_REQUESTS_FILENAME, "r") as fh:
+    meta_filename = path / DATA_REQUESTS_FILENAME
+    if not meta_filename.exists():
+        return []
+
+    with open(meta_filename, "r") as fh:
         download_requests = yaml.load(fh, Loader=yaml.FullLoader)
 
     files_to_download = []

@@ -63,10 +63,11 @@ def main():
     argparser.add_argument("--debug", default=False, action="store_true")
     args = argparser.parse_args()
 
-    cli(data_path=args.data_path, trajectory_name=args.trajectory, debug=args.debug)
+    with optional_debugging(args.debug):
+        cli(data_path=args.data_path, trajectory_name=args.trajectory)
 
 
-def cli(data_path, trajectory_name, debug):
+def cli(data_path, trajectory_name):
     traj_definition = load_definition(root_data_path=data_path, name=trajectory_name)
 
     if traj_definition.timestep == "domain_data":
@@ -96,8 +97,7 @@ def cli(data_path, trajectory_name, debug):
         )
         kwargs["ds_domain"] = ds_domain
 
-    with optional_debugging(debug):
-        ds_trajectory = create_trajectory(**kwargs)
+    ds_trajectory = create_trajectory(**kwargs)
 
     trajectory_data_path = build_data_path(
         root_data_path=data_path, trajectory_name=traj_definition.name

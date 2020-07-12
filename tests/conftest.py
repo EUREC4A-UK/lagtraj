@@ -1,8 +1,6 @@
 from pathlib import Path
 import tarfile
 import tempfile
-import shutil
-import datetime
 
 import requests
 import pytest
@@ -14,7 +12,8 @@ TESTDATA_URL = (
 )
 
 # A testdata folder in this directory
-testdata_dir = Path(__file__).parent.parent / "data"
+tempdir = tempfile.TemporaryDirectory()
+testdata_dir = Path(tempdir.name)
 
 
 def download_testdata():
@@ -25,7 +24,7 @@ def download_testdata():
     fhtar.close()
 
     testdata_dir.mkdir()
-    tarfile.open(fhtar.name, "r:gz").extractall(testdata_dir.parent)
+    tarfile.open(fhtar.name, "r:gz").extractall(testdata_dir)
 
     return
 
@@ -33,7 +32,8 @@ def download_testdata():
 @pytest.fixture
 def ds_domain_test(scope="session"):
     # Download testdata if it is not there yet
-    if not testdata_dir.exists():
+    if len(list(testdata_dir.glob("**/*.nc"))) == 0:
+        print("Downloading testdata...")
         download_testdata()
 
     DOMAIN_NAME = "eurec4a_circle_eul"

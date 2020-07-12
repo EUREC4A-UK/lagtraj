@@ -69,10 +69,30 @@ class ERA5DataSet(object):
         self.datasets = _find_datasets(data_path=data_path)
 
     def _extra_var(self, v):
-        das = [ds[(v)] for (ds_identifier, ds) in self.datasets.items()]
-        da_combined = functools.reduce(
-            lambda da0, da: da.combine_first(da0), das[1:], das[0]
-        )
+        """
+        Extract a particular variable across all files and extract the part
+        where there is overlap between analysis and forecast files, used to
+        extract a common time, lat and lon reference for all files
+        """
+        das_by_run_type = {}
+        for ds_identifier, ds in self.datasets.items():
+            model_run_type, _ = ds_identifier.split("__")
+            # rename is required otherwise xarray complains when merging
+            # because the dataarrays are promoted to datasets before merging,
+            # and the dataset name would otherwise be the same as a dimension
+            # (which is not allowed)
+            da_ = ds[v].rename('_temp')
+            das_by_run_type.setdefault(model_run_type, []).append(da_)
+
+        # outer join first because era5 files are separated in time
+        dss = []
+        for model_run_type, das_run_type in das_by_run_type.items():
+            ds_ = xr.merge(das_run_type, join="outer")
+            dss.append(ds_)
+
+        # finally, use inner-join to only return range for which all source
+        # files have data
+        da_combined = xr.merge(dss, join="inner")["_temp"]
         return da_combined
 
     @property

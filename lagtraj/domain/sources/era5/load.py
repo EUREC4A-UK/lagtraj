@@ -98,9 +98,11 @@ class ERA5DataSet(object):
     def sel(
         self, indexer=None, method=None, tolerance=None, drop=False, **indexers_kwargs
     ):
-        warnings.warn("Subsetting an entire era5 dataset is computationally expensive."
-                      " Consider accessing the the time, lat, lon attributes directly"
-                      " if these qre needed.")
+        warnings.warn(
+            "Subsetting an entire era5 dataset is computationally expensive."
+            " Consider accessing the the time, lat, lon attributes directly"
+            " if these qre needed."
+        )
         indexers_dims = indexers_kwargs.keys()
         datasets_slices = []
         for ds in self.datasets.values():
@@ -114,10 +116,7 @@ class ERA5DataSet(object):
                     slices[d] = indexers_kwargs[d]
 
                 da_v_slice = da_v.sel(
-                    **slices,
-                    method=method,
-                    tolerance=tolerance,
-                    drop=drop,
+                    **slices, method=method, tolerance=tolerance, drop=drop,
                 )
                 das.append(da_v_slice)
 
@@ -154,10 +153,12 @@ class ERA5DataSet(object):
                     at_left_edge = da_coord_left.count() <= idx_padding
                     at_right_edge = da_coord_right.count() <= idx_padding
                     if at_left_edge or at_right_edge:
-                        raise Exception("Requested interpolation at edge of domain"
-                                        f" (trying to access {d}={interp_to[d].values}"
-                                        f" between {da_v[d].min().values} and"
-                                        f" {da_v[d].max().values}")
+                        raise Exception(
+                            "Requested interpolation at edge of domain"
+                            f" (trying to access {d}={interp_to[d].values}"
+                            f" between {da_v[d].min().values} and"
+                            f" {da_v[d].max().values}"
+                        )
 
                     d_edge_min = da_coord_left.isel(**{d: -1 - idx_padding})
                     d_edge_max = da_coord_right.isel(**{d: idx_padding})

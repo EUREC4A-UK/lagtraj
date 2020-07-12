@@ -1,6 +1,7 @@
 from pathlib import Path
 import tarfile
 import tempfile
+import os
 
 import requests
 import pytest
@@ -11,9 +12,11 @@ TESTDATA_URL = (
     "http://gws-access.ceda.ac.uk/public/eurec4auk/testdata/lagtraj.testdata.tar.gz"
 )
 
-# A testdata folder in this directory
-tempdir = tempfile.TemporaryDirectory()
-testdata_dir = Path(tempdir.name)
+if os.environ.get('LAGTRAJ_TESTDATA_DIR', None):
+    testdata_dir = Path(os.environ['LAGTRAJ_TESTDATA_DIR'])
+else:
+    tempdir = tempfile.TemporaryDirectory()
+    testdata_dir = Path(tempdir.name)
 
 
 def download_testdata():

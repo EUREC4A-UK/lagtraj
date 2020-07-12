@@ -12,8 +12,8 @@ TESTDATA_URL = (
     "http://gws-access.ceda.ac.uk/public/eurec4auk/testdata/lagtraj.testdata.tar.gz"
 )
 
-if os.environ.get('LAGTRAJ_TESTDATA_DIR', None):
-    testdata_dir = Path(os.environ['LAGTRAJ_TESTDATA_DIR'])
+if os.environ.get("LAGTRAJ_TESTDATA_DIR", None):
+    testdata_dir = Path(os.environ["LAGTRAJ_TESTDATA_DIR"])
 else:
     tempdir = tempfile.TemporaryDirectory()
     testdata_dir = Path(tempdir.name)

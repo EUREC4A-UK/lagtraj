@@ -81,7 +81,7 @@ class ERA5DataSet(object):
             # because the dataarrays are promoted to datasets before merging,
             # and the dataset name would otherwise be the same as a dimension
             # (which is not allowed)
-            da_ = ds[v].rename('_temp')
+            da_ = ds[v].rename("_temp")
             das_by_run_type.setdefault(model_run_type, []).append(da_)
 
         # outer join first because era5 files are separated in time

@@ -6,6 +6,10 @@ from ..utils import geometry
 
 from .integration.velocity_estimation import estimate_horizontal_velocities
 
+# optimisation constants
+two_pi = 2.0 * pi
+half_pi = 0.5 * pi
+
 
 def extrapolate_posn_with_fixed_velocity(lat, lon, u_vel, v_vel, dt):
     """Extrapolates a position from point (lat, lon) given velocities
@@ -20,9 +24,9 @@ def extrapolate_posn_with_fixed_velocity(lat, lon, u_vel, v_vel, dt):
 
     if dt < 0.0:
         raise Exception("Expecting positive dt in extrapolation")
-    theta = np.arctan2(v_vel, u_vel) % (2 * pi)
-    bearing = ((pi / 2) - theta) % (2 * pi)
-    dist = np.sqrt(u_vel ** 2 + v_vel ** 2) * dt
+    theta = np.arctan2(v_vel, u_vel) % two_pi
+    bearing = (half_pi - theta) % two_pi
+    dist = np.sqrt(u_vel * u_vel + v_vel * v_vel) * dt
     lat_rad = np.deg2rad(lat)
     lon_rad = np.deg2rad(lon)
     traced_lat_rad = np.arcsin(

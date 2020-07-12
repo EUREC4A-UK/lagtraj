@@ -210,6 +210,10 @@ def _fingerprint_downloaded_file(query_hash, file_path):
 
 def _build_single_level_an_query(date, bbox, latlon_sampling):
     # 2D ANALYSIS FROM ERA5
+    # 27 Low vegetation cover [(0 - 1)], cvl
+    # 28 High vegetation cover [(0 - 1)], cvh
+    # 29 Type of low vegetation [~], tvl
+    # 30 Type of high vegetation cover [~], tvh
     # 31 Sea ice area fraction [(0 - 1)], ci
     # 32 Snow albedo [(0 - 1)], asn
     # 33 Snow density [kg m**-3], rsn
@@ -219,13 +223,19 @@ def _build_single_level_an_query(date, bbox, latlon_sampling):
     # 40 Volumetric soil water layer 21 [m**3 m**-3], swvl2
     # 41 Volumetric soil water layer 31 [m**3 m**-3], swvl3
     # 42 Volumetric soil water layer 41 [m**3 m**-3], swvl4
+    # 66 Leaf area index, low vegetation [m**2 m**-2], lai_lv
+    # 67 Leaf area index, high vegetation [m**2 m**-2], lai_hv
     # 129 Geopotential [m**2 s**-2], z
     # 134 Surface pressure [Pa], sp
     # 136 Total column water  [kg m**-2], tcw
     # 139 Soil temperature level 11 [K], stl1
     # 141 Snow depth [m of water equivalent], sd
-    # 151 Mean sea level pressure [Pa ], msl
+    # 151 Mean sea level pressure [Pa], msl
     # 159 Boundary layer height [m],  blh
+    # 160 Standard deviation of orography [~], sdor
+    # 161 Anisotropy of sub-gridscale orography [~], isor
+    # 162 Angle of sub-gridscale orography [radians], anor
+    # 163 Slope of sub-gridscale orography [~], slor
     # 164 Total cloud cover [(0 - 1)],  tcc
     # 170 Soil temperature level 21 [K], stl2
     # 172 Land-sea mask [(0 - 1)], lsm
@@ -233,6 +243,7 @@ def _build_single_level_an_query(date, bbox, latlon_sampling):
     # 186 Low cloud cover [(0 - 1)],  lcc
     # 187 Medium cloud cover  [(0 - 1)],  mcc
     # 188 High cloud cover  [(0 - 1)],  hcc
+    # 198 Skin reservoir content [m of water equivalent], src
     # 236 Soil temperature level 41 [K], stl4
     # 238 Temperature of snow layer [K], tsn
     # 243 Forecast albedo [(0 - 1)], fal
@@ -245,10 +256,12 @@ def _build_single_level_an_query(date, bbox, latlon_sampling):
         "expver": "1",
         "levtype": "sfc",
         "param": (
-            "31.128/32.128/33.128/34.128/35.128/39.128/40.128/41.128"
-            "/42.128/129.128/136.128/134.128/139.128/141.128/151.128"
-            "/159.128/164.128/170.128/172.128/183.128/186.128/187.128"
-            "/188.128/236.128/238.128/243.128/244.128/245.128"
+            "27.128/28.128/29.128/30.128/31.128/32.128/33.128/34.128"
+            "/35.128/39.128/40.128/41.128/42.128/66.128/67.128"
+            "/129.128/134.128/136.128/139.128/141.128/151.128/159.128"
+            "/160.128/161.128/162.128/163.128/164.128/170.128/172.128"
+            "/183.128/186.128/187.128/188.128/198.128/236.128/238.128"
+            "/243.128/244.128/245.128"
         ),
         "stream": "oper",
         "time": (
@@ -313,6 +326,8 @@ def _build_model_level_an_query(date, bbox, latlon_sampling):
 
 def _build_single_level_fc_query(date, bbox, latlon_sampling):
     # 2D FORECAST DATA FROM ERA5
+    # 146 Surface sensible heat flux (accumulated) [J m**-2], sshf
+    # 147 Surface latent heat flux (accumulated) [J m**-2], slhf
     # 228001 Convective inhibition [J kg**-1], cin
     # 228003 Friction velocity [m s**-1], zust
     # 228023 Cloud base height [m], cbh
@@ -349,9 +364,9 @@ def _build_single_level_fc_query(date, bbox, latlon_sampling):
         "expver": "1",
         "levtype": "sfc",
         "param": (
-            "228001/228003/228023/235033/235034/235035/235036/235037/"
-            "235038/235039/235040/235043/235049/235050/235051/235052/"
-            "235053/235058/235059/235068/235069/235070"
+            "146.128/147.128/228001/228003/228023/235033/235034/235035"
+            "/235036/235037/235038/235039/235040/235043/235049/235050"
+            "/235051/235052/235053/235058/235059/235068/235069/235070"
         ),
         "stream": "oper",
         "time": "06:00:00/18:00:00",

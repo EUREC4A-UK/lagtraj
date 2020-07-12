@@ -52,7 +52,8 @@ def main(input_filename, add_ref=None):
     plt.title(
         f"{ds.name} {ds.trajectory_type} trajectory\n{ds.domain_name} domain\n"
         f"from {t_start_str} to {t_end_str}"
-        "\n\n")
+        "\n\n"
+    )
 
     output_filename = input_filename.replace(".nc", ".png")
     plt.savefig(output_filename)

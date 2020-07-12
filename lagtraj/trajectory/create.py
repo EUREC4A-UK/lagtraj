@@ -103,9 +103,9 @@ def cli(data_path, trajectory_name):
         root_data_path=data_path, trajectory_name=traj_definition.name
     )
 
-    ds_trajectory.attrs['name'] = trajectory_name
-    ds_trajectory.attrs['domain_name'] = traj_definition.domain
-    ds_trajectory.attrs['trajectory_type'] = traj_definition.type
+    ds_trajectory.attrs["name"] = trajectory_name
+    ds_trajectory.attrs["domain_name"] = traj_definition.domain
+    ds_trajectory.attrs["trajectory_type"] = traj_definition.type
     for k, v in traj_definition.extra_kwargs.items():
         if type(v) == dict:
             for k_, v_ in v.items():

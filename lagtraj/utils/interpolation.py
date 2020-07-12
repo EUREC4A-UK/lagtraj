@@ -11,7 +11,11 @@ except ImportError:
 
 @njit
 def steffen_3d(
-    v_in, z_in, z_out, z_min_surface, z_max_surface,
+    v_in,
+    z_in,
+    z_out,
+    z_min_surface,
+    z_max_surface,
     lower_extrapolation_with_gradient=False,
     upper_extrapolation_with_gradient=False,
 ):
@@ -61,12 +65,8 @@ def steffen_3d(
             for k in range(1, k_max_minus):
                 delta_lower = z_in[k, j, i] - z_in[k - 1, j, i]
                 delta_upper = z_in[k + 1, j, i] - z_in[k, j, i]
-                slope_lower = (
-                    v_in[k, j, i] - v_in[k - 1, j, i]
-                ) / delta_lower
-                slope_upper = (
-                    v_in[k + 1, j, i] - v_in[k, j, i]
-                ) / delta_upper
+                slope_lower = (v_in[k, j, i] - v_in[k - 1, j, i]) / delta_lower
+                slope_upper = (v_in[k + 1, j, i] - v_in[k, j, i]) / delta_upper
                 weighted_slope = (
                     slope_lower * delta_upper + slope_upper * delta_lower
                 ) / (delta_lower + delta_upper)
@@ -85,13 +85,8 @@ def steffen_3d(
                     linear_slope[k] = weighted_slope
 
             # last point
-            delta_lower = (
-                z_in[k_max_minus - 1, j, i]
-                - z_in[k_max_minus - 2, j, i]
-            )
-            delta_upper = (
-                z_in[k_max_minus, j, i] - z_in[k_max_minus - 1, j, i]
-            )
+            delta_lower = z_in[k_max_minus - 1, j, i] - z_in[k_max_minus - 2, j, i]
+            delta_upper = z_in[k_max_minus, j, i] - z_in[k_max_minus - 1, j, i]
             slope_lower = (
                 v_in[k_max_minus - 1, j, i] - v_in[k_max_minus - 2, j, i]
             ) / delta_lower
@@ -111,9 +106,7 @@ def steffen_3d(
             # loop over output points
             k_temp = 0
             for k_out in range(k_max_output):
-                while (k_temp < k_max) and (
-                    z_in[k_temp, j, i] < z_out[k_out]
-                ):
+                while (k_temp < k_max) and (z_in[k_temp, j, i] < z_out[k_out]):
                     k_temp = k_temp + 1
                 if 0 < k_temp < k_max:
                     k_high = k_temp
@@ -132,24 +125,18 @@ def steffen_3d(
                     t_2 = t_1 * t_1
                     t_3 = t_2 * t_1
                     v_out[k_out, j, i] = a * t_3 + b * t_2 + c * t_1 + d
-                elif (k_temp == 0) and (
-                    z_out[k_out] >= z_min_surface[j, i]
-                ):
+                elif (k_temp == 0) and (z_out[k_out] >= z_min_surface[j, i]):
                     if lower_extrapolation_with_gradient:
-                        v_out[k_out, j, i] = v_in[0, j, i] + linear_slope[
-                            0
-                        ] * (z_out[k_out] - z_in[0, j, i])
+                        v_out[k_out, j, i] = v_in[0, j, i] + linear_slope[0] * (
+                            z_out[k_out] - z_in[0, j, i]
+                        )
                     else:
                         v_out[k_out, j, i] = v_in[0, j, i]
-                elif (k_temp == k_max) and (
-                    z_out[k_out] <= z_max_surface[j, i]
-                ):
+                elif (k_temp == k_max) and (z_out[k_out] <= z_max_surface[j, i]):
                     if upper_extrapolation_with_gradient:
-                        v_out[k_out, j, i] = v_in[
-                            k_max - 1, j, i
-                        ] + linear_slope[k_max - 1] * (
-                            z_out[k_out] - z_in[k_max - 1, j, i]
-                        )
+                        v_out[k_out, j, i] = v_in[k_max - 1, j, i] + linear_slope[
+                            k_max - 1
+                        ] * (z_out[k_out] - z_in[k_max - 1, j, i])
                     else:
                         v_out[k_out, j, i] = v_in[k_max - 1, j, i]
                 else:

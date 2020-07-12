@@ -114,7 +114,6 @@ class ERA5DataSet(object):
             v = v.union(ds.data_vars)
         return v
 
-    @property
     def sel(
         self, indexer=None, method=None, tolerance=None, drop=False, **indexers_kwargs
     ):

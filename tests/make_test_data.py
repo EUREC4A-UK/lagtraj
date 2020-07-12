@@ -33,8 +33,10 @@ def main(
     _ = load.load_data(DEFAULT_ROOT_DATA_PATH, name=domain_name)
 
     domain_name_local = domain_name.replace("lagtraj://", "")
-    p = p_root / "domains" / f"{domain_name_local}_data"
     with tarfile.open(output_filename, "w:gz") as tar:
+        p = p_root / "domains" / f"{domain_name_local}.yaml"
+        tar.add(p, arcname=p.relative_to(p_root))
+        p = p_root / "domains" / f"{domain_name_local}_data"
         tar.add(p, arcname=p.relative_to(p_root))
 
     print(f"Domain data for {domain_name} written to {output_filename}")

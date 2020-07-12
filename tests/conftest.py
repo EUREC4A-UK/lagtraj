@@ -26,14 +26,13 @@ def download_testdata():
     fhtar.write(r.content)
     fhtar.close()
 
-    testdata_dir.mkdir()
     tarfile.open(fhtar.name, "r:gz").extractall(testdata_dir)
-
-    return
 
 
 @pytest.fixture
 def ds_domain_test(scope="session"):
+    if not testdata_dir.exists():
+        raise Exception(f"Couldn't find test-data directory {testdata_dir}")
     # Download testdata if it is not there yet
     if len(list(testdata_dir.glob("**/*.nc"))) == 0:
         print("Downloading testdata...")

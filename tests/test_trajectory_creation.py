@@ -1,8 +1,6 @@
 from pathlib import Path
 import dateutil.parser
 import datetime
-import numpy as np
-import xarray as xr
 
 import lagtraj.produce.lagrangian_trajectory
 from lagtraj.utils import validation
@@ -27,7 +25,7 @@ def test_create_stationary_trajectory(ds_domain_test):
 
 
 def test_create_linear_trajectory(ds_domain_test):
-    t0 = ds_domain_test.isel(time=0).time
+    t0 = ds_domain_test.time.isel(time=-15)
 
     origin = lagtraj.trajectory.TrajectoryOrigin(
         lat=ds_domain_test.lat.mean(), lon=ds_domain_test.lon.mean(), datetime=t0,
@@ -36,7 +34,7 @@ def test_create_linear_trajectory(ds_domain_test):
     da_times = ds_domain_test.time
 
     ds_traj = lagtraj.trajectory.create.create_trajectory(
-        origin=origin, trajectory_type="linear", da_times=da_times, U=[5.0, 5.0,]
+        origin=origin, trajectory_type="linear", da_times=da_times, U=[0.0, -0.0,]
     )
 
     assert ds_traj.time.equals(da_times)
@@ -44,24 +42,19 @@ def test_create_linear_trajectory(ds_domain_test):
     validation.validate_trajectory(ds_traj)
 
 
-def test_integrated_linear_trajectory(ds_domain_test):
-    t0 = ds_domain_test.sel(time=slice("2020-01-01T00:00:00", None)).isel(time=0).time
+def test_create_lagrangian_trajectory(ds_domain_test):
+    da_times = ds_domain_test.time.isel(time=slice(-10, -5))
+    t0 = da_times.isel(time=0)
 
     origin = lagtraj.trajectory.TrajectoryOrigin(
         lat=ds_domain_test.lat.mean(), lon=ds_domain_test.lon.mean(), datetime=t0,
     )
 
-    t_min = t0.values
-    dt = np.timedelta64("10", "m")
-    t_max = t_min + dt * 3.0
-    t_ = np.arange(t_min, t_max, dt)
-    da_times = xr.DataArray(t_, dims=("time",), coords=dict(time=t_))
-
     ds_traj = lagtraj.trajectory.create.create_trajectory(
         origin=origin,
         trajectory_type="lagrangian",
         velocity_method="single_height_level",
-        velocity_method_kwargs=dict(height=700.0, time_space_interpolation="nearest",),
+        velocity_method_kwargs=dict(height=700.0,),
         da_times=da_times,
         ds_domain=ds_domain_test,
     )

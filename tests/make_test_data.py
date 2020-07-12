@@ -1,5 +1,4 @@
 import tarfile
-import numpy as np
 
 from lagtraj.domain import load, download as domain_download
 from lagtraj.trajectory import load as trajectory_load
@@ -30,13 +29,13 @@ def main(
             "Some data still isn't downloaded, check the download"
             " requests have completed and run again"
         )
-    ds = load.load_data(DEFAULT_ROOT_DATA_PATH, name=domain_name)
+    # attempt to load the data
+    _ = load.load_data(DEFAULT_ROOT_DATA_PATH, name=domain_name)
 
-    assert not np.isnan(ds.isel(time=0).u.mean())
-
-    p = p_root / "domains" / f"{domain_name}_data"
+    domain_name_local = domain_name.replace("lagtraj://", "")
+    p = p_root / "domains" / f"{domain_name_local}_data"
     with tarfile.open(output_filename, "w:gz") as tar:
-        tar.add(p, arcname=p.name)
+        tar.add(p, arcname=p.relative_to(p_root))
 
     print(f"Domain data for {domain_name} written to {output_filename}")
 

@@ -9,5 +9,6 @@ cdsapi
 pandas
 scipy
 argparse
+dask[array]
 asciitree
 isodate

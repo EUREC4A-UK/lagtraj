@@ -17,7 +17,7 @@ def validate_input(input_params, required_fields):
         # options
         missing_allowed = type(f_option) in [list, tuple] and None in f_option
 
-        if missing_allowed:
+        if missing_allowed and f_name not in input_params:
             pass
         elif f_name not in input_params:
             raise InvalidInputDefinition("Missing `{}` field".format(f_name))
@@ -29,7 +29,7 @@ def validate_input(input_params, required_fields):
             )
         elif callable(f_option):
             return f_option(input_params[f_name])
-        elif type(f_option) == str and type(input_params[f_name]) == str:
+        elif type(f_option) == str and input_params[f_name] == f_option:
             # allows setting an option to be just a string
             pass
         elif type(f_option) == list or type(f_option) == tuple:

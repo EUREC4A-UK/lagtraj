@@ -31,6 +31,23 @@ def load_definition(root_data_path, name):
         backward=params.get("backward_duration", datetime.timedelta()),
     )
 
+    extra_kwargs = {}
+    if "u_vel" in params or "v_vel" in params:
+        if not ("u_vel" in params and "v_vel" in params):
+            raise Exception(
+                "Both `u_vel` and `v_vel` should be defined when"
+                " creating a linear trajectory"
+            )
+        extra_kwargs["U"] = (params["u_vel"], params["v_vel"])
+
+    if "velocity_method" in params:
+        extra_kwargs["velocity_method"] = params["velocity_method"]
+
+    if "velocity_method_height" in params:
+        extra_kwargs["velocity_method_kwargs"] = dict(
+            height=params["velocity_method_height"]
+        )
+
     return TrajectoryDefinition(
         domain=params["domain"],
         origin=origin,
@@ -38,6 +55,7 @@ def load_definition(root_data_path, name):
         type=params["trajectory_type"],
         name=params["name"],
         timestep=params["timestep"],
+        extra_kwargs=extra_kwargs,
     )
 
 

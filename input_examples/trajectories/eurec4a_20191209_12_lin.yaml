@@ -1,9 +1,10 @@
 trajectory_type : linear
-domain          : eurec4a_eul_circle_domain
+domain          : lagtraj://eurec4a_circle_eul
 lat_origin      : 13.3
 lon_origin      : -57.717
+u_vel           : -5.0
+v_vel           : -0.1
 datetime_origin : "2020-01-03T12:00"
-dlat_dt         : -0.5E-05
-dlon_dt         : -7.0E-05
-forward_duration: PT24H
-timestep        : domain_data  # or for example PT1H
+backward_duration : PT12H
+forward_duration : PT24H
+timestep        : PT1H  # or for example PT1H

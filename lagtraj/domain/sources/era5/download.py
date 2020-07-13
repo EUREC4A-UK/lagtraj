@@ -4,21 +4,18 @@ Routines for downloading era5 data for a given domain and storing it locally
 import datetime
 import warnings
 from pathlib import Path
-import xarray as xr
-import numpy as np
 
 import netCDF4
 import yaml
 
-from ... import utils
+from .... import utils
 from .cdsapi_request import RequestFetchCDSClient
+from . import FILENAME_FORMAT
 
-
+DATA_REQUESTS_FILENAME = "data_requests.yaml"
 DATE_FORMAT = "%Y-%m-%d"
 TIME_FORMAT = "%h:%M:%s"
 REPOSITORY_NAME = "reanalysis-era5-complete"
-FILENAME_FORMAT = "{model_run_type}_{level_type}_{date}.nc"
-DATA_REQUESTS_FILENAME = "data_requests.yaml"
 
 
 def download_data(
@@ -58,7 +55,7 @@ def download_data(
             if download_requests[download_id]["query_hash"] == query_hash:
                 should_make_request = False
             else:
-                del download_data[download_id]
+                del download_requests[download_id]
 
         if should_make_request:
             request_id = c.queue_data_request(
@@ -76,16 +73,7 @@ def download_data(
         with open(path / DATA_REQUESTS_FILENAME, "w") as fh:
             fh.write(yaml.dump(download_requests))
 
-    files_to_download = []
-    if len(download_requests) > 0:
-        print("Status on current data requests:")
-        for file_path, request_details in download_requests.items():
-            request_id = request_details["request_id"]
-            status = c.get_request_status(request_id=request_id)
-            print(" {}:\n\t{} ({})".format(file_path, status, request_id))
-
-            if status == "completed":
-                files_to_download.append(file_path)
+    files_to_download = _get_files_to_download(path=path, c=c, debug=True)
 
     if len(files_to_download) > 0:
         print("Downloading files which are ready...")
@@ -112,6 +100,34 @@ def download_data(
         print("All files downloaded!")
 
 
+def all_data_is_downloaded(path):
+    c = RequestFetchCDSClient()
+    return len(_get_files_to_download(path=path, c=c)) == 0
+
+
+def _get_files_to_download(path, c, debug=False):
+    meta_filename = path / DATA_REQUESTS_FILENAME
+    if not meta_filename.exists():
+        return []
+
+    with open(meta_filename, "r") as fh:
+        download_requests = yaml.load(fh, Loader=yaml.FullLoader)
+
+    files_to_download = []
+    if len(download_requests) > 0:
+        if debug:
+            print("Status on current data requests:")
+        for file_path, request_details in download_requests.items():
+            request_id = request_details["request_id"]
+            status = c.get_request_status(request_id=request_id)
+            if debug:
+                print(" {}:\n\t{} ({})".format(file_path, status, request_id))
+
+            if status == "completed":
+                files_to_download.append(file_path)
+    return files_to_download
+
+
 def _data_valid(file_path, query_hash):
     """
     Create hash on `query_kwargs` and ensure it matches that stored in file
@@ -135,12 +151,12 @@ def _build_query_times(model_run_type, t_start, t_end):
     if model_run_type == "an":
         return [
             (t_start + datetime.timedelta(days=x))
-            for x in range(0, (t_end - t_start).days + 1)
+            for x in range(0, (t_end.date() - t_start.date()).days)
         ]
     elif model_run_type == "fc":
         return [
             (t_start + datetime.timedelta(days=x))
-            for x in range(-1, (t_end - t_start).days + 1)
+            for x in range(-1, (t_end.date() - t_start.date()).days)
         ]
     else:
         raise NotImplementedError(model_run_type)
@@ -413,50 +429,3 @@ def _build_model_level_fc_query(date, bbox, latlon_sampling):
         "step": "1/2/3/4/5/6/7/8/9/10/11/12",
         "format": "netcdf",
     }
-
-
-def _era_5_normalise_longitude(ds):
-    """Normalise longitudes to be between 0 and 360 degrees
-    This is needed because these are stored differently in the surface
-    and model level data. Rounding up to 4 decimals seems to work for now,
-    with more decimals misalignment has happenend. Would be good to sort
-    out why this is the case.
-    """
-
-    def longitude_set_meridian(longitude):
-        """Sets longitude to be between -180 and 180 degrees"""
-        return (longitude + 180.0) % 360.0 - 180.0
-
-    ds.coords["longitude"] = (
-        "longitude",
-        np.round(longitude_set_meridian(ds.coords["longitude"]), decimals=4),
-        ds.coords["longitude"].attrs,
-    )
-    return ds
-
-
-def load_data(data_path):
-    datasets = []
-
-    model_run_types = ["an", "fc"]  # analysis and forecast runs
-    level_types = ["model", "single"]  # need model and surface data
-
-    for model_run_type in model_run_types:
-        for level_type in level_types:
-            filename_format = FILENAME_FORMAT.format(
-                model_run_type=model_run_type, level_type=level_type, date="*"
-            )
-
-            files = data_path.glob(filename_format)
-
-            ds_ = xr.open_mfdataset(files, combine="by_coords")
-            # z needs to be dropped to prevent duplicity, lnsp is simply
-            # redundant
-            if model_run_type == "an" and level_type == "model":
-                ds_ = ds_.drop_vars(["lnsp"])
-            ds_ = _era_5_normalise_longitude(ds=ds_)
-            datasets.append(ds_)
-
-    ds = xr.merge(datasets, compat="override")
-    ds = ds.rename(dict(latitude="lat", longitude="lon"))
-    return ds

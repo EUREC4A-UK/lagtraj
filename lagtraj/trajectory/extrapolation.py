@@ -58,7 +58,7 @@ def extrapolate_using_domain_data(
     ds_domain,
     velocity_method,
     velocity_method_kwargs={},
-    num_velocity_integrations=5,
+    num_velocity_integrations=10,
 ):
     """Using the fields in `ds_domain` apply `velocity_method` to iteratively
     estimate a velocity field and extrapolate using these velocities until the

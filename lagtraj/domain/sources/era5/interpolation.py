@@ -43,10 +43,12 @@ def interpolate_to_height_levels(ds_model_levels, height, mask_method="sea"):
         z_min_2d = ds_timestep_model_levels.height_h.min(dim="level")
         lsm_2d = ds_timestep_model_levels.lsm
         sea_mask = (z_min_2d < 5.0) * (z_min_2d > 1.0e-6) * (lsm_2d < 0.2)
-        z_min_surface = ds_timestep_model_levels.height_h.isel(level=-1).where(
-            ~sea_mask, other=-1.0e-6
+        z_min_surface = (
+            ds_timestep_model_levels.height_h.isel(level=-1)
+            .where(~sea_mask, other=-1.0e-6)
+            .values
         )
-        z_max_surface = ds_timestep_model_levels.height_f.isel(level=0)
+        z_max_surface = ds_timestep_model_levels.height_f.isel(level=0).values
 
         # pressure levels are monitonically in the opposite order, to ensure
         # the heights end up in increasing order we flip the input and height

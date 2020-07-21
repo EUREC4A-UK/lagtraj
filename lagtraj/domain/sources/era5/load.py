@@ -47,7 +47,7 @@ def _find_datasets(data_path):
             # z needs to be dropped to prevent duplicity, lnsp is simply
             # redundant
             if model_run_type == "an" and level_type == "model":
-                ds_ = ds_.drop_vars(["lnsp"])
+                ds_ = ds_.drop_vars(["lnsp", "z"])
             ds_ = _era_5_normalise_longitude(ds=ds_)
             ds_ = ds_.rename(dict(latitude="lat", longitude="lon"))
 

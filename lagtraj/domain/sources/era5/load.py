@@ -2,7 +2,6 @@ import xarray as xr
 import numpy as np
 
 import functools
-import operator
 import warnings
 
 from . import FILENAME_FORMAT
@@ -176,7 +175,7 @@ class ERA5DataSet(object):
 
         return xr.merge(datasets_slices, compat="override").compute()
 
-    def interp(self, kwargs, **interp_to):
+    def interp(self, kwargs, method="linear", **interp_to):
         """
         Implements xarray.interp by first slicing out the necessary data from
         individual era5 files, merging these and then interpolating
@@ -190,7 +189,14 @@ class ERA5DataSet(object):
             )
         requested_variables = self._selected_vars or self.data_vars
 
-        idx_padding = 1
+        if method not in ["linear", "nearest"]:
+            raise NotImplementedError(
+                "The interpolation method doesn't support"
+                f" the {method} interpolation method,"
+                " as not enough values are extracted during"
+                " slicing."
+            )
+
         interp_dims = interp_to.keys()
         datasets_slices = []
         for ds in self.datasets.values():
@@ -202,34 +208,35 @@ class ERA5DataSet(object):
 
                 slices = {}
                 for d in dims:
-                    # need to handle case where order isn't monototnically
-                    # increasing
-                    if da_v[d].values[0] > da_v[d].values[-1]:
-                        dir = -1
-                    else:
-                        dir = 1
-                    da_coord_left = da_v[d].sel(**{d: slice(None, interp_to[d], dir)})
-                    da_coord_right = da_v[d].sel(**{d: slice(interp_to[d], None, dir)})
+                    # if a particular value is in a coordinate (for example
+                    # time) we just take that out, no need to make a slice
+                    if np.array(interp_to[d]) in da_v[d].values:
+                        slices[d] = interp_to[d]
+                        continue
 
-                    at_left_edge = da_coord_left.count() <= idx_padding
-                    at_right_edge = da_coord_right.count() <= idx_padding
+                    if type(interp_to[d]) == xr.core.dataarray.DataArray:
+                        d_interp_val = interp_to[d].values
+                    else:
+                        d_interp_val = interp_to[d]
+                    d_vals_array = ds[d].values
+                    d_vals_smaller = d_vals_array[d_vals_array < d_interp_val]
+                    d_vals_greater = d_vals_array[d_vals_array > d_interp_val]
+                    at_left_edge = len(d_vals_smaller) == 0
+                    at_right_edge = len(d_vals_greater) == 0
                     if at_left_edge or at_right_edge:
                         raise Exception(
                             "Requested interpolation at edge of domain"
-                            f" (trying to access {d}={interp_to[d].values}"
+                            f" (trying to access {d}={interp_to[d]}"
                             f" between {da_v[d].min().values} and"
                             f" {da_v[d].max().values}"
                         )
-
-                    d_edge_min = da_coord_left.isel(**{d: -1 - idx_padding})
-                    d_edge_max = da_coord_right.isel(**{d: idx_padding})
-                    if dir == -1:
-                        slices[d] = slice(d_edge_max, d_edge_min)
+                    d_slice_min = np.nanmax(d_vals_smaller)
+                    d_slice_max = np.nanmin(d_vals_greater)
+                    # Slice direction depends on how variables are ordered
+                    if d_vals_array[0] < d_vals_array[1]:
+                        slices[d] = slice(d_slice_min, d_slice_max)
                     else:
-                        slices[d] = slice(d_edge_min, d_edge_max)
-                    assert d_edge_min <= interp_to[d] <= d_edge_max
-                    # make sure we've actually selected some data
-                    assert functools.reduce(operator.mul, da_v.shape) > 0
+                        slices[d] = slice(d_slice_max, d_slice_min)
 
                 da_v_slice = da_v.sel(**slices)
                 das.append(da_v_slice)
@@ -238,7 +245,12 @@ class ERA5DataSet(object):
             datasets_slices.append(ds_slice)
 
         ds_slice = xr.merge(datasets_slices, compat="override").load()
-        return ds_slice.interp(**interp_to, kwargs=kwargs)
+
+        # remove coords that we've picked already (matching exact values)
+        extra_dims = list(set(interp_to.keys()).difference(ds_slice.dims))
+        for d in extra_dims:
+            del interp_to[d]
+        return ds_slice.interp(**interp_to, kwargs=kwargs, method=method)
 
 
 def _load_naive(data_path):

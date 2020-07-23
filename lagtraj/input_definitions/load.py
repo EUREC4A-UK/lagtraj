@@ -55,20 +55,40 @@ def load_definition(input_name, input_type, root_data_path, required_fields):
             print()
             input_examples.print_available(input_types=[input_type_plural])
             sys.exit(1)
-    elif input_name.endswith(".yaml") or input_name.endswith(".yml"):
-        # assume we've been passed a full path
-        input_local_path = Path(input_name)
-        raise Exception(
-            "You provided an absolute path to an input"
-            " yaml file instead of providing the name"
-            " of the input.\nFor for example a trajectory"
-            " stored in data/trajectories/eurec4a_20191209_12_lin.yaml"
-            " this should be loaded by name as `eurec4a_20191209_12_lin`"
-        )
     else:
-        input_local_path = build_input_definition_path(
-            root_data_path=root_data_path, input_name=input_name, input_type=input_type,
-        )
+        if input_name.endswith(".yaml") or input_name.endswith(".yml"):
+            # assume we've been passed a full path
+            input_local_path = Path(input_name)
+            # assume we've been passed a full path
+            input_local_path = Path(input_name)
+            if not input_local_path.exists():
+                raise Exception(
+                    "You provided an absolute path to an input"
+                    " yaml file, but that file doesn't appear"
+                    " to exist. Maybe you intended to just"
+                    " load this input definition by name instead?"
+                )
+            # check that this provided yaml-file is in the correct folder
+            # structure
+            input_type_plural = DATA_TYPE_PLURAL[input_type]
+            if not (
+                input_local_path.parent.parent.name == "data"
+                and input_local_path.parent.name == input_type_plural
+            ):
+                raise Exception(
+                    "The yaml input-file you provided does not"
+                    " exist in the correct direction structure."
+                    " lagtraj assumes that all data is stored in"
+                    " a directory structure as follows (so that"
+                    " so that the relevant input data and output"
+                    f" can be found by lagtraj): \n{FOLDER_STRUCTURE_EXAMPLE}"
+                )
+        else:
+            input_local_path = build_input_definition_path(
+                root_data_path=root_data_path,
+                input_name=input_name,
+                input_type=input_type,
+            )
         with open(input_local_path) as fh:
             params = yaml.load(fh, Loader=yaml.FullLoader)
 

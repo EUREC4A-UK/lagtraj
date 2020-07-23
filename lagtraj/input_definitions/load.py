@@ -1,8 +1,25 @@
 import yaml
 import sys
+from pathlib import Path
 
 from . import validate_input, build_input_definition_path, examples as input_examples
 from .. import DATA_TYPE_PLURAL
+
+FOLDER_STRUCTURE_EXAMPLE = """
+data
+├── domains
+│   ├── eurec4a_circle_eul.yaml
+│   └── eurec4a_circle_eul_data
+│       ├── an_model_2020-01-01.nc
+│       :
+│       └── fc_single_2020-01-03.nc
+├── forcings
+│   ├── eure4a_20191209_12_eul.yaml
+│   └── eure4a_20191209_12_eul.nc
+└── trajectories
+    ├── eure4a_20191209_12_eul.yaml
+    └── eure4a_20191209_12_eul.nc
+"""
 
 
 def load_definition(input_name, input_type, root_data_path, required_fields):
@@ -38,6 +55,16 @@ def load_definition(input_name, input_type, root_data_path, required_fields):
             print()
             input_examples.print_available(input_types=[input_type_plural])
             sys.exit(1)
+    elif input_name.endswith(".yaml") or input_name.endswith(".yml"):
+        # assume we've been passed a full path
+        input_local_path = Path(input_name)
+        raise Exception(
+            "You provided an absolute path to an input"
+            " yaml file instead of providing the name"
+            " of the input.\nFor for example a trajectory"
+            " stored in data/trajectories/eurec4a_20191209_12_lin.yaml"
+            " this should be loaded by name as `eurec4a_20191209_12_lin`"
+        )
     else:
         input_local_path = build_input_definition_path(
             root_data_path=root_data_path, input_name=input_name, input_type=input_type,

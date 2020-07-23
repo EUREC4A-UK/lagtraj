@@ -151,12 +151,12 @@ def _build_query_times(model_run_type, t_start, t_end):
     if model_run_type == "an":
         return [
             (t_start + datetime.timedelta(days=x))
-            for x in range(0, (t_end.date() - t_start.date()).days)
+            for x in range(0, (t_end.date() - t_start.date()).days + 1)
         ]
     elif model_run_type == "fc":
         return [
             (t_start + datetime.timedelta(days=x))
-            for x in range(-1, (t_end.date() - t_start.date()).days)
+            for x in range(-1, (t_end.date() - t_start.date()).days + 1)
         ]
     else:
         raise NotImplementedError(model_run_type)

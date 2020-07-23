@@ -15,7 +15,7 @@ This is done with pyinstrument:
 Trajectory creation can be tested with the following command
 
 ```bash
-pyinstrument -m lagtraj.trajectory.create <full path to eurec4a_20200203_12_lag.yaml, without the .yaml extension>
+pyinstrument -m lagtraj.trajectory.create lagtraj://eurec4a_20200203_12_lag
 ```
 
 ## Memory usage
@@ -25,7 +25,7 @@ This can be done with python memory profiler
 [https://pypi.org/project/memory-profiler/](https://pypi.org/project/memory-profiler/)
 
 ```bash
-mprof run python -m lagtraj.trajectory.create <full path to eurec4a_20200203_12_lag.yaml, without the .yaml extension>
+mprof run python -m lagtraj.trajectory.create lagtraj://eurec4a_20200203_12_lag
 mprof plot
 ```
 

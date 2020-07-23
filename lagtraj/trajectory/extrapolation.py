@@ -43,11 +43,16 @@ def extrapolate_posn_with_fixed_velocity(lat, lon, u_vel, v_vel, dt):
 
 
 def _extract_column_at_time(ds_domain, t, lat, lon, method):
+    required_variables = ["u", "v", "sp", "z", "t", "q", "lsm"]
+    # pick out only the variables we need, TODO: this should move into parent
+    # functions so we can select variables based on the methods used and output
+    # variables to produce
+    ds_ = ds_domain[required_variables]
     if method == "nearest":
-        return ds_domain.sel(time=t, lat=lat, lon=lon, method="nearest")
+        return ds_.sel(time=t, lat=lat, lon=lon, method="nearest")
     else:
         interp_kwargs = dict(bounds_error=True)
-        return ds_domain.interp(time=t, lat=lat, lon=lon, kwargs=interp_kwargs)
+        return ds_.interp(time=t, lat=lat, lon=lon, kwargs=interp_kwargs)
 
 
 def extrapolate_using_domain_data(

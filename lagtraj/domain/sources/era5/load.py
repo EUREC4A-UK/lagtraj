@@ -64,9 +64,10 @@ class ERA5DataSet(object):
     applied
     """
 
-    def __init__(self, data_path):
+    def __init__(self, data_path, selected_vars=[], datasets=[]):
         self.data_path = data_path
-        self.datasets = _find_datasets(data_path=data_path)
+        self.datasets = datasets or _find_datasets(data_path=data_path)
+        self._selected_vars = selected_vars
 
     def _extra_var(self, v):
         """
@@ -95,19 +96,36 @@ class ERA5DataSet(object):
         da_combined = xr.merge(dss, join="inner")["_temp"]
         return da_combined
 
+    def __getitem__(self, item):
+        requested_vars = type(item) == set and item or set(item)
+        available_vars = self._selected_vars or self.data_vars
+        missing_vars = requested_vars.difference(available_vars)
+        if len(missing_vars) > 0:
+            s = ", ".join(missing_vars)
+            s2 = ", ".join(available_vars)
+            raise Exception(f"Some of the variables you have requested ({s})"
+                            " aren't available in this dataset, the ones available"
+                            f" are: {s2}")
+        return ERA5DataSet(data_path=self.data_path, datasets=self.datasets,
+                           selected_vars=requested_vars)
+
     @property
+    @functools.lru_cache(maxsize=1)
     def time(self):
         return self._extra_var(v="time")
 
     @property
+    @functools.lru_cache(maxsize=1)
     def lon(self):
         return self._extra_var(v="lon")
 
     @property
+    @functools.lru_cache(maxsize=1)
     def lat(self):
         return self._extra_var(v="lat")
 
     @property
+    @functools.lru_cache(maxsize=1)
     def data_vars(self):
         v = set()
         for ds in self.datasets.values():
@@ -122,11 +140,20 @@ class ERA5DataSet(object):
             " Consider accessing the the time, lat, lon attributes directly"
             " if these qre needed."
         )
+        if len(self._selected_vars) == 0:
+            warnings.warn(
+                "You are doing a selection on *all* variables available in this era5 dataset"
+                " which is expensive (as they are loaded from many individual files). Instead"
+                " select the variables you need (e.g. with `ds[('u', 'v')]`) before calling"
+                " .sel to make a coordinated-based selection"
+            )
+        requested_variables = self._selected_vars or self.data_vars
         indexers_dims = indexers_kwargs.keys()
         datasets_slices = []
         for ds in self.datasets.values():
             das = []
-            for v in ds.data_vars:
+            variables = set(requested_variables).intersection(list(ds.data_vars))
+            for v in variables:
                 da_v = ds[v]
                 dims = set(indexers_dims).intersection(da_v.dims)
 
@@ -149,12 +176,22 @@ class ERA5DataSet(object):
         Implements xarray.interp by first slicing out the necessary data from
         individual era5 files, merging these and then interpolating
         """
+        if len(self._selected_vars) == 0:
+            warnings.warn(
+                "You are doing an interpolation on *all* variables available in this era5 dataset"
+                " which is expensive (as they are loaded from many individual files). Instead"
+                " select the variables you need (e.g. with `ds[('u', 'v')]`) before calling"
+                " .sel to make a coordinated-based selection"
+            )
+        requested_variables = self._selected_vars or self.data_vars
+
         idx_padding = 1
         interp_dims = interp_to.keys()
         datasets_slices = []
         for ds in self.datasets.values():
             das = []
-            for v in ds.data_vars:
+            variables = set(requested_variables).intersection(list(ds.data_vars))
+            for v in variables:
                 da_v = ds[v]
                 dims = set(interp_dims).intersection(da_v.dims)
 
@@ -195,7 +232,7 @@ class ERA5DataSet(object):
             ds_slice = xr.merge(das)
             datasets_slices.append(ds_slice)
 
-        ds_slice = xr.merge(datasets_slices, compat="override").compute()
+        ds_slice = xr.merge(datasets_slices, compat="override").load()
         return ds_slice.interp(**interp_to, kwargs=kwargs)
 
 

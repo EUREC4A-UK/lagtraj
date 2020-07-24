@@ -2,7 +2,6 @@ import xarray as xr
 import numpy as np
 
 import functools
-import operator
 import warnings
 
 from . import FILENAME_FORMAT
@@ -64,9 +63,10 @@ class ERA5DataSet(object):
     applied
     """
 
-    def __init__(self, data_path):
+    def __init__(self, data_path, selected_vars=[], datasets=[]):
         self.data_path = data_path
-        self.datasets = _find_datasets(data_path=data_path)
+        self.datasets = datasets or _find_datasets(data_path=data_path)
+        self._selected_vars = selected_vars
 
     def _extra_var(self, v):
         """
@@ -95,19 +95,41 @@ class ERA5DataSet(object):
         da_combined = xr.merge(dss, join="inner")["_temp"]
         return da_combined
 
+    def __getitem__(self, item):
+        requested_vars = type(item) == set and item or set(item)
+        available_vars = self._selected_vars or self.data_vars
+        missing_vars = requested_vars.difference(available_vars)
+        if len(missing_vars) > 0:
+            s = ", ".join(missing_vars)
+            s2 = ", ".join(available_vars)
+            raise Exception(
+                f"Some of the variables you have requested ({s})"
+                " aren't available in this dataset, the ones available"
+                f" are: {s2}"
+            )
+        return ERA5DataSet(
+            data_path=self.data_path,
+            datasets=self.datasets,
+            selected_vars=requested_vars,
+        )
+
     @property
+    @functools.lru_cache(maxsize=1)
     def time(self):
         return self._extra_var(v="time")
 
     @property
+    @functools.lru_cache(maxsize=1)
     def lon(self):
         return self._extra_var(v="lon")
 
     @property
+    @functools.lru_cache(maxsize=1)
     def lat(self):
         return self._extra_var(v="lat")
 
     @property
+    @functools.lru_cache(maxsize=1)
     def data_vars(self):
         v = set()
         for ds in self.datasets.values():
@@ -122,11 +144,20 @@ class ERA5DataSet(object):
             " Consider accessing the the time, lat, lon attributes directly"
             " if these qre needed."
         )
+        if len(self._selected_vars) == 0:
+            warnings.warn(
+                "You are doing a selection on *all* variables available in this era5 dataset"
+                " which is expensive (as they are loaded from many individual files). Instead"
+                " select the variables you need (e.g. with `ds[('u', 'v')]`) before calling"
+                " .sel to make a coordinated-based selection"
+            )
+        requested_variables = self._selected_vars or self.data_vars
         indexers_dims = indexers_kwargs.keys()
         datasets_slices = []
         for ds in self.datasets.values():
             das = []
-            for v in ds.data_vars:
+            variables = set(requested_variables).intersection(list(ds.data_vars))
+            for v in variables:
                 da_v = ds[v]
                 dims = set(indexers_dims).intersection(da_v.dims)
 
@@ -144,50 +175,68 @@ class ERA5DataSet(object):
 
         return xr.merge(datasets_slices, compat="override").compute()
 
-    def interp(self, kwargs, **interp_to):
+    def interp(self, kwargs, method="linear", **interp_to):
         """
         Implements xarray.interp by first slicing out the necessary data from
         individual era5 files, merging these and then interpolating
         """
-        idx_padding = 1
+        if len(self._selected_vars) == 0:
+            warnings.warn(
+                "You are doing an interpolation on *all* variables available in this era5 dataset"
+                " which is expensive (as they are loaded from many individual files). Instead"
+                " select the variables you need (e.g. with `ds[('u', 'v')]`) before calling"
+                " .sel to make a coordinated-based selection"
+            )
+        requested_variables = self._selected_vars or self.data_vars
+
+        if method not in ["linear", "nearest"]:
+            raise NotImplementedError(
+                "The interpolation method doesn't support"
+                f" the {method} interpolation method,"
+                " as not enough values are extracted during"
+                " slicing."
+            )
+
         interp_dims = interp_to.keys()
         datasets_slices = []
         for ds in self.datasets.values():
             das = []
-            for v in ds.data_vars:
+            variables = set(requested_variables).intersection(list(ds.data_vars))
+            for v in variables:
                 da_v = ds[v]
                 dims = set(interp_dims).intersection(da_v.dims)
 
                 slices = {}
                 for d in dims:
-                    # need to handle case where order isn't monototnically
-                    # increasing
-                    if da_v[d].values[0] > da_v[d].values[-1]:
-                        dir = -1
-                    else:
-                        dir = 1
-                    da_coord_left = da_v[d].sel(**{d: slice(None, interp_to[d], dir)})
-                    da_coord_right = da_v[d].sel(**{d: slice(interp_to[d], None, dir)})
+                    # if a particular value is in a coordinate (for example
+                    # time) we just take that out, no need to make a slice
+                    if np.array(interp_to[d]) in da_v[d].values:
+                        slices[d] = interp_to[d]
+                        continue
 
-                    at_left_edge = da_coord_left.count() <= idx_padding
-                    at_right_edge = da_coord_right.count() <= idx_padding
+                    if type(interp_to[d]) == xr.core.dataarray.DataArray:
+                        d_interp_val = interp_to[d].values
+                    else:
+                        d_interp_val = interp_to[d]
+                    d_vals_array = ds[d].values
+                    d_vals_smaller = d_vals_array[d_vals_array < d_interp_val]
+                    d_vals_greater = d_vals_array[d_vals_array > d_interp_val]
+                    at_left_edge = len(d_vals_smaller) == 0
+                    at_right_edge = len(d_vals_greater) == 0
                     if at_left_edge or at_right_edge:
                         raise Exception(
                             "Requested interpolation at edge of domain"
-                            f" (trying to access {d}={interp_to[d].values}"
+                            f" (trying to access {d}={interp_to[d]}"
                             f" between {da_v[d].min().values} and"
                             f" {da_v[d].max().values}"
                         )
-
-                    d_edge_min = da_coord_left.isel(**{d: -1 - idx_padding})
-                    d_edge_max = da_coord_right.isel(**{d: idx_padding})
-                    if dir == -1:
-                        slices[d] = slice(d_edge_max, d_edge_min)
+                    d_slice_min = np.nanmax(d_vals_smaller)
+                    d_slice_max = np.nanmin(d_vals_greater)
+                    # Slice direction depends on how variables are ordered
+                    if d_vals_array[0] < d_vals_array[1]:
+                        slices[d] = slice(d_slice_min, d_slice_max)
                     else:
-                        slices[d] = slice(d_edge_min, d_edge_max)
-                    assert d_edge_min <= interp_to[d] <= d_edge_max
-                    # make sure we've actually selected some data
-                    assert functools.reduce(operator.mul, da_v.shape) > 0
+                        slices[d] = slice(d_slice_max, d_slice_min)
 
                 da_v_slice = da_v.sel(**slices)
                 das.append(da_v_slice)
@@ -195,8 +244,13 @@ class ERA5DataSet(object):
             ds_slice = xr.merge(das)
             datasets_slices.append(ds_slice)
 
-        ds_slice = xr.merge(datasets_slices, compat="override").compute()
-        return ds_slice.interp(**interp_to, kwargs=kwargs)
+        ds_slice = xr.merge(datasets_slices, compat="override").load()
+
+        # remove coords that we've picked already (matching exact values)
+        extra_dims = list(set(interp_to.keys()).difference(ds_slice.dims))
+        for d in extra_dims:
+            del interp_to[d]
+        return ds_slice.interp(**interp_to, kwargs=kwargs, method=method)
 
 
 def _load_naive(data_path):

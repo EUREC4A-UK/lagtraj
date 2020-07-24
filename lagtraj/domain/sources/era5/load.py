@@ -200,49 +200,43 @@ class ERA5DataSet(object):
         interp_dims = interp_to.keys()
         datasets_slices = []
         for ds in self.datasets.values():
-            das = []
-            variables = set(requested_variables).intersection(list(ds.data_vars))
-            for v in variables:
-                da_v = ds[v]
-                dims = set(interp_dims).intersection(da_v.dims)
-
-                slices = {}
-                for d in dims:
-                    # if a particular value is in a coordinate (for example
-                    # time) we just take that out, no need to make a slice
-                    if np.array(interp_to[d]) in da_v[d].values:
-                        slices[d] = interp_to[d]
-                        continue
-
-                    if type(interp_to[d]) == xr.core.dataarray.DataArray:
-                        d_interp_val = interp_to[d].values
-                    else:
-                        d_interp_val = interp_to[d]
-                    d_vals_array = ds[d].values
-                    d_vals_smaller = d_vals_array[d_vals_array < d_interp_val]
-                    d_vals_greater = d_vals_array[d_vals_array > d_interp_val]
-                    at_left_edge = len(d_vals_smaller) == 0
-                    at_right_edge = len(d_vals_greater) == 0
-                    if at_left_edge or at_right_edge:
-                        raise Exception(
-                            "Requested interpolation at edge of domain"
-                            f" (trying to access {d}={interp_to[d]}"
-                            f" between {da_v[d].min().values} and"
-                            f" {da_v[d].max().values}"
-                        )
-                    d_slice_min = np.nanmax(d_vals_smaller)
-                    d_slice_max = np.nanmin(d_vals_greater)
-                    # Slice direction depends on how variables are ordered
-                    if d_vals_array[0] < d_vals_array[1]:
-                        slices[d] = slice(d_slice_min, d_slice_max)
-                    else:
-                        slices[d] = slice(d_slice_max, d_slice_min)
-
-                da_v_slice = da_v.sel(**slices)
-                das.append(da_v_slice)
-
-            ds_slice = xr.merge(das)
-            datasets_slices.append(ds_slice)
+            variables = list(set(requested_variables).intersection(list(ds.data_vars)))
+            if(len(variables)==0):
+                continue
+            slices = {}
+            dims = set(interp_dims).intersection(ds.dims)
+            for d in dims:
+                # if a particular value is in a coordinate (for example
+                # time) we just take that out, no need to make a slice
+                d_vals_array = ds[d].values
+                if np.array(interp_to[d]) in d_vals_array:
+                    slices[d] = interp_to[d]
+                    continue
+                if type(interp_to[d]) == xr.core.dataarray.DataArray:
+                    d_interp_val = interp_to[d].values
+                else:
+                    d_interp_val = interp_to[d]
+                d_vals_smaller = d_vals_array[d_vals_array < d_interp_val]
+                d_vals_greater = d_vals_array[d_vals_array > d_interp_val]
+                at_left_edge = len(d_vals_smaller) == 0
+                at_right_edge = len(d_vals_greater) == 0
+                if at_left_edge or at_right_edge:
+                    raise Exception(
+                        "Requested interpolation at edge of domain"
+                        f" (trying to access {d}={interp_to[d]}"
+                        f" between {da_v[d].min().values} and"
+                        f" {da_v[d].max().values}"
+                    )
+                d_slice_min = np.nanmax(d_vals_smaller)
+                d_slice_max = np.nanmin(d_vals_greater)
+                # Slice direction depends on how variables are ordered
+                if d_vals_array[0] < d_vals_array[1]:
+                    slices[d] = slice(d_slice_min, d_slice_max)
+                else:
+                    slices[d] = slice(d_slice_max, d_slice_min)
+            ds_v_slice = ds[variables].sel(**slices)
+            ds_v_slice.load()
+            datasets_slices.append(ds_v_slice)
 
         ds_slice = xr.merge(datasets_slices, compat="override").load()
 
@@ -250,7 +244,7 @@ class ERA5DataSet(object):
         extra_dims = list(set(interp_to.keys()).difference(ds_slice.dims))
         for d in extra_dims:
             del interp_to[d]
-        return ds_slice.interp(**interp_to, kwargs=kwargs, method=method)
+        return ds_slice.interp(**interp_to, kwargs=kwargs, method=method).load()
 
 
 def _load_naive(data_path):

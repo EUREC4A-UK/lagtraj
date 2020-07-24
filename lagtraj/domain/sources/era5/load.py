@@ -238,7 +238,7 @@ class ERA5DataSet(object):
             ds_v_slice.load()
             datasets_slices.append(ds_v_slice)
 
-        ds_slice = xr.merge(datasets_slices, compat="override").load()
+        ds_slice = xr.merge(datasets_slices, compat="override")
 
         # remove coords that we've picked already (matching exact values)
         extra_dims = list(set(interp_to.keys()).difference(ds_slice.dims))

@@ -73,11 +73,11 @@ for downloading domain data run lagtraj.domain.download as follows:
 integration and forcing calculation being available before trajectories are
 integrated. This was done to reduce the number of data requests required to the
 data storage backends (e.g. ECMWF), but does mean that *the expected extent
-that a trajetory will reach must been known before performining a trajectory
+that a trajectory will reach must been known before performining a trajectory
 integration*, otherwise `lagtraj` will issue a warning when the edge of the
 available domain is reached.
 
-Either create your own domain definition in `data/domains/<domain_name>/meta.yaml` and run
+Either create your own domain definition in `data/domains/<domain_name>.yaml` and run
 
 ```bash
 $> python -m lagtraj.domain.download <domain_name> [start date (yyyy-mm-dd)] [end date (yyyy-mm-dd)]
@@ -94,8 +94,19 @@ $> python -m lagtraj.domain.download lagtraj://eurec4a_north_atlantic [start dat
 
 ## 2. Producing a trajectory
 
+Once you have downloaded the required domain data you can either create
+a trajectory definition in `data/trajectories/<trajectory_name>.yaml` and run
+
 ```bash
 $> python -m lagtraj.trajectory.create <trajectory_name>
+```
+
+Or use one of the domain definitions included with `lagtraj` (e.g.
+`eurec4a_20191209_12_lag`
+
+
+```bash
+$> python -m lagtraj.trajectory.create lagtraj://eurec4a_20191209_12_lag
 ```
 
 ## 3. Producing forcing profiles

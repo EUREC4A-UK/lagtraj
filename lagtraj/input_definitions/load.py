@@ -46,7 +46,7 @@ def load_definition(input_name, input_type, root_data_path, required_fields):
         except input_examples.LagtrajExampleDoesNotExist:
             input_type_plural = DATA_TYPE_PLURAL[input_type]
             print(
-                "The requested {} ({}) isn't currently available"
+                "The requested {} ({}) isn't currently available "
                 "in lagtraj\n(maybe you could add it with a pull-request"
                 " at https://github.com/EUREC4A-UK/lagtraj/pulls)\n\n"
                 "The {} currently defined in lagtraj are:"
@@ -57,8 +57,6 @@ def load_definition(input_name, input_type, root_data_path, required_fields):
             sys.exit(1)
     else:
         if input_name.endswith(".yaml") or input_name.endswith(".yml"):
-            # assume we've been passed a full path
-            input_local_path = Path(input_name)
             # assume we've been passed a full path
             input_local_path = Path(input_name)
             if not input_local_path.exists():
@@ -82,6 +80,11 @@ def load_definition(input_name, input_type, root_data_path, required_fields):
                     " a directory structure as follows (so that"
                     " so that the relevant input data and output"
                     f" can be found by lagtraj): \n{FOLDER_STRUCTURE_EXAMPLE}"
+                    "Files under input_examples can be retrieved as well, "
+                    "by using a lagtraj://<input file without .yaml> "
+                    "e.g. \n"
+                    "python -m lagtraj.trajectory.create lagtraj://eurec4a_20200202_12_lag \n"
+                    "The input files are then copied over to the data directory."
                 )
         else:
             input_local_path = build_input_definition_path(

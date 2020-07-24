@@ -224,8 +224,8 @@ class ERA5DataSet(object):
                     raise Exception(
                         "Requested interpolation at edge of domain"
                         f" (trying to access {d}={interp_to[d]}"
-                        f" between {da_v[d].min().values} and"
-                        f" {da_v[d].max().values}"
+                        f" between {ds[d].min().values} and"
+                        f" {ds[d].max().values}"
                     )
                 d_slice_min = np.nanmax(d_vals_smaller)
                 d_slice_max = np.nanmin(d_vals_greater)

@@ -200,7 +200,8 @@ class ERA5DataSet(object):
         interp_dims = interp_to.keys()
         datasets_slices = []
         for ds in self.datasets.values():
-            variables = list(set(requested_variables).intersection(list(ds.data_vars)))
+            # Note this needs to be a list, in order to refer to it when selecting from ds
+            variables = list(set(requested_variables).intersection(ds.data_vars))
             if len(variables) == 0:
                 continue
             slices = {}

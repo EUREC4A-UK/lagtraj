@@ -154,26 +154,23 @@ class ERA5DataSet(object):
         requested_variables = self._selected_vars or self.data_vars
         indexers_dims = indexers_kwargs.keys()
         datasets_slices = []
+
         for ds in self.datasets.values():
-            das = []
-            variables = set(requested_variables).intersection(list(ds.data_vars))
-            for v in variables:
-                da_v = ds[v]
-                dims = set(indexers_dims).intersection(da_v.dims)
+            variables = list(set(requested_variables).intersection(ds.data_vars))
+            if len(variables) == 0:
+                continue
+            slices = {}
+            dims = set(indexers_dims).intersection(ds.dims)
+            for d in dims:
+                slices[d] = indexers_kwargs[d]
 
-                slices = {}
-                for d in dims:
-                    slices[d] = indexers_kwargs[d]
+            ds_v_slice = ds[variables].sel(
+                **slices, method=method, tolerance=tolerance, drop=drop,
+            )
+            ds_v_slice.load()
+            datasets_slices.append(ds_v_slice)
 
-                da_v_slice = da_v.sel(
-                    **slices, method=method, tolerance=tolerance, drop=drop,
-                )
-                das.append(da_v_slice)
-
-            ds_slice = xr.merge(das)
-            datasets_slices.append(ds_slice)
-
-        return xr.merge(datasets_slices, compat="override").compute()
+        return xr.merge(datasets_slices, compat="override").load()
 
     def interp(self, kwargs, method="linear", **interp_to):
         """

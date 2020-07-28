@@ -74,7 +74,9 @@ def load_definition(input_name, input_type, root_data_path, required_fields):
                 input_local_path.parent.parent.name == "data"
                 and input_local_path.parent.name == input_type_plural
             ):
-                lagtraj_input_examples = list(get_available_input_examples(input_types=[input_type]))
+                lagtraj_input_examples = list(
+                    get_available_input_examples(input_types=[input_type])
+                )
                 s = ", ".join(lagtraj_input_examples[:3])  #  show the first three only
                 raise Exception(
                     "The yaml input-file you provided does not"
@@ -88,7 +90,7 @@ def load_definition(input_name, input_type, root_data_path, required_fields):
                     "e.g. \n"
                     "python -m lagtraj.trajectory.create lagtraj://eurec4a_20200202_12_lag \n"
                     "The input files are then copied over to the data directory."
-                                )
+                )
         else:
             input_local_path = build_input_definition_path(
                 root_data_path=root_data_path,

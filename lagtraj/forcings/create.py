@@ -12,8 +12,30 @@ from ..trajectory.load import load_data as load_trajectory_data
 
 def _make_latlontime_sampling_points(method, ds_trajectory, ds_domain):
     if method == "model_timesteps":
-        da_time = ds_domain.time
-        da_sampling = ds_trajectory.interp(time=da_time, method="linear")
+        t_min_domn = ds_domain.time.min()
+        t_max_domn = ds_domain.time.max()
+        t_min_traj = ds_trajectory.time.min()
+        t_max_traj = ds_trajectory.time.max()
+
+        if t_min_traj < t_min_domn or t_max_domn < t_max_traj:
+            raise Exception(
+                "The downloaded domain data does not cover the timespan"
+                " of the trajectory requested (ds_trajectory.name)."
+                f" t_domain=[{t_min_domn.values},{t_max_domn.values}] and"
+                f" t_traj=[{t_min_traj.values},{t_max_traj.values}]. "
+                " Please download more domain data"
+            )
+
+        da_sampling = ds_trajectory.interp(
+            time=ds_domain.time, method="linear", kwargs=dict(bounds_error=True)
+        )
+        if da_sampling.isnull().count() > 0:
+            raise Exception(
+                "It appears that some of the domain data is incomplete "
+                "as interolating the trajectory coordinates to the model "
+                "timesteps returned NaNs. Please check that all domain data "
+                "has been downloaded."
+            )
         # we clip the times to the interval in which the trajectory is defined
         t_min, t_max = ds_trajectory.time.min(), ds_trajectory.time.max()
         da_sampling = da_sampling.sel(time=slice(t_min, t_max))

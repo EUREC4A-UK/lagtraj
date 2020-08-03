@@ -29,4 +29,6 @@ def load_data(root_data_path, name):
     else:
         raise NotImplementedError(domain_def["source"])
 
+    ds.attrs["data_source"] = domain_def["source"]
+
     return ds

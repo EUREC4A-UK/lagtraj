@@ -76,6 +76,9 @@ def extrapolate_using_domain_data(
     ds_column_interpolated = _extract_column_at_time(
         t=t0, lat=lat, lon=lon, method=time_space_interpolation, ds_domain=ds_domain
     )
+    # to be able to interpolate to height levels and produce auxiliary
+    # variables later we need to know where this data originated
+    ds_column_interpolated.attrs["data_source"] = ds_domain.attrs.get("data_source")
 
     lat_start, lon_start = lat, lon
     u_start, v_start = estimate_horizontal_velocities(
@@ -108,6 +111,8 @@ def extrapolate_using_domain_data(
             method=time_space_interpolation,
             ds_domain=ds_domain,
         )
+        ds_column_interpolated.attrs["data_source"] = ds_domain.attrs.get("data_source")
+
         u_end, v_end = estimate_horizontal_velocities(
             ds_column=ds_column_interpolated,
             method=velocity_method,

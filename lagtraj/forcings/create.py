@@ -119,9 +119,15 @@ def main():
     ds_domain = load_domain_data(
         root_data_path=args.data_path, name=forcing_defn.domain
     )
-    ds_trajectory = load_trajectory_data(
-        root_data_path=args.data_path, name=forcing_defn.trajectory
-    )
+    try:
+        ds_trajectory = load_trajectory_data(
+            root_data_path=args.data_path, name=forcing_defn.trajectory
+        )
+    except FileNotFoundError:
+        raise Exception(f"The output file for trajectory `{forcing_defn.trajectory}`"
+                        " couldn't be found. Please create the trajectory by running: \n"
+                        f"    python -m lagtraj.trajectory.create {forcing_defn.trajectory}\n"
+                        "and then run the forcing creation again")
 
     with optional_debugging(args.debug):
         ds_forcing = make_forcing(

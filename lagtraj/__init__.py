@@ -1,6 +1,19 @@
 from pathlib import Path
 import os
 
+# Optional numba dependency
+try:
+    from numba import njit
+
+    print("Running with numba")
+except ImportError:
+
+    def njit(numba_function):
+        """Dummy numba function"""
+        return numba_function
+
+    print("Running without numba")
+
 
 # by default we store data relative to where lagtraj is invoked from
 DEFAULT_ROOT_DATA_PATH = Path(os.getcwd()) / "data"

@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from ....utils.interpolation import njit
+from .... import njit
 from .constants import rg, rd, rv_over_rd_minus_one
 
 levels_file = Path(__file__).parent / "137levels.dat"

@@ -1,12 +1,7 @@
 import numpy as np
+from scipy.constants import pi
 
-try:
-    from numba import njit
-except ImportError:
-
-    def njit(numba_function):
-        """Dummy numba function"""
-        return numba_function
+from .. import njit
 
 
 @njit

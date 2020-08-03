@@ -6,3 +6,5 @@ lagtraj/utils/*.html
 __pycache__/
 
 data/
+lagtraj.testdata.tar.gz
+.DS_Store

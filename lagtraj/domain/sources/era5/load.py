@@ -185,7 +185,7 @@ class ERA5DataSet(object):
             ds_slice = xr.merge(das)
             datasets_slices.append(ds_slice)
 
-        return xr.merge(datasets_slices, compat="override").compute()
+        return xr.merge(datasets_slices, compat="override")
 
     def interp(self, kwargs, method="linear", **interp_to):
         """

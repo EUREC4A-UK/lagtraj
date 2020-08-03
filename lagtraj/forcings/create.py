@@ -26,10 +26,13 @@ def _make_latlontime_sampling_points(method, ds_trajectory, ds_domain):
                 " Please download more domain data"
             )
 
-        da_sampling = ds_trajectory.interp(
-            time=ds_domain.time, method="linear", kwargs=dict(bounds_error=True)
+        da_times = ds_domain.time.sel(time=slice(t_min_traj, t_max_traj))
+
+        ds_sampling = ds_trajectory.interp(
+            time=da_times, method="linear", kwargs=dict(bounds_error=True)
         )
-        if da_sampling.isnull().count() > 0:
+
+        if ds_sampling.dropna(dim="time").time.count() != da_times.count():
             raise Exception(
                 "It appears that some of the domain data is incomplete "
                 "as interolating the trajectory coordinates to the model "
@@ -38,14 +41,14 @@ def _make_latlontime_sampling_points(method, ds_trajectory, ds_domain):
             )
         # we clip the times to the interval in which the trajectory is defined
         t_min, t_max = ds_trajectory.time.min(), ds_trajectory.time.max()
-        da_sampling = da_sampling.sel(time=slice(t_min, t_max))
+        ds_sampling = ds_sampling.sel(time=slice(t_min, t_max))
     elif method == "all_trajectory_timesteps":
-        da_sampling = ds_trajectory
+        ds_sampling = ds_trajectory
     else:
         raise NotImplementedError(
             "Trajectory sampling method `{}` not implemented".format()
         )
-    return da_sampling
+    return ds_sampling
 
 
 def make_forcing(
@@ -58,20 +61,20 @@ def make_forcing(
     for how to construct levels_definition and sampling_method objects
     """
 
-    da_sampling = _make_latlontime_sampling_points(
+    ds_sampling = _make_latlontime_sampling_points(
         method=sampling_method.time_sampling_method,
         ds_trajectory=ds_trajectory,
         ds_domain=ds_domain,
     )
 
-    da_sampling["levels"] = make_levels(
+    ds_sampling["levels"] = make_levels(
         method=levels_definition.method,
         n_levels=levels_definition.n_levels,
         z_top=levels_definition.z_top,
         dz_min=levels_definition.dz_min,
     )
 
-    ds_forcing = xr.Dataset(coords=da_sampling.coords,)
+    ds_forcing = xr.Dataset(coords=ds_sampling.coords,)
 
     # XXX: eventually this will be replaced by a function which doesn't assume
     # that the domain data is era5 data
@@ -79,7 +82,7 @@ def make_forcing(
 
     ds_timesteps = []
     for time in tqdm(ds_forcing.time):
-        da_pt = da_sampling.sel(time=time)
+        da_pt = ds_sampling.sel(time=time)
         ds_timestep = timestep_function(
             da_pt=da_pt, ds_domain=ds_domain, sampling_method=sampling_method
         )

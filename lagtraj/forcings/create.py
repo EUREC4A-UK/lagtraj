@@ -3,7 +3,7 @@ from tqdm import tqdm
 from pathlib import Path
 
 from .. import DEFAULT_ROOT_DATA_PATH
-from . import era5, load, build_forcing_data_path
+from . import profile_calculation, load, build_forcing_data_path
 from .utils.levels import make_levels
 from ..utils import optional_debugging
 from ..domain.load import load_data as load_domain_data
@@ -67,7 +67,11 @@ def make_forcing(
         ds_domain=ds_domain,
     )
 
-    ds_sampling["levels"] = make_levels(
+    # `origin_` variables from the trajectory aren't needed for the forcing
+    # calculations so lets remove them for now
+    ds_sampling = ds_sampling.drop(["origin_lon", "origin_lat", "origin_datetime"])
+
+    ds_sampling["level"] = make_levels(
         method=levels_definition.method,
         n_levels=levels_definition.n_levels,
         z_top=levels_definition.z_top,
@@ -78,17 +82,21 @@ def make_forcing(
 
     # XXX: eventually this will be replaced by a function which doesn't assume
     # that the domain data is era5 data
-    timestep_function = era5.calculate_timestep
+    timestep_function = profile_calculation.calculate_timestep
 
-    ds_timesteps = []
+    forcing_profiles = []
     for time in tqdm(ds_forcing.time):
-        da_pt = ds_sampling.sel(time=time)
-        ds_timestep = timestep_function(
-            da_pt=da_pt, ds_domain=ds_domain, sampling_method=sampling_method
+        # extract from a single timestep the positions (points in space and
+        # time) at which to calculate the forcing profile
+        ds_profile_posn = ds_sampling.sel(time=time)
+        ds_forcing_profile = timestep_function(
+            ds_profile_posn=ds_profile_posn,
+            ds_domain=ds_domain,
+            sampling_method=sampling_method,
         )
-        ds_timesteps.append(ds_timestep)
+        forcing_profiles.append(ds_forcing_profile)
 
-    return xr.concat(ds_timesteps, dim="time")
+    return xr.concat(forcing_profiles, dim="time")
 
 
 def export(file_path, ds_forcing, format):
@@ -124,10 +132,12 @@ def main():
             root_data_path=args.data_path, name=forcing_defn.trajectory
         )
     except FileNotFoundError:
-        raise Exception(f"The output file for trajectory `{forcing_defn.trajectory}`"
-                        " couldn't be found. Please create the trajectory by running: \n"
-                        f"    python -m lagtraj.trajectory.create {forcing_defn.trajectory}\n"
-                        "and then run the forcing creation again")
+        raise Exception(
+            f"The output file for trajectory `{forcing_defn.trajectory}`"
+            " couldn't be found. Please create the trajectory by running: \n"
+            f"    python -m lagtraj.trajectory.create {forcing_defn.trajectory}\n"
+            "and then run the forcing creation again"
+        )
 
     with optional_debugging(args.debug):
         ds_forcing = make_forcing(

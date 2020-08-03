@@ -1,39 +1,5 @@
 import xarray as xr
 
-from ..utils.geometry import longitude_set_meridian
-from ..utils.gradient_calculation import era5_gradients
-
-
-# list of scalars  we want to compute forcings of, TODO: move into yaml input
-# definitions
-FORCING_SCALARS = ["theta", "rho", "w_pressure_corr", "w_corr"]
-
-
-def era5_adv_tendencies(phi, ds_profile, ds_traj):
-    """
-    Compute the horizontal advective tendency for a field with name `phi` for a
-    point on trajectory (defined by `ds_traj`) with horizontal velocity
-    `ds_traj.u` and `ds_traj.v`
-
-        dphi/dt = - dphi/dx * u - dphi/dy * v
-
-    given the vertical `ds_profile` containing ambient horizontal wind
-    components (u, v) and horizontal gradients (dphi/dx, dphi/dy)
-    """
-    # compute the relative velocities
-    u_rel = ds_profile.u - ds_traj.u
-    v_rel = ds_profile.v - ds_traj.v
-
-    # dphi/dt = - dphi/dx * u - dphi/dy * v
-    dphidx = ds_profile[f"d{phi}dx"]
-    dphidy = ds_profile[f"d{phi}dy"]
-    da_dphidt = - dphidx*u_rel - dphidy * v_rel
-
-    da_dphidt.attrs['long_name'] = f"{ds_profile[phi].long_name} tendency (advection)"
-    da_dphidt.attrs['units'] = f"{ds_profile[phi].units} s**-1"
-
-    return da_dphidt
-
 
 def dummy_forcings(mf_list, forcings_dict):
     """Forcings example: needs to be integrated into main functionality"""

@@ -67,6 +67,13 @@ class ERA5DataSet(object):
         self.data_path = data_path
         self.datasets = datasets or _find_datasets(data_path=data_path)
         self._selected_vars = selected_vars
+        self.attrs = {}
+
+    def __getattr__(self, v):
+        if v in self.attrs:
+            return self.attrs[v]
+        else:
+            raise AttributeError(v)
 
     def _extra_var(self, v):
         """

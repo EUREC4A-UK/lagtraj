@@ -179,6 +179,16 @@ def create_eulerian_trajectory(origin, da_times):
         lon0 * np.ones(len(ds.time)),
         {"long_name": "longitude", "units": "degrees_north"},
     )
+    ds["u_traj"] = (
+        ("time",),
+        np.zeros(len(ds.time)),
+        {"long_name": "zonal velocity", "units": "m/s"},
+    )
+    ds["v_traj"] = (
+        ("time",),
+        np.zeros(len(ds.time)),
+        {"long_name": "meridional velocity", "units": "m/s"},
+    )
 
     return ds
 
@@ -192,9 +202,12 @@ def create_linear_trajectory(origin, da_times, U):
         else:
             s = -1.0
 
-        return extrapolation.extrapolate_posn_with_fixed_velocity(
+        lat_new, lon_new = extrapolation.extrapolate_posn_with_fixed_velocity(
             lat=lat, lon=lon, u_vel=s * U[0], v_vel=s * U[1], dt=s * dt,
         )
+        u_start_and_end = (U[0], U[0])
+        v_start_and_end = (U[1], U[1])
+        return lat_new, lon_new, u_start_and_end, v_start_and_end
 
     return _create_extrapolated_trajectory(
         origin=origin, da_times=da_times, extrapolation_func=extrapolation_func
@@ -250,12 +263,26 @@ def _create_extrapolated_trajectory(origin, da_times, extrapolation_func):
             dt = _calculate_seconds(t - ds_prev_posn.time)
             if int(dt) == 0:
                 continue
-            lat, lon = extrapolation_func(
+            lat, lon, u_traj, v_traj = extrapolation_func(
                 lat=points[-1].lat, lon=points[-1].lon, dt=dt, t0=ds_prev_posn.time
             )
+            # u_traj and v_traj are tuples containing the start and end
+            # velocities for the trajectory
+            u_start, u_end = u_traj
+            v_start, v_end = v_traj
+            # for the very first point we also want to record the starting
+            # velocity which was calculated by the interpolation routine
+            if len(points) == 1:
+                points[0]["u_traj"] = u_start
+                points[0]["v_traj"] = u_start
+
             ds_next_posn = xr.Dataset(coords=dict(time=t))
             ds_next_posn["lat"] = lat
             ds_next_posn["lon"] = lon
+            # record the velocity at the end of the current timestep (at the
+            # point in time of the new trajectory point)
+            ds_next_posn["u_traj"] = u_end
+            ds_next_posn["v_traj"] = v_end
             points.append(ds_next_posn)
 
         if dir == "backward":
@@ -263,6 +290,8 @@ def _create_extrapolated_trajectory(origin, da_times, extrapolation_func):
             points = points[::-1]
 
     ds_traj = xr.concat(points, dim="time").sortby("time")
+    ds_traj["u_traj"].attrs = {"long_name": "zonal velocity", "units": "m/s"}
+    ds_traj["v_traj"].attrs = {"long_name": "meridional velocity", "units": "m/s"}
     ds_traj["origin_lat"] = origin.lat
     ds_traj["origin_lon"] = origin.lon
     ds_traj["origin_datetime"] = origin.datetime

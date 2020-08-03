@@ -42,7 +42,9 @@ def extrapolate_posn_with_fixed_velocity(lat, lon, u_vel, v_vel, dt):
     return traced_lat, traced_lon
 
 
-def _extract_column_at_time(ds_domain, t, lat, lon, method):
+def _extract_column_at_time(
+    ds_domain, t, lat, lon, method,
+):
     required_variables = ["u", "v", "sp", "z", "t", "q", "lsm"]
     # pick out only the variables we need, TODO: this should move into parent
     # functions so we can select variables based on the methods used and output
@@ -121,4 +123,4 @@ def extrapolate_using_domain_data(
         u_guess = 0.5 * (u_start + u_end)
         v_guess = 0.5 * (v_start + v_end)
 
-    return lat_end, lon_end
+    return lat_end, lon_end, [u_start, u_end], [v_start, v_end]

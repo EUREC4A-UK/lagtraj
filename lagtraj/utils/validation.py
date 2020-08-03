@@ -1,5 +1,5 @@
 def validate_trajectory(ds_traj):
-    required_fields = ["lat", "lon", "time"]
+    required_fields = ["lat", "lon", "time", "u_traj", "v_traj"]
     missing_fields = list(filter(lambda f: f not in ds_traj, required_fields))
 
     if len(missing_fields) > 0:

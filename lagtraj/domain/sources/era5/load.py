@@ -170,7 +170,12 @@ class ERA5DataSet(object):
 
                 slices = {}
                 for d in dims:
-                    slices[d] = indexers_kwargs[d]
+                    s = indexers_kwargs[d]
+                    # ensure that slices always work if defined monotonically
+                    if da_v[d][0] > da_v[d][-1]:
+                        slices[d] = slice(s.stop, s.start, s.step)
+                    else:
+                        slices[d] = s
 
                 da_v_slice = da_v.sel(
                     **slices, method=method, tolerance=tolerance, drop=drop,

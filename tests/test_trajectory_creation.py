@@ -62,21 +62,3 @@ def test_create_lagrangian_trajectory(ds_domain_test):
     assert ds_traj.time.equals(da_times)
 
     validation.validate_trajectory(ds_traj)
-
-
-# testing command line interface
-def test_cli():
-    fn_out = "stationary_trajectory_test.nc"
-    lagtraj.produce.lagrangian_trajectory.main(
-        lat0=-10,
-        lon0=40,
-        t0=dateutil.parser.parse("2020-01-22T12:00"),
-        t_max=dateutil.parser.parse("2020-01-24T12:00"),
-        dt=datetime.timedelta(hours=4),
-        trajectory_type="stationary",
-        out_filename=fn_out,
-    )
-
-    p = Path(fn_out)
-    assert p.exists()
-    p.unlink()

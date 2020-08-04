@@ -55,32 +55,25 @@ def compute_adv_profile(ds_profile, da_domain, profile_method, gradient_method):
     # the representative vertical profile and horizontal gradients
     ds_ref_pt = ds_profile[["lat", "lon", "time"]]
 
-    profile_method_kwargs = {}
-    if profile_method == "single_point":
-        profile_method_kwargs["reference_point"] = ds_ref_pt
-
-    da_profile = _build_domain_profile(
-        da_field=da_domain, method=profile_method, **profile_method_kwargs
-    )
-
-    dphidx, dphidy = calc_horizontal_gradients(
+    da_dphidx, da_dphidy = calc_horizontal_gradients(
         da_field=da_domain, method=gradient_method, ds_ref_pt=ds_ref_pt
     )
 
-    # compute the relative velocities
-    u_rel = ds_profile.u - ds_profile.u_traj
-    v_rel = ds_profile.v - ds_profile.v_traj
+    # compute the relative velocities (`_local` being the velocities
+    # interpolated to the trajectory (lat, lon) and `_traj` being the velocity
+    # of the trajectory itself)
+    da_u_rel = ds_profile.u_local - ds_profile.u_traj
+    da_v_rel = ds_profile.v_local - ds_profile.v_traj
 
     # dphi/dt = - dphi/dx * u - dphi/dy * v
-    da_dphidt = -dphidx * u_rel - dphidy * v_rel
+    da_dphidt = -da_dphidx * da_u_rel - da_dphidy * da_v_rel
 
     da_dphidt.attrs["long_name"] = f"{da_domain.long_name} tendency (advection)"
     da_dphidt.attrs["units"] = f"{da_domain.units} s**-1"
 
     da_dphidt = da_dphidt.squeeze()
-    da_profile = da_profile.squeeze()
 
-    return da_profile, da_dphidt
+    return da_dphidt, da_dphidx, da_dphidy
 
 
 class InvalidLevelsDefinition(Exception):
@@ -186,29 +179,28 @@ def calculate_timestep(ds_profile_posn, ds_domain, sampling_method):
     ds_profile = ds_profile_posn.copy().set_coords(["time", "level", "lat", "lon"])
     ds_profile["u_traj"] = u_traj
     ds_profile["v_traj"] = v_traj
-    profile_method_kwargs = {}
-    if sampling_method.profile_method == "single_point":
-        profile_method_kwargs["reference_point"] = ds_profile[["lat", "lon", "level"]]
-    ds_profile["u"] = _build_domain_profile(
-        da_field=ds_subdomain.u,
-        method=sampling_method.profile_method,
-        **profile_method_kwargs,
-    )
-    ds_profile["v"] = _build_domain_profile(
-        da_field=ds_subdomain.v,
-        method=sampling_method.profile_method,
-        **profile_method_kwargs,
-    )
+
+    # compute mean profiles and profile at trajectory (lat, lon)-point of all
+    # 3D variables. For this we need a reference point for the interpolations
+    # required when calculating the representative vertical profile and
+    # horizontal gradients
+    ds_ref_pt = ds_profile_posn[["lat", "lon", "time"]]
+    for v in ds_subdomain.data_vars:
+        da_field = ds_subdomain[v]
+        # have to provide `dtype` kwarg otherwise `bottleneck` might use
+        # float32 to calculate means
+        ds_profile[f"{v}_mean"] = da_field.mean(dim=("lat", "lon"), dtype=np.float64)
+        ds_profile[f"{v}_local"] = da_field.squeeze().interp(ds_ref_pt)
 
     for v in ds_subdomain.data_vars:
         da_subdomain = ds_subdomain[v]
-        da_ref_profile, da_adv_profile = compute_adv_profile(
+        da_adv_profile, da_dvdx, da_dvdy = compute_adv_profile(
             da_domain=da_subdomain,
             ds_profile=ds_profile,
-            profile_method=sampling_method.profile_method,
             gradient_method=sampling_method.gradient_method,
         )
         ds_profile[f"d{v}dt_adv"] = da_adv_profile
-        ds_profile[f"{v}_ref"] = da_ref_profile
+        ds_profile[f"d{v}dx"] = da_dvdx
+        ds_profile[f"d{v}dy"] = da_dvdy
 
     return ds_profile

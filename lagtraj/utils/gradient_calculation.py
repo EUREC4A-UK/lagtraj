@@ -111,7 +111,8 @@ def calc_horizontal_gradients(da_field, ds_ref_pt, method="regression"):
     da_dphidx = xr.DataArray(
         x_gradient_array,
         name=f"d{v}dx",
-        dims=("time", "lev"),
+        dims=("time", "level"),
+        coords=dict(time=da_field.time, level=da_field.level),
         attrs=dict(
             long_name=f"{da_field.long_name} x-gradient",
             units=f"{da_field.units} m**-1",
@@ -120,7 +121,8 @@ def calc_horizontal_gradients(da_field, ds_ref_pt, method="regression"):
     da_dphidy = xr.DataArray(
         y_gradient_array,
         name=f"d{v}dy",
-        dims=("time", "lev"),
+        dims=("time", "level"),
+        coords=dict(time=da_field.time, level=da_field.level),
         attrs=dict(
             long_name=f"{da_field.long_name} y-gradient",
             units=f"{da_field.units} m**-1",

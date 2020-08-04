@@ -13,16 +13,22 @@ def validate_trajectory(ds_traj):
 
 
 def validate_forcing_profiles(ds_forcing_profiles):
-    required_fields = ["lat", "lon", "time", "level"]
+    required_vars = ["lat", "lon", "time", "level"]
+    required_2d_fields = []
     for v in FORCING_VARS:
-        required_fields += [f"{v}_mean", f"{v}_local", f"d{v}dt_adv"]
+        v_fields_2d = [f"{v}_mean", f"{v}_local", f"d{v}dt_adv"]
+        required_vars += v_fields_2d
+        required_2d_fields += v_fields_2d
 
-    missing_fields = list(
-        filter(lambda f: f not in ds_forcing_profiles, required_fields)
+    missing_vars = list(
+        filter(lambda f: f not in ds_forcing_profiles, required_vars)
     )
 
-    if len(missing_fields) > 0:
+    if len(missing_vars) > 0:
         raise Exception(
             "The provided forcing profiles are missing the"
-            " following fields: {}".format(", ".join(missing_fields))
+            " following vars: {}".format(", ".join(missing_vars))
         )
+
+    for v in required_2d_fields:
+        assert ds_forcing_profiles[v].dims == ("time", "level")

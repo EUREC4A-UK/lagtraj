@@ -113,7 +113,7 @@ def calc_horizontal_gradients(da_field, ds_ref_pt, method="regression"):
         name=f"d{v}dx",
         dims=("time", "lev"),
         attrs=dict(
-            long_name=f"f{da_field.long_name} x-gradient",
+            long_name=f"{da_field.long_name} x-gradient",
             units=f"{da_field.units} m**-1",
         ),
     )
@@ -122,7 +122,7 @@ def calc_horizontal_gradients(da_field, ds_ref_pt, method="regression"):
         name=f"d{v}dy",
         dims=("time", "lev"),
         attrs=dict(
-            long_name=f"f{da_field.long_name} y-gradient",
+            long_name=f"{da_field.long_name} y-gradient",
             units=f"{da_field.units} m**-1",
         ),
     )

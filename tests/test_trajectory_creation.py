@@ -1,10 +1,6 @@
-from pathlib import Path
-import dateutil.parser
 import datetime
 
-import lagtraj.produce.lagrangian_trajectory
 from lagtraj.utils import validation
-
 import lagtraj.trajectory.create
 
 
@@ -34,7 +30,7 @@ def test_create_linear_trajectory(ds_domain_test):
     da_times = ds_domain_test.time
 
     ds_traj = lagtraj.trajectory.create.create_trajectory(
-        origin=origin, trajectory_type="linear", da_times=da_times, U=[0.0, -0.0,]
+        origin=origin, trajectory_type="linear", da_times=da_times, U=[0.0, -0.0]
     )
 
     assert ds_traj.time.equals(da_times)

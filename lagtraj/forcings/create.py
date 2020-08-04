@@ -11,7 +11,7 @@ from ..trajectory.load import load_data as load_trajectory_data
 
 
 def _make_latlontime_sampling_points(method, ds_trajectory, ds_domain):
-    if method == "model_timesteps":
+    if method == "domain_data":
         t_min_domn = ds_domain.time.min()
         t_max_domn = ds_domain.time.max()
         t_min_traj = ds_trajectory.time.min()
@@ -46,7 +46,7 @@ def _make_latlontime_sampling_points(method, ds_trajectory, ds_domain):
         ds_sampling = ds_trajectory
     else:
         raise NotImplementedError(
-            "Trajectory sampling method `{}` not implemented".format()
+            f"Trajectory sampling method `{method}` not implemented"
         )
     return ds_sampling
 

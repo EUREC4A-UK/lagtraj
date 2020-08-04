@@ -20,21 +20,10 @@ def test_create_stationary_trajectory(ds_domain_test):
     validation.validate_trajectory(ds_traj)
 
 
-def test_create_linear_trajectory(ds_domain_test):
-    t0 = ds_domain_test.time.isel(time=-15)
-
-    origin = lagtraj.trajectory.TrajectoryOrigin(
-        lat=ds_domain_test.lat.mean(), lon=ds_domain_test.lon.mean(), datetime=t0,
-    )
-
+def test_create_linear_trajectory(ds_domain_test, ds_trajectory_linear):
     da_times = ds_domain_test.time
-
-    ds_traj = lagtraj.trajectory.create.create_trajectory(
-        origin=origin, trajectory_type="linear", da_times=da_times, U=[0.0, -0.0]
-    )
-
+    ds_traj = ds_trajectory_linear
     assert ds_traj.time.equals(da_times)
-
     validation.validate_trajectory(ds_traj)
 
 

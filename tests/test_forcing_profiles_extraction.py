@@ -21,7 +21,7 @@ def test_create_forcing_linear_trajectory(
         gradient_method=gradient_method,
         averaging_width=2.0,
         time_sampling_method="domain_data",
-        mask="ocean_only"
+        mask="ocean_only",
     )
     ds_forcing = lagtraj.forcings.create.make_forcing(
         ds_trajectory=ds_traj,

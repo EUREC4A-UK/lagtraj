@@ -113,7 +113,7 @@ def _construct_subdomain(
     # and apply a mask (we might for example only want to consider columns
     # which are over the ocean)
     da_mask = calc_mask(ds=ds_subdomain, mask_type=mask_type)
-    ds_subdomain['mask'] = da_mask
+    ds_subdomain["mask"] = da_mask
     ds_subdomain = ds_subdomain.where(ds_subdomain.mask, other=np.nan)
     ds_subdomain.attrs["data_source"] = ds_domain.attrs.get("data_source")
 
@@ -169,7 +169,7 @@ def calculate_timestep(ds_profile_posn, ds_domain, sampling_method):
         ds_profile_posn=ds_profile_posn,
         ds_domain=ds_domain,
         latlon_sampling_window=sampling_method.averaging_width,
-        mask_type=sampling_method.mask
+        mask_type=sampling_method.mask,
     )
 
     # start with a profile with just the horizontal wind profiles estimated at
@@ -187,7 +187,9 @@ def calculate_timestep(ds_profile_posn, ds_domain, sampling_method):
         da_field = ds_subdomain[v]
         # have to provide `dtype` kwarg otherwise `bottleneck` might use
         # float32 to calculate means
-        da_v__mean = da_field.mean(dim=("lat", "lon"), dtype=np.float64, keep_attrs=True)
+        da_v__mean = da_field.mean(
+            dim=("lat", "lon"), dtype=np.float64, keep_attrs=True
+        )
         da_v__mean.attrs["long_name"] = f"sampling-domain mean {da_field.long_name}"
         ds_profile[f"{v}_mean"] = da_v__mean
 

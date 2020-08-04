@@ -20,9 +20,7 @@ def validate_forcing_profiles(ds_forcing_profiles):
         required_vars += v_fields_2d
         required_2d_fields += v_fields_2d
 
-    missing_vars = list(
-        filter(lambda f: f not in ds_forcing_profiles, required_vars)
-    )
+    missing_vars = list(filter(lambda f: f not in ds_forcing_profiles, required_vars))
 
     if len(missing_vars) > 0:
         raise Exception(

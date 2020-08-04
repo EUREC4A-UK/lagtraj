@@ -1,5 +1,6 @@
-if __name__ == "__main__": # noqa
+if __name__ == "__main__":  # noqa
     import matplotlib
+
     matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
@@ -19,7 +20,7 @@ def main(ds):
     plt.suptitle(
         f"{ds.name} {ds.trajectory_type} trajectory\n{ds.domain_name} domain\n"
         f"`{ds.velocity_method}` velocity method using {ds.velocity_method_kwargs_height}m height\n",
-        y=1.01
+        y=1.01,
     )
 
     return fig
@@ -27,6 +28,7 @@ def main(ds):
 
 if __name__ == "__main__":
     import argparse
+
     argparser = argparse.ArgumentParser()
     argparser.add_argument("forcing_profile.nc")
     args = argparser.parse_args()

@@ -7,9 +7,16 @@ from ..domain import calc_auxiliary_variable as calc_auxiliary_domain_variable
 from ..domain import interpolate_to_height_levels as interpolate_domain_to_height_levels
 
 
-# list of scalars  we want to compute forcings of, TODO: move into yaml input
+# list of scalars we want to compute forcings of, TODO: move into yaml input
 # definitions
-FORCING_SCALARS = ["theta", "rho", "w_pressure_corr", "w_corr", "u", "v"]
+FORCING_VARS = ["u", "v", "theta", "q"]
+
+# list of variables which must be derived, TODO: move itno yaml input
+# definition, NOTE: the order is important here, `rho` must be derived first as
+# it's needed for `w_corr` and `w_pressure_corr`, TODO: the order here should
+# be automatically resolved in a module specialied to era5 (so we can
+# generalise to model input from other models)
+AUXILIARY_VARS = ["theta", "rho", "w_pressure_corr", "w_corr"]
 
 
 ForcingSamplingDefinition = namedtuple(
@@ -94,17 +101,13 @@ def _construct_subdomain(
         time=ds_profile_posn.time,
     )
 
-    required_vars = set(FORCING_SCALARS)
-    available_vars = set(ds_domain.data_vars).intersection(required_vars)
-    missing_vars = required_vars.difference(available_vars)
+    # TODO: make it possible to select which variables to include in the output
+    # (mean and local) profiles, for now use all variables available in the
+    # domain dataset
+    required_vars = list(ds_domain.data_vars)
 
-    if use_hacky_variable_preselection:
-        # TODO: remove this when a routine for computing all the required
-        # variables has been added
-        preselected_vars_hacky = ["u", "v", "sp", "z", "t", "q", "lsm", "w"]
-        ds_domain = ds_domain[preselected_vars_hacky]
-
-    ds_subdomain = ds_domain.sel(**sampling_window)
+    # clip the domain to the sampling window
+    ds_subdomain = ds_domain[required_vars].sel(**sampling_window)
     ds_subdomain.attrs["data_source"] = ds_domain.attrs.get("data_source")
 
     # TODO: this interpolates all domain variables to height levels, but we
@@ -114,21 +117,8 @@ def _construct_subdomain(
         ds=ds_subdomain, height=ds_profile_posn.level
     )
 
-    # XXX: `w_corr` aux variable requires `w_pressure_corr` is calculated
-    # first, this hack which ensure `w_pressure_corr` is first in the list
-    # needs removing and property dependency evaluation implementing
-    missing_vars = list(missing_vars)
-    if "w_corr" in missing_vars:
-        if "w_pressure_corr" in missing_vars:
-            missing_vars.remove("w_pressure_corr")
-        missing_vars.insert(0, "w_pressure_corr")
-    if "w_pressure_corr" in missing_vars:
-        if "rho" in missing_vars:
-            missing_vars.remove("rho")
-        missing_vars.insert(0, "rho")
-
     # attempt to calculate the missing variables as auxiliary variables
-    for v in missing_vars:
+    for v in AUXILIARY_VARS:
         aux_kwargs = {}
         # TODO: these parameters should got into the `sampling_method` definition
         if v == "w_pressure_corr":
@@ -139,7 +129,7 @@ def _construct_subdomain(
         )
 
     # ensure all data is loaded into memory
-    return ds_subdomain_hl[list(required_vars)].compute()
+    return ds_subdomain_hl.compute()
 
 
 def calculate_timestep(ds_profile_posn, ds_domain, sampling_method):
@@ -192,7 +182,7 @@ def calculate_timestep(ds_profile_posn, ds_domain, sampling_method):
         ds_profile[f"{v}_mean"] = da_field.mean(dim=("lat", "lon"), dtype=np.float64)
         ds_profile[f"{v}_local"] = da_field.squeeze().interp(ds_ref_pt)
 
-    for v in ds_subdomain.data_vars:
+    for v in FORCING_VARS:
         da_subdomain = ds_subdomain[v]
         da_adv_profile, da_dvdx, da_dvdy = compute_adv_profile(
             da_domain=da_subdomain,

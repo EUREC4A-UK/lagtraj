@@ -23,12 +23,9 @@ def load_definition(root_data_path, forcing_name):
     )
 
     sampling_definition = ForcingSamplingDefinition(
-        profile_method=forcing_params["profile_method"],
         gradient_method=forcing_params["gradient_method"],
         averaging_width=forcing_params["averaging_width"],
-        time_sampling_method=forcing_params.get(
-            "time_sampling_method", "model_timesteps"
-        ),
+        time_sampling_method=forcing_params.get("time_sampling_method", "domain_data"),
     )
 
     forcing_definition = ForcingDefinition(

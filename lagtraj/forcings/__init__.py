@@ -1,6 +1,6 @@
 from collections import namedtuple
 from .utils.levels import ForcingLevelsDefinition  # noqa
-from .era5 import ForcingSamplingDefinition  # noqa
+from .profile_calculation import ForcingSamplingDefinition  # noqa
 from .. import build_data_path
 
 

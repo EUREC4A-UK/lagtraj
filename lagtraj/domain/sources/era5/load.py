@@ -139,11 +139,6 @@ class ERA5DataSet(object):
     def sel(
         self, indexer=None, method=None, tolerance=None, drop=False, **indexers_kwargs
     ):
-        warnings.warn(
-            "Subsetting an entire era5 dataset is computationally expensive."
-            " Consider accessing the the time, lat, lon attributes directly"
-            " if these qre needed."
-        )
         if len(self._selected_vars) == 0:
             warnings.warn(
                 "You are doing a selection on *all* variables available in this era5 dataset"

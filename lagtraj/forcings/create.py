@@ -78,18 +78,12 @@ def make_forcing(
         dz_min=levels_definition.dz_min,
     )
 
-    ds_forcing = xr.Dataset(coords=ds_sampling.coords,)
-
-    # XXX: eventually this will be replaced by a function which doesn't assume
-    # that the domain data is era5 data
-    timestep_function = profile_calculation.calculate_timestep
-
     forcing_profiles = []
-    for time in tqdm(ds_forcing.time):
+    for time in tqdm(ds_sampling.time):
         # extract from a single timestep the positions (points in space and
         # time) at which to calculate the forcing profile
         ds_profile_posn = ds_sampling.sel(time=time)
-        ds_forcing_profile = timestep_function(
+        ds_forcing_profile = profile_calculation.calculate_timestep(
             ds_profile_posn=ds_profile_posn,
             ds_domain=ds_domain,
             sampling_method=sampling_method,

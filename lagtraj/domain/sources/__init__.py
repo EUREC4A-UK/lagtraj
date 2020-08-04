@@ -2,6 +2,9 @@
 Wrapper interface for dispatching calculations of auxiliary variables to the
 correct functions depending on the data source a given dataset originated from.
 """
+import xarray as xr
+
+
 from .era5.interpolation import interpolate_to_height_levels as era5_hl_interp
 from .era5.aux_variables import calc_variable as era5_calc
 
@@ -50,4 +53,7 @@ def interpolate_to_height_levels(ds, height):
         )
 
     ds_hl.attrs["data_source"] = ds.attrs.get("data_source")
+    # test to ensure that correct coords with attrs has been set
+    if isinstance(height, xr.DataArray):
+        ds_hl["level"] = height
     return ds_hl

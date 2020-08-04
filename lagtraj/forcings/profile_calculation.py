@@ -145,7 +145,7 @@ def calculate_timestep(ds_profile_posn, ds_domain, sampling_method):
     points in `ds_profile_posn`, defining the `time`, `lat` and `lon`
     and `level` (height) positions.
     """
-    ds_domain_timestep = ds_domain.sel(time=ds_profile_posn.time)
+    ds_domain_timestep = ds_domain.time.sel(time=ds_profile_posn.time)
     if ds_domain_timestep.time.count() != 1:
         raise NotImplementedError(
             "Forcings based on era5 data cannot be"
@@ -187,8 +187,14 @@ def calculate_timestep(ds_profile_posn, ds_domain, sampling_method):
         da_field = ds_subdomain[v]
         # have to provide `dtype` kwarg otherwise `bottleneck` might use
         # float32 to calculate means
-        ds_profile[f"{v}_mean"] = da_field.mean(dim=("lat", "lon"), dtype=np.float64)
-        ds_profile[f"{v}_local"] = da_field.squeeze().interp(ds_ref_pt)
+        da_v__mean = da_field.mean(dim=("lat", "lon"), dtype=np.float64, keep_attrs=True)
+        da_v__mean.attrs["long_name"] = f"sampling-domain mean {da_field.long_name}"
+        ds_profile[f"{v}_mean"] = da_v__mean
+
+        da_v__local = da_field.squeeze().interp(ds_ref_pt)
+        da_v__local.attrs["long_name"] = f"trajectory-centered {da_field.long_name}"
+        da_v__local.attrs["units"] = da_field.units
+        ds_profile[f"{v}_local"] = da_v__local
 
     for v in FORCING_VARS:
         da_subdomain = ds_subdomain[v]

@@ -14,6 +14,7 @@ INPUT_REQUIRED_FIELDS = dict(
     levels_dzmin=(None, float),
     levels_ztop=float,
     time_sampling_method=(None, "str"),
+    sampling_mask=[None, "ocean_only"]
 )
 
 

@@ -5,6 +5,7 @@ import numpy as np
 from ..utils.gradient_calculation import calc_horizontal_gradients
 from ..domain import calc_auxiliary_variable as calc_auxiliary_domain_variable
 from ..domain import interpolate_to_height_levels as interpolate_domain_to_height_levels
+from ..domain.mask import calc_mask
 
 
 # list of scalars we want to compute forcings of, TODO: move into yaml input
@@ -21,7 +22,7 @@ AUXILIARY_VARS = ["theta", "rho", "w_pressure_corr", "w_corr"]
 
 ForcingSamplingDefinition = namedtuple(
     "ForcingSamplingDefinition",
-    ["gradient_method", "averaging_width", "time_sampling_method"],
+    ["gradient_method", "averaging_width", "time_sampling_method", "mask"],
 )
 
 
@@ -91,9 +92,9 @@ def _construct_subdomain(
     ds_profile_posn,
     ds_domain,
     latlon_sampling_window,
+    mask_type,
     use_hacky_variable_preselection=False,
 ):
-    # TODO: mask input field `da_domain` here
     l_lat = l_lon = latlon_sampling_window
     sampling_window = dict(
         lat=slice(ds_profile_posn.lat - l_lat / 2.0, ds_profile_posn.lat + l_lat / 2.0),
@@ -108,6 +109,12 @@ def _construct_subdomain(
 
     # clip the domain to the sampling window
     ds_subdomain = ds_domain[required_vars].sel(**sampling_window)
+
+    # and apply a mask (we might for example only want to consider columns
+    # which are over the ocean)
+    da_mask = calc_mask(ds=ds_subdomain, mask_type=mask_type)
+    ds_subdomain['mask'] = da_mask
+    ds_subdomain = ds_subdomain.where(ds_subdomain.mask, other=np.nan)
     ds_subdomain.attrs["data_source"] = ds_domain.attrs.get("data_source")
 
     # TODO: this interpolates all domain variables to height levels, but we
@@ -162,6 +169,7 @@ def calculate_timestep(ds_profile_posn, ds_domain, sampling_method):
         ds_profile_posn=ds_profile_posn,
         ds_domain=ds_domain,
         latlon_sampling_window=sampling_method.averaging_width,
+        mask_type=sampling_method.mask
     )
 
     # start with a profile with just the horizontal wind profiles estimated at

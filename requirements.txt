@@ -6,7 +6,7 @@ datetime
 numpy
 pyyaml
 cdsapi
-pandas
+pandas<=1.0.5  # datetime indexing broken with 1.1.0, https://github.com/pydata/xarray/issues/4283
 scipy
 argparse
 dask[array]

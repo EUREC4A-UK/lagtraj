@@ -7,7 +7,6 @@ from .. import build_data_path
 INPUT_REQUIRED_FIELDS = dict(
     trajectory=str,
     domain=str,
-    profile_method=str,
     gradient_method=str,
     averaging_width=float,
     levels_method=str,

@@ -14,7 +14,7 @@ FORCING_SCALARS = ["theta", "rho", "w_pressure_corr", "w_corr", "u", "v"]
 
 ForcingSamplingDefinition = namedtuple(
     "ForcingSamplingDefinition",
-    ["profile_method", "gradient_method", "averaging_width", "time_sampling_method"],
+    ["gradient_method", "averaging_width", "time_sampling_method"],
 )
 
 
@@ -39,7 +39,7 @@ def _build_domain_profile(da_field, method="single_point", **kwargs):
         raise NotImplementedError(method)
 
 
-def compute_adv_profile(ds_profile, da_domain, profile_method, gradient_method):
+def compute_adv_profile(ds_profile, da_domain, gradient_method):
     """
     Compute the horizontal advective tendency profile and reference profile for
     a field `da_domain` (named `phi` here) for a point on trajectory (defined

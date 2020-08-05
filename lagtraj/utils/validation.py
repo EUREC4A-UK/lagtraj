@@ -2,13 +2,31 @@ from lagtraj.forcings.profile_calculation import FORCING_VARS
 
 
 def validate_trajectory(ds_traj):
-    required_fields = ["lat", "lon", "time", "u_traj", "v_traj"]
+    required_fields = [
+        "lat",
+        "lon",
+        "time",
+        "u_traj",
+        "v_traj",
+        "origin_lat",
+        "origin_lon",
+        "origin_datetime",
+    ]
     missing_fields = list(filter(lambda f: f not in ds_traj, required_fields))
 
     if len(missing_fields) > 0:
         raise Exception(
             "The provided trajectory is missing the following"
             " fields: {}".format(", ".join(missing_fields))
+        )
+
+    required_attrs = ["name", "domain_name", "trajectory_type", "velocity_method"]
+    missing_attrs = list(filter(lambda f: f not in ds_traj.attrs, required_attrs))
+
+    if len(missing_attrs) > 0:
+        raise Exception(
+            "The provided trajectory is missing the following"
+            " attrs: {}".format(", ".join(missing_attrs))
         )
 
 

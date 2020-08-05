@@ -10,7 +10,7 @@ from .load import load_definition
 from . import build_data_path, extrapolation
 from ..domain.load import load_data as load_domain_data
 from ..domain.download import download_complete
-from ..utils import optional_debugging
+from ..utils import optional_debugging, validation
 
 """ Routines for creating a trajectory
 
@@ -113,6 +113,7 @@ def cli(data_path, trajectory_name):
         else:
             ds_trajectory.attrs[k] = str(v)
 
+    validation.validate_trajectory(ds_traj=ds_trajectory)
     ds_trajectory.to_netcdf(trajectory_data_path)
     print("Saved trajectory to `{}`".format(trajectory_data_path))
 
@@ -169,16 +170,15 @@ def create_eulerian_trajectory(origin, da_times):
 
     lat0 = origin.lat
     lon0 = origin.lon
-    ds["lat"] = (
-        ("time",),
-        lat0 * np.ones(len(ds.time)),
-        {"long_name": "latitude", "units": "degrees_east"},
+    ds["origin_datetime"] = origin.datetime
+    ds["origin_lat"] = xr.DataArray(
+        lat0, attrs={"long_name": "latitude", "units": "degrees_east"},
     )
-    ds["lon"] = (
-        ("time",),
-        lon0 * np.ones(len(ds.time)),
-        {"long_name": "longitude", "units": "degrees_north"},
+    ds["origin_lon"] = xr.DataArray(
+        lon0, attrs={"long_name": "longitude", "units": "degrees_north"},
     )
+    ds["lat"] = ("time"), ds.origin_lat.item() * np.ones(len(ds.time))
+    ds["lon"] = ("time"), ds.origin_lon.item() * np.ones(len(ds.time))
     ds["u_traj"] = (
         ("time",),
         np.zeros(len(ds.time)),
@@ -189,6 +189,7 @@ def create_eulerian_trajectory(origin, da_times):
         np.zeros(len(ds.time)),
         {"long_name": "meridional velocity", "units": "m/s"},
     )
+    ds.attrs["velocity_method"] = "stationary trajectory"
 
     return ds
 

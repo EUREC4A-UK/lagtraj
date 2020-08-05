@@ -17,9 +17,15 @@ def main(ds):
         v_adv = f"d{v}dt_adv"
         ds[v_adv].plot(ax=ax, y="level")
 
+    vel_method_details = ""
+    if hasattr(ds, "velocity_method_kwargs_height"):
+        vel_method_details = (
+            f"velocity method using {ds.velocity_method_kwargs_height}m height"
+        )
+
     plt.suptitle(
         f"{ds.name} {ds.trajectory_type} trajectory\n{ds.domain_name} domain\n"
-        f"`{ds.velocity_method}` velocity method using {ds.velocity_method_kwargs_height}m height\n",
+        f"`{ds.velocity_method}` {vel_method_details}\n",
         y=1.01,
     )
 

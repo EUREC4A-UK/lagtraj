@@ -16,6 +16,8 @@ def test_create_stationary_trajectory(ds_domain_test):
     ds_traj = lagtraj.trajectory.create.create_trajectory(
         origin=origin, trajectory_type="eulerian", da_times=da_times,
     )
+    ds_traj.attrs["name"] = "test_trajectory"
+    ds_traj.attrs["domain_name"] = "test_domain_data"
 
     validation.validate_trajectory(ds_traj)
 
@@ -24,6 +26,8 @@ def test_create_linear_trajectory(ds_domain_test, ds_trajectory_linear):
     da_times = ds_domain_test.time
     ds_traj = ds_trajectory_linear
     assert ds_traj.time.equals(da_times)
+    ds_traj.attrs["name"] = "test_trajectory"
+    ds_traj.attrs["domain_name"] = "test_domain_data"
     validation.validate_trajectory(ds_traj)
 
 
@@ -45,5 +49,7 @@ def test_create_lagrangian_trajectory(ds_domain_test):
     )
 
     assert ds_traj.time.equals(da_times)
+    ds_traj.attrs["name"] = "test_trajectory"
+    ds_traj.attrs["domain_name"] = "test_domain_data"
 
     validation.validate_trajectory(ds_traj)

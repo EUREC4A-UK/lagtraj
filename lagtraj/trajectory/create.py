@@ -28,14 +28,14 @@ from ..utils import optional_debugging, validation
 
 def create_trajectory(origin, trajectory_type, da_times, **kwargs):
     if trajectory_type == "eulerian":
-        return create_eulerian_trajectory(origin=origin, da_times=da_times)
+        ds_traj = create_eulerian_trajectory(origin=origin, da_times=da_times)
     elif trajectory_type == "linear":
         if "U" not in kwargs:
             raise Exception(
                 "To use the `linear` trajectory integration you"
                 " must provide a velocity `U`"
             )
-        return create_linear_trajectory(origin=origin, da_times=da_times, **kwargs)
+        ds_traj = create_linear_trajectory(origin=origin, da_times=da_times, **kwargs)
     elif trajectory_type == "lagrangian":
         if "ds_domain" not in kwargs:
             raise Exception(
@@ -47,9 +47,16 @@ def create_trajectory(origin, trajectory_type, da_times, **kwargs):
                 "To integrate a trajectory using velocities from model data"
                 " you must select a `velocity_method`"
             )
-        return create_lagrangian_trajectory(origin=origin, da_times=da_times, **kwargs)
+        ds_traj = create_lagrangian_trajectory(
+            origin=origin, da_times=da_times, **kwargs
+        )
     else:
         raise NotImplementedError(f"`{trajectory_type}` trajectory type not available")
+
+    ds_traj.attrs["trajectory_type"] = trajectory_type
+    for (k, v) in kwargs.items():
+        ds_traj.attrs[k] = v
+    return ds_traj
 
 
 def main():
@@ -99,19 +106,18 @@ def cli(data_path, trajectory_name):
 
     ds_trajectory = create_trajectory(**kwargs)
 
-    trajectory_data_path = build_data_path(
-        root_data_path=data_path, trajectory_name=traj_definition.name
-    )
-
     ds_trajectory.attrs["name"] = trajectory_name
     ds_trajectory.attrs["domain_name"] = traj_definition.domain
-    ds_trajectory.attrs["trajectory_type"] = traj_definition.type
     for k, v in traj_definition.extra_kwargs.items():
         if type(v) == dict:
             for k_, v_ in v.items():
                 ds_trajectory.attrs[f"{k}_{k_}"] = v_
         else:
             ds_trajectory.attrs[k] = str(v)
+
+    trajectory_data_path = build_data_path(
+        root_data_path=data_path, trajectory_name=traj_definition.name
+    )
 
     validation.validate_trajectory(ds_traj=ds_trajectory)
     ds_trajectory.to_netcdf(trajectory_data_path)
@@ -189,7 +195,6 @@ def create_eulerian_trajectory(origin, da_times):
         np.zeros(len(ds.time)),
         {"long_name": "meridional velocity", "units": "m/s"},
     )
-    ds.attrs["velocity_method"] = "stationary trajectory"
 
     return ds
 

@@ -274,7 +274,7 @@ def _create_extrapolated_trajectory(origin, da_times, extrapolation_func):
             # velocity which was calculated by the interpolation routine
             if len(points) == 1:
                 points[0]["u_traj"] = u_start
-                points[0]["v_traj"] = u_start
+                points[0]["v_traj"] = v_start
 
             ds_next_posn = xr.Dataset(coords=dict(time=t))
             ds_next_posn["lat"] = lat

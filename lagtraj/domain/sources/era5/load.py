@@ -164,7 +164,12 @@ class ERA5DataSet(object):
             slices = {}
             dims = set(indexers_dims).intersection(ds.dims)
             for d in dims:
-                slices[d] = indexers_kwargs[d]
+                s = indexers_kwargs[d]
+                # ensure that slices always work if defined monotonically
+                if ds[d][0] > ds[d][-1]:
+                    slices[d] = slice(s.stop, s.start, s.step)
+                else:
+                    slices[d] = s
 
             ds_v_slice = ds[variables].sel(
                 **slices, method=method, tolerance=tolerance, drop=drop,

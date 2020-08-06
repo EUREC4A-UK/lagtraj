@@ -1,6 +1,8 @@
 from collections import namedtuple
 
 from .. import build_data_path
+from .sources import interpolate_to_height_levels  # noqa
+from .sources import calc_auxiliary_variable  # noqa
 
 LatLonBoundingBox = namedtuple(
     "LatLonBoundingBox", ["lat_min", "lat_max", "lon_min", "lon_max"]

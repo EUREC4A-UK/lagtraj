@@ -1,7 +1,7 @@
 import numpy as np
 
 from .. import interpolation
-from ...domain.sources.era5.interpolation import interpolate_to_height_levels
+from ...domain import interpolate_to_height_levels
 
 
 def weighted_velocity(ds_column, pres_cutoff_start, pres_cutoff_end):

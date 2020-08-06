@@ -97,6 +97,16 @@ def load_definition(input_name, input_type, root_data_path, required_fields):
                 input_name=input_name,
                 input_type=input_type,
             )
+            if not input_local_path.exists():
+                input_type_plural = DATA_TYPE_PLURAL[input_type]
+                raise Exception(
+                    f"The requested {input_type} ({input_name}) wasn't found. "
+                    f"To use a {input_type} with this name please define its "
+                    f"parameters {input_local_path}\n"
+                    "(or run `python -m lagtraj.input_definitions.examples` all available with"
+                    "to see the ones currently bundled with lagtraj"
+                )
+            print()
         with open(input_local_path) as fh:
             params = yaml.load(fh, Loader=yaml.FullLoader)
 

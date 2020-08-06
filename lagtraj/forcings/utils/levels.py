@@ -23,7 +23,9 @@ def make_levels(method, n_levels, z_top, dz_min=None):
     else:
         raise Exception("Unknown strategy for making levels")
     return xr.DataArray(
-        levels, dims=("level",), attrs=dict(long_name="height", units="m")
+        levels,
+        dims=("level",),
+        attrs=dict(long_name="height", units="m", method="linear"),
     )
 
 

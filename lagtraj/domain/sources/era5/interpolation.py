@@ -33,8 +33,8 @@ def interpolate_to_height_levels(ds_model_levels, height, mask_method="sea"):
         # construct coords for output dataset (on height levels)
         coords = dict(ds_timestep_model_levels.coords)
         del coords["level"]
-        coords["height"] = xr.DataArray(
-            height, attrs={"long_name": "altitude", "units": "metres"}
+        coords["level"] = xr.DataArray(
+            height, attrs={"long_name": "altitude", "units": "metres"}, dims=("level")
         )
         ds_timestep_height_levels = xr.Dataset(coords=coords)
 
@@ -87,8 +87,10 @@ def interpolate_to_height_levels(ds_model_levels, height, mask_method="sea"):
                     interp_kwargs["upper_extrapolation_with_gradient"] = True
 
                 da_v_height_levels = xr.DataArray(
-                    steffen_3d(**interp_kwargs), dims=("height", "lat", "lon")
+                    steffen_3d(**interp_kwargs), dims=("level", "lat", "lon")
                 )
+                da_v_height_levels.attrs.update(da_v.attrs)
+                da_v_height_levels.attrs["notes"] = "interpolated from pressure levels"
                 ds_timestep_height_levels[v] = da_v_height_levels
 
         datasets_on_height_levels.append(ds_timestep_height_levels)

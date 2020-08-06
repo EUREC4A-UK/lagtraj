@@ -42,7 +42,9 @@ def extrapolate_posn_with_fixed_velocity(lat, lon, u_vel, v_vel, dt):
     return traced_lat, traced_lon
 
 
-def _extract_column_at_time(ds_domain, t, lat, lon, method):
+def _extract_column_at_time(
+    ds_domain, t, lat, lon, method,
+):
     required_variables = ["u", "v", "sp", "z", "t", "q", "lsm"]
     # pick out only the variables we need, TODO: this should move into parent
     # functions so we can select variables based on the methods used and output
@@ -76,6 +78,9 @@ def extrapolate_using_domain_data(
     ds_column_interpolated = _extract_column_at_time(
         t=t0, lat=lat, lon=lon, method=time_space_interpolation, ds_domain=ds_domain
     )
+    # to be able to interpolate to height levels and produce auxiliary
+    # variables later we need to know where this data originated
+    ds_column_interpolated.attrs["data_source"] = ds_domain.attrs.get("data_source")
 
     lat_start, lon_start = lat, lon
     u_start, v_start = estimate_horizontal_velocities(
@@ -108,6 +113,8 @@ def extrapolate_using_domain_data(
             method=time_space_interpolation,
             ds_domain=ds_domain,
         )
+        ds_column_interpolated.attrs["data_source"] = ds_domain.attrs.get("data_source")
+
         u_end, v_end = estimate_horizontal_velocities(
             ds_column=ds_column_interpolated,
             method=velocity_method,
@@ -116,4 +123,4 @@ def extrapolate_using_domain_data(
         u_guess = 0.5 * (u_start + u_end)
         v_guess = 0.5 * (v_start + v_end)
 
-    return lat_end, lon_end
+    return lat_end, lon_end, [u_start, u_end], [v_start, v_end]

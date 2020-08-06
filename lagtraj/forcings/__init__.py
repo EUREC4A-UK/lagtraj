@@ -1,13 +1,12 @@
 from collections import namedtuple
 from .utils.levels import ForcingLevelsDefinition  # noqa
-from .era5 import ForcingSamplingDefinition  # noqa
+from .profile_calculation import ForcingSamplingDefinition  # noqa
 from .. import build_data_path
 
 
 INPUT_REQUIRED_FIELDS = dict(
     trajectory=str,
     domain=str,
-    profile_method=str,
     gradient_method=str,
     averaging_width=float,
     levels_method=str,
@@ -15,6 +14,7 @@ INPUT_REQUIRED_FIELDS = dict(
     levels_dzmin=(None, float),
     levels_ztop=float,
     time_sampling_method=(None, "str"),
+    sampling_mask=[None, "ocean_only"],
 )
 
 

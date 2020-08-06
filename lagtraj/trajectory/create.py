@@ -10,7 +10,7 @@ from .load import load_definition
 from . import build_data_path, extrapolation
 from ..domain.load import load_data as load_domain_data
 from ..domain.download import download_complete
-from ..utils import optional_debugging
+from ..utils import optional_debugging, validation
 
 """ Routines for creating a trajectory
 
@@ -28,14 +28,14 @@ from ..utils import optional_debugging
 
 def create_trajectory(origin, trajectory_type, da_times, **kwargs):
     if trajectory_type == "eulerian":
-        return create_eulerian_trajectory(origin=origin, da_times=da_times)
+        ds_traj = create_eulerian_trajectory(origin=origin, da_times=da_times)
     elif trajectory_type == "linear":
         if "U" not in kwargs:
             raise Exception(
                 "To use the `linear` trajectory integration you"
                 " must provide a velocity `U`"
             )
-        return create_linear_trajectory(origin=origin, da_times=da_times, **kwargs)
+        ds_traj = create_linear_trajectory(origin=origin, da_times=da_times, **kwargs)
     elif trajectory_type == "lagrangian":
         if "ds_domain" not in kwargs:
             raise Exception(
@@ -47,9 +47,16 @@ def create_trajectory(origin, trajectory_type, da_times, **kwargs):
                 "To integrate a trajectory using velocities from model data"
                 " you must select a `velocity_method`"
             )
-        return create_lagrangian_trajectory(origin=origin, da_times=da_times, **kwargs)
+        ds_traj = create_lagrangian_trajectory(
+            origin=origin, da_times=da_times, **kwargs
+        )
     else:
         raise NotImplementedError(f"`{trajectory_type}` trajectory type not available")
+
+    ds_traj.attrs["trajectory_type"] = trajectory_type
+    for (k, v) in kwargs.items():
+        ds_traj.attrs[k] = v
+    return ds_traj
 
 
 def main():
@@ -99,13 +106,8 @@ def cli(data_path, trajectory_name):
 
     ds_trajectory = create_trajectory(**kwargs)
 
-    trajectory_data_path = build_data_path(
-        root_data_path=data_path, trajectory_name=traj_definition.name
-    )
-
     ds_trajectory.attrs["name"] = trajectory_name
     ds_trajectory.attrs["domain_name"] = traj_definition.domain
-    ds_trajectory.attrs["trajectory_type"] = traj_definition.type
     for k, v in traj_definition.extra_kwargs.items():
         if type(v) == dict:
             for k_, v_ in v.items():
@@ -113,6 +115,11 @@ def cli(data_path, trajectory_name):
         else:
             ds_trajectory.attrs[k] = str(v)
 
+    trajectory_data_path = build_data_path(
+        root_data_path=data_path, trajectory_name=traj_definition.name
+    )
+
+    validation.validate_trajectory(ds_traj=ds_trajectory)
     ds_trajectory.to_netcdf(trajectory_data_path)
     print("Saved trajectory to `{}`".format(trajectory_data_path))
 
@@ -169,15 +176,24 @@ def create_eulerian_trajectory(origin, da_times):
 
     lat0 = origin.lat
     lon0 = origin.lon
-    ds["lat"] = (
-        ("time",),
-        lat0 * np.ones(len(ds.time)),
-        {"long_name": "latitude", "units": "degrees_east"},
+    ds["origin_datetime"] = origin.datetime
+    ds["origin_lat"] = xr.DataArray(
+        lat0, attrs={"long_name": "latitude", "units": "degrees_east"},
     )
-    ds["lon"] = (
+    ds["origin_lon"] = xr.DataArray(
+        lon0, attrs={"long_name": "longitude", "units": "degrees_north"},
+    )
+    ds["lat"] = ("time"), ds.origin_lat.item() * np.ones(len(ds.time))
+    ds["lon"] = ("time"), ds.origin_lon.item() * np.ones(len(ds.time))
+    ds["u_traj"] = (
         ("time",),
-        lon0 * np.ones(len(ds.time)),
-        {"long_name": "longitude", "units": "degrees_north"},
+        np.zeros(len(ds.time)),
+        {"long_name": "zonal velocity", "units": "m/s"},
+    )
+    ds["v_traj"] = (
+        ("time",),
+        np.zeros(len(ds.time)),
+        {"long_name": "meridional velocity", "units": "m/s"},
     )
 
     return ds
@@ -192,9 +208,12 @@ def create_linear_trajectory(origin, da_times, U):
         else:
             s = -1.0
 
-        return extrapolation.extrapolate_posn_with_fixed_velocity(
+        lat_new, lon_new = extrapolation.extrapolate_posn_with_fixed_velocity(
             lat=lat, lon=lon, u_vel=s * U[0], v_vel=s * U[1], dt=s * dt,
         )
+        u_start_and_end = (U[0], U[0])
+        v_start_and_end = (U[1], U[1])
+        return lat_new, lon_new, u_start_and_end, v_start_and_end
 
     return _create_extrapolated_trajectory(
         origin=origin, da_times=da_times, extrapolation_func=extrapolation_func
@@ -250,12 +269,26 @@ def _create_extrapolated_trajectory(origin, da_times, extrapolation_func):
             dt = _calculate_seconds(t - ds_prev_posn.time)
             if int(dt) == 0:
                 continue
-            lat, lon = extrapolation_func(
+            lat, lon, u_traj, v_traj = extrapolation_func(
                 lat=points[-1].lat, lon=points[-1].lon, dt=dt, t0=ds_prev_posn.time
             )
+            # u_traj and v_traj are tuples containing the start and end
+            # velocities for the trajectory
+            u_start, u_end = u_traj
+            v_start, v_end = v_traj
+            # for the very first point we also want to record the starting
+            # velocity which was calculated by the interpolation routine
+            if len(points) == 1:
+                points[0]["u_traj"] = u_start
+                points[0]["v_traj"] = v_start
+
             ds_next_posn = xr.Dataset(coords=dict(time=t))
             ds_next_posn["lat"] = lat
             ds_next_posn["lon"] = lon
+            # record the velocity at the end of the current timestep (at the
+            # point in time of the new trajectory point)
+            ds_next_posn["u_traj"] = u_end
+            ds_next_posn["v_traj"] = v_end
             points.append(ds_next_posn)
 
         if dir == "backward":
@@ -263,6 +296,8 @@ def _create_extrapolated_trajectory(origin, da_times, extrapolation_func):
             points = points[::-1]
 
     ds_traj = xr.concat(points, dim="time").sortby("time")
+    ds_traj["u_traj"].attrs = {"long_name": "zonal velocity", "units": "m/s"}
+    ds_traj["v_traj"].attrs = {"long_name": "meridional velocity", "units": "m/s"}
     ds_traj["origin_lat"] = origin.lat
     ds_traj["origin_lon"] = origin.lon
     ds_traj["origin_datetime"] = origin.datetime

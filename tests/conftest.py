@@ -41,3 +41,20 @@ def ds_domain_test(scope="session"):
     DOMAIN_NAME = "eurec4a_circle_eul"
     ds = lagtraj.domain.load.load_data(root_data_path=testdata_dir, name=DOMAIN_NAME)
     return ds
+
+
+@pytest.fixture
+def ds_trajectory_linear(ds_domain_test):
+    t0 = ds_domain_test.time.isel(time=-15)
+
+    origin = lagtraj.trajectory.TrajectoryOrigin(
+        lat=ds_domain_test.lat.mean(), lon=ds_domain_test.lon.mean(), datetime=t0,
+    )
+
+    da_times = ds_domain_test.time
+
+    ds_traj = lagtraj.trajectory.create.create_trajectory(
+        origin=origin, trajectory_type="linear", da_times=da_times, U=[0.0, -0.0]
+    )
+
+    return ds_traj

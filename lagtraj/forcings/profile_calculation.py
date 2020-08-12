@@ -122,7 +122,7 @@ class InvalidLevelsDefinition(Exception):
 
 def _reset_lat_lon(ds):
     # Function to ensure lat and lon are not a dimension on this data.
-    ds=ds.reset_coords(["lat", "lon"])
+    ds = ds.reset_coords(["lat", "lon"])
     ds["lat"].attrs = {"long_name": "latitude", "units": "degrees_north"}
     ds["lon"].attrs = {"long_name": "longitude", "units": "degrees_east"}
     return ds
@@ -154,6 +154,8 @@ def _construct_subdomain(
     # which are over the ocean)
     da_mask = calc_mask(ds=ds_subdomain, mask_type=mask_type)
     ds_subdomain["mask"] = da_mask
+    # units will be requested whe calculating mean and local values
+    ds_subdomain["mask"].attrs["units"] = ["(0 - 1)"]
     ds_subdomain = ds_subdomain.where(ds_subdomain.mask, other=np.nan)
     ds_subdomain.attrs["data_source"] = ds_domain.attrs.get("data_source")
 

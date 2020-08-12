@@ -61,7 +61,7 @@ def interpolate_to_height_levels(ds_model_levels, height, mask_method="sea"):
             da_v = ds_timestep_model_levels[v]
             if "level" not in da_v.dims:
                 # doesn't need interpolating so we just copy it across
-                da_v = ds_timestep_model_levels[v]
+                ds_timestep_height_levels[v] = ds_timestep_model_levels[v]
             else:
                 field_p_levels = ds_timestep_model_levels[v]
                 interp_kwargs = dict(

@@ -103,18 +103,12 @@ def calculate_heights_and_pressures(ds):
         ds_extra["height_h"] = xr.DataArray(
             height_h,
             dims=height_dims,
-            attrs={
-                "long_name": "height above sea level at half level",
-                "units": "m",
-            },
+            attrs={"long_name": "height above sea level at half level", "units": "m",},
         )
         ds_extra["height_f"] = xr.DataArray(
             height_f,
             dims=height_dims,
-            attrs={
-                "long_name": "height above sea level at full level",
-                "units": "m",
-            },
+            attrs={"long_name": "height above sea level at full level", "units": "m",},
         )
         ds_extra["p_h"] = xr.DataArray(
             p_h,

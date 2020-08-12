@@ -138,10 +138,11 @@ def main():
 
     with optional_debugging(args.debug):
         ds_forcing = make_forcing(
-                levels_definition=forcing_defn.levels,
-        ds_domain=ds_domain,
-        ds_trajectory=ds_trajectory,
-        sampling_method=forcing_defn.sampling)
+            levels_definition=forcing_defn.levels,
+            ds_domain=ds_domain,
+            ds_trajectory=ds_trajectory,
+            sampling_method=forcing_defn.sampling,
+        )
 
     ds_forcing.attrs.update(ds_domain.attrs)
     attr_dict = dict(
@@ -149,7 +150,7 @@ def main():
         ds_domain=ds_domain,
         ds_trajectory=ds_trajectory,
         sampling_method=forcing_defn.sampling,
-        trajectory_name=forcing_defn.trajectory
+        trajectory_name=forcing_defn.trajectory,
     )
     append_dictionary_to_attrs(attr_dict, ds_forcing)
     ds_time_to_seconds(ds_forcing)

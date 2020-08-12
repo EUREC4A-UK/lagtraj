@@ -34,7 +34,7 @@ def interpolate_to_height_levels(ds_model_levels, height, mask_method="sea"):
         coords = dict(ds_timestep_model_levels.coords)
         del coords["level"]
         coords["level"] = xr.DataArray(
-            height, attrs={"long_name": "altitude", "units": "metres"}, dims=("level")
+            height, attrs={"long_name": "altitude", "units": "m"}, dims=("level")
         )
         ds_timestep_height_levels = xr.Dataset(coords=coords)
 

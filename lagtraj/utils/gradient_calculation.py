@@ -67,7 +67,8 @@ def _regression_gradients(x_array, y_array, val_array):
             y_flat_filter = np.expand_dims(y_flat[~np.isnan(data_flat)], axis=1)
             ones_flat_filter = np.expand_dims(ones_flat[~np.isnan(data_flat)], axis=1)
             oxy_mat = np.hstack((ones_flat_filter, x_flat_filter, y_flat_filter))
-            # Use the normal method to find the best fit
+            # Use the normal method to find the best fit of a plane through the data
+            # At each individual model level
             theta = np.dot(
                 np.dot(
                     np.linalg.pinv(np.dot(oxy_mat.transpose(), oxy_mat)),

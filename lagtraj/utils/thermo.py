@@ -24,7 +24,7 @@ pref = 100000.0  # reference pressure.
 p_triple_point = 610.7  # triple point pressure
 
 
-def theta_l_extensive(tt, pp, qt, ql, qi):
+def theta_l_detailed(tt, pp, qt, ql, qi):
     """theta_l: becomes theta for a dry parcel"""
     theta_l = xr.where(
         ql + qi < 0.999 * qt,

@@ -3,7 +3,7 @@ import numpy as np
 
 from .constants import rd, rv_over_rd_minus_one, cp, p_ref, rg, rlv, rls, omega
 from ....utils.interpolation import cos_transition
-from ....utils.thermo import theta_l_extensive
+from ....utils.thermo import theta_l_detailed
 
 rd_over_cp = rd / cp
 p_ref_inv = 1.0 / p_ref
@@ -108,7 +108,7 @@ def calc_variable(ds, var, **kwargs):
     elif var == "theta_l":
         # Compute a relatively well conserved liquid water potential temperature
         return xr.DataArray(
-            theta_l_extensive(ds["t"], ds["p_f"], ds["q_t"], ds["clwc"], ds["ciwc"],),
+            theta_l_detailed(ds["t"], ds["p_f"], ds["q_t"], ds["clwc"], ds["ciwc"],),
             attrs={"long_name": "Liquid water potential temperature", "units": "K"},
         )
     elif var == "u_g":

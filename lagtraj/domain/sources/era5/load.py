@@ -5,7 +5,7 @@ import functools
 import warnings
 
 from . import FILENAME_FORMAT
-
+from .utils import add_era5_global_attributes
 
 MODEL_RUN_TYPES = ["an", "fc"]  # analysis and forecast runs
 LEVEL_TYPES = ["model", "single"]  # need model and surface data
@@ -268,5 +268,5 @@ def load_data(data_path, use_lazy_loading=False):
         ds = _load_naive(data_path)
     else:
         ds = ERA5DataSet(data_path)
-
+    add_era5_global_attributes(ds)
     return ds

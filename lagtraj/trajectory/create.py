@@ -11,8 +11,8 @@ from . import build_data_path, extrapolation
 from ..domain.load import load_data as load_domain_data
 from ..domain.download import download_complete
 from ..utils import optional_debugging, validation
-from ..domain.sources.era5.load import ERA5DataSet
 from ..utils.time import ds_time_to_seconds
+from ..utils.xarray import append_dictionary_to_attrs
 
 """ Routines for creating a trajectory
 
@@ -26,18 +26,6 @@ from ..utils.time import ds_time_to_seconds
 # add_dict_to_global_attrs(ds_traj, trajectory_dict)
 # ds_traj.to_netcdf("ds_traj.nc")
 """
-
-
-def _append_dictionary_to_attrs(input_dictionary, output_ds, init_str=""):
-    for k, v in input_dictionary.items():
-        if isinstance(v, dict):
-            _append_dictionary_to_attrs(v, output_ds, init_str=str(k) + "_")
-        elif isinstance(v, xr.Dataset) or isinstance(v, ERA5DataSet):
-            output_ds.attrs[init_str + k] = str(type(v))
-        elif isinstance(v, xr.DataArray):
-            output_ds.attrs[init_str + k] = v.values
-        else:
-            output_ds.attrs[init_str + k] = v
 
 
 def create_trajectory(origin, trajectory_type, da_times, **kwargs):
@@ -68,7 +56,7 @@ def create_trajectory(origin, trajectory_type, da_times, **kwargs):
         raise NotImplementedError(f"`{trajectory_type}` trajectory type not available")
 
     ds_traj.attrs["trajectory_type"] = trajectory_type
-    _append_dictionary_to_attrs(kwargs, ds_traj)
+    append_dictionary_to_attrs(kwargs, ds_traj)
     return ds_traj
 
 
@@ -118,6 +106,7 @@ def cli(data_path, trajectory_name):
         kwargs["ds_domain"] = ds_domain
 
     ds_trajectory = create_trajectory(**kwargs)
+    ds_trajectory.attrs.update(ds_domain.attrs)
 
     ds_trajectory.attrs["name"] = trajectory_name
     ds_trajectory.attrs["domain_name"] = traj_definition.domain

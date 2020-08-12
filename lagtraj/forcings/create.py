@@ -136,18 +136,22 @@ def main():
             "and then run the forcing creation again"
         )
 
-    kwargs = dict(
+    with optional_debugging(args.debug):
+        ds_forcing = make_forcing(
+                levels_definition=forcing_defn.levels,
+        ds_domain=ds_domain,
+        ds_trajectory=ds_trajectory,
+        sampling_method=forcing_defn.sampling)
+
+    ds_forcing.attrs.update(ds_domain.attrs)
+    attr_dict = dict(
         levels_definition=forcing_defn.levels,
         ds_domain=ds_domain,
         ds_trajectory=ds_trajectory,
         sampling_method=forcing_defn.sampling,
+        trajectory_name=forcing_defn.trajectory
     )
-
-    with optional_debugging(args.debug):
-        ds_forcing = make_forcing(**kwargs)
-
-    ds_forcing.attrs.update(ds_domain.attrs)
-    append_dictionary_to_attrs(kwargs, ds_forcing)
+    append_dictionary_to_attrs(attr_dict, ds_forcing)
     ds_time_to_seconds(ds_forcing)
     fix_units(ds_forcing)
     output_file_path = build_forcing_data_path(

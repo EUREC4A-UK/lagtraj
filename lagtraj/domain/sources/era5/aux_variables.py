@@ -1,6 +1,7 @@
 import xarray as xr
+import numpy as np
 
-from .constants import rd, rv_over_rd_minus_one, cp, p_ref, rg, rlv, rls
+from .constants import rd, rv_over_rd_minus_one, cp, p_ref, rg, rlv, rls, omega
 from ....utils.interpolation import cos_transition
 from ....utils.thermo import theta_l_extensive
 
@@ -109,6 +110,18 @@ def calc_variable(ds, var, **kwargs):
         return xr.DataArray(
             theta_l_extensive(ds["t"], ds["p_f"], ds["q_t"], ds["clwc"], ds["ciwc"],),
             attrs={"long_name": "Liquid water potential temperature", "units": "K"},
+        )
+    elif var == "u_g":
+        f_cor = 2.0 * omega * np.sin(np.deg2rad(ds["lat"]))
+        return xr.DataArray(
+            -(1.0 / (f_cor * ds["rho_mean"])) * ds["dp_fdy"],
+            attrs={"long_name": "U component of geostrophic wind", "units": "m s**-1"},
+        )
+    elif var == "v_g":
+        f_cor = 2.0 * omega * np.sin(np.deg2rad(ds["lat"]))
+        return xr.DataArray(
+            (1.0 / (f_cor * ds["rho_mean"])) * ds["dp_fdx"],
+            attrs={"long_name": "V component of geostrophic wind", "units": "m s**-1"},
         )
     else:
         raise NotImplementedError(f"Variable `{var}` not implemented")

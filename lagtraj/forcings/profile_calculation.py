@@ -49,6 +49,8 @@ AUXILIARY_VARS = [
     "theta_l",
 ]
 
+# Geostrophic winds can only be calculated after the profile calculations
+FINAL_VARS = ["u_g", "v_g"]
 
 ForcingSamplingDefinition = namedtuple(
     "ForcingSamplingDefinition",
@@ -205,6 +207,7 @@ def calculate_timestep(ds_profile_posn, ds_domain, sampling_method):
     # start with a profile with just the horizontal wind profiles estimated at
     # the trajectory point (these are needed to compute the advective derivatives)
     ds_profile = ds_profile_posn.copy().set_coords(["time", "level", "lat", "lon"])
+    ds_profile.attrs["data_source"] = "era5"
     ds_profile["u_traj"] = u_traj
     ds_profile["v_traj"] = v_traj
 
@@ -238,5 +241,9 @@ def calculate_timestep(ds_profile_posn, ds_domain, sampling_method):
         ds_profile[f"d{v}dt_adv"] = da_adv_profile
         ds_profile[f"d{v}dx"] = da_dvdx
         ds_profile[f"d{v}dy"] = da_dvdy
+
+    for v in FINAL_VARS:
+        aux_kwargs = {}
+        ds_profile[v] = calc_auxiliary_domain_variable(ds=ds_profile, v=v, **aux_kwargs)
 
     return ds_profile

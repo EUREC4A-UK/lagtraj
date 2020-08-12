@@ -8,6 +8,7 @@ from .utils.levels import make_levels
 from ..utils import optional_debugging
 from ..domain.load import load_data as load_domain_data
 from ..trajectory.load import load_data as load_trajectory_data
+from ..utils.time import ds_time_to_seconds
 
 
 def _make_latlontime_sampling_points(method, ds_trajectory, ds_domain):
@@ -141,6 +142,7 @@ def main():
             sampling_method=forcing_defn.sampling,
         )
 
+    ds_time_to_seconds(ds_forcing)
     output_file_path = build_forcing_data_path(
         root_data_path=args.data_path, forcing_name=forcing_defn.name
     )

@@ -120,6 +120,14 @@ class InvalidLevelsDefinition(Exception):
     pass
 
 
+def _reset_lat_lon(ds):
+    # Function to ensure lat and lon are not a dimension on this data.
+    ds=ds.reset_coords(["lat", "lon"])
+    ds["lat"].attrs = {"long_name": "latitude", "units": "degrees_north"}
+    ds["lon"].attrs = {"long_name": "longitude", "units": "degrees_east"}
+    return ds
+
+
 def _construct_subdomain(
     ds_profile_posn,
     ds_domain,
@@ -246,4 +254,5 @@ def calculate_timestep(ds_profile_posn, ds_domain, sampling_method):
         aux_kwargs = {}
         ds_profile[v] = calc_auxiliary_domain_variable(ds=ds_profile, v=v, **aux_kwargs)
 
+    ds_profile = _reset_lat_lon(ds_profile)
     return ds_profile

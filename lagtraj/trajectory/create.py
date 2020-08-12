@@ -12,6 +12,7 @@ from ..domain.load import load_data as load_domain_data
 from ..domain.download import download_complete
 from ..utils import optional_debugging, validation
 from ..domain.sources.era5.load import ERA5DataSet
+from ..utils.time import ds_time_to_seconds
 
 """ Routines for creating a trajectory
 
@@ -313,6 +314,7 @@ def _create_extrapolated_trajectory(origin, da_times, extrapolation_func):
     ds_traj["origin_lat"] = origin.lat
     ds_traj["origin_lon"] = origin.lon
     ds_traj["origin_datetime"] = origin.datetime
+    ds_time_to_seconds(ds_traj)
     return ds_traj
 
 

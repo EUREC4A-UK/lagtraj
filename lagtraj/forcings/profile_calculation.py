@@ -10,14 +10,44 @@ from ..domain.mask import calc_mask
 
 # list of scalars we want to compute forcings of, TODO: move into yaml input
 # definitions
-FORCING_VARS = ["u", "v", "theta", "q"]
+FORCING_VARS = [
+    "u",
+    "v",
+    "theta",
+    "q",
+    "clwc",
+    "ciwc",
+    "t",
+    "p_f",
+    "t_l",
+    "cc",
+    "q_t",
+    "r_t",
+    "r_v",
+    "r_l",
+    "r_i",
+    "theta_l",
+]
 
 # list of variables which must be derived, TODO: move itno yaml input
 # definition, NOTE: the order is important here, `rho` must be derived first as
 # it's needed for `w_corr` and `w_pressure_corr`, TODO: the order here should
 # be automatically resolved in a module specialied to era5 (so we can
 # generalise to model input from other models)
-AUXILIARY_VARS = ["theta", "rho", "w_pressure_corr", "w_corr"]
+AUXILIARY_VARS = [
+    "theta",
+    "rho",
+    "w_pressure_corr",
+    "w_corr",
+    "t_l",
+    "q_t",
+    "q_t_hydromet",
+    "r_t",
+    "r_v",
+    "r_l",
+    "r_i",
+    "theta_l",
+]
 
 
 ForcingSamplingDefinition = namedtuple(

@@ -11,5 +11,7 @@ cp = 1004.0
 rd_over_cp = rd / cp
 p_ref_inv = 1.0 / p_ref
 omega = 7.2921150e-5
+rlv = 2.5008e6
+rls = 2.8345e6
 
 longitude_tolerance = 0.001  # (about 100m)

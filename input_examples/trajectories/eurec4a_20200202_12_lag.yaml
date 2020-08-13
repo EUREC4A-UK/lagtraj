@@ -1,7 +1,7 @@
 trajectory_type : lagrangian
 velocity_method : single_height_level
 velocity_method_height: 500.
-domain          : lagtraj://eurec4a_north_atlantic.yaml
+domain          : lagtraj://eurec4a_north_atlantic
 lat_origin      : 13.3
 lon_origin      : -57.717
 datetime_origin : "2020-02-02T12:00"

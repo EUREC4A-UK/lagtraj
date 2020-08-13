@@ -206,7 +206,7 @@ def create_eulerian_trajectory(origin, da_times):
     ds["origin_datetime"].attrs[
         "info"
     ] = "the reference point is the space-time coordinate from which the trajectory is calculated"
-    #ds_time_to_seconds(ds)
+    # ds_time_to_seconds(ds)
     fix_units(ds)
     return ds
 
@@ -329,7 +329,7 @@ def _create_extrapolated_trajectory(origin, da_times, extrapolation_func):
     ds_traj["origin_datetime"].attrs[
         "info"
     ] = "the reference point is the space-time coordinate from which the trajectory is calculated"
-    #ds_time_to_seconds(ds_traj)
+    # ds_time_to_seconds(ds_traj)
     fix_units(ds_traj)
     return ds_traj
 

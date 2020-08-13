@@ -20,6 +20,8 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: 3.6
+    - name: Install ncview
+      run: sudo apt-get install ncview
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip

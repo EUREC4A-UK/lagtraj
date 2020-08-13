@@ -175,6 +175,8 @@ class ERA5DataSet(object):
                 **slices, method=method, tolerance=tolerance, drop=drop,
             )
             ds_v_slice.load()
+            # Change the long name of these variables, so the units are no
+            # longer in contradicting with it (with cfchecker convections)
             for variable in ["sshf", "slhf", "sshf_local", "slhf_local"]:
                 if variable in variables:
                     ds_v_slice[variable].attrs = {

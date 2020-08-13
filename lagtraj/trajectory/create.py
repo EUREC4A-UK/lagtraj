@@ -12,7 +12,7 @@ from ..domain.load import load_data as load_domain_data
 from ..domain.download import download_complete
 from ..utils import optional_debugging, validation
 from ..utils.time import ds_time_to_seconds
-from ..utils.xarray import append_dictionary_to_attrs
+from ..utils.xarray import create_attributes_dictionary
 from ..utils.units import fix_units
 
 """ Routines for creating a trajectory
@@ -55,9 +55,8 @@ def create_trajectory(origin, trajectory_type, da_times, **kwargs):
         )
     else:
         raise NotImplementedError(f"`{trajectory_type}` trajectory type not available")
-
     ds_traj.attrs["trajectory_type"] = trajectory_type
-    append_dictionary_to_attrs(kwargs, ds_traj)
+    ds_traj.attrs.update(create_attributes_dictionary(kwargs))
     return ds_traj
 
 
@@ -121,7 +120,6 @@ def cli(data_path, trajectory_name):
     trajectory_data_path = build_data_path(
         root_data_path=data_path, trajectory_name=traj_definition.name
     )
-
     validation.validate_trajectory(ds_traj=ds_trajectory)
     ds_trajectory.to_netcdf(trajectory_data_path)
     print("Saved trajectory to `{}`".format(trajectory_data_path))
@@ -180,12 +178,8 @@ def create_eulerian_trajectory(origin, da_times):
     lat0 = origin.lat
     lon0 = origin.lon
     ds["origin_datetime"] = origin.datetime
-    ds["origin_lat"] = xr.DataArray(
-        lat0, attrs={"long_name": "latitude", "units": "degrees_east"},
-    )
-    ds["origin_lon"] = xr.DataArray(
-        lon0, attrs={"long_name": "longitude", "units": "degrees_north"},
-    )
+    ds["origin_lat"] = xr.DataArray(lat0)
+    ds["origin_lon"] = xr.DataArray(lon0)
     ds["lat"] = ("time"), ds.origin_lat.item() * np.ones(len(ds.time))
     ds["lon"] = ("time"), ds.origin_lon.item() * np.ones(len(ds.time))
     ds["u_traj"] = (
@@ -198,7 +192,22 @@ def create_eulerian_trajectory(origin, da_times):
         np.zeros(len(ds.time)),
         {"long_name": "meridional velocity", "units": "m s**-1"},
     )
-
+    ds["origin_lat"].attrs = {
+        "long_name": "latitude of trajectory origin",
+        "units": "degrees_north",
+        "info": "the reference point is the space-time coordinate from which the trajectory is calculated",
+    }
+    ds["origin_lon"].attrs = {
+        "long_name": "longitude of trajectory origin",
+        "units": "degrees_east",
+        "info": "the reference point is the space-time coordinate from which the trajectory is calculated",
+    }
+    ds["origin_datetime"].attrs["long_name"] = "time of trajectory origin"
+    ds["origin_datetime"].attrs[
+        "info"
+    ] = "the reference point is the space-time coordinate from which the trajectory is calculated"
+    #ds_time_to_seconds(ds)
+    fix_units(ds)
     return ds
 
 
@@ -303,9 +312,7 @@ def _create_extrapolated_trajectory(origin, da_times, extrapolation_func):
     ds_traj["v_traj"].attrs = {"long_name": "meridional velocity", "units": "m s**-1"}
     ds_traj["origin_lat"] = origin.lat
     ds_traj["origin_lon"] = origin.lon
-    ds_traj["origin_datetime"] = (
-        np.datetime64(origin.datetime) - np.datetime64("1970-01-01T00:00")
-    ) / np.timedelta64(1, "s")
+    ds_traj["origin_datetime"] = origin.datetime
     ds_traj["lat"].attrs = {"long_name": "latitude", "units": "degrees_north"}
     ds_traj["lon"].attrs = {"long_name": "longitude", "units": "degrees_east"}
     ds_traj["origin_lat"].attrs = {
@@ -318,12 +325,11 @@ def _create_extrapolated_trajectory(origin, da_times, extrapolation_func):
         "units": "degrees_east",
         "info": "the reference point is the space-time coordinate from which the trajectory is calculated",
     }
-    ds_traj["origin_datetime"].attrs = {
-        "units": "seconds since 1-1-1970 00:00",
-        "long_name": "time of trajectory origin",
-        "info": "the reference point is the space-time coordinate from which the trajectory is calculated",
-    }
-    ds_time_to_seconds(ds_traj)
+    ds_traj["origin_datetime"].attrs["long_name"] = "time of trajectory origin"
+    ds_traj["origin_datetime"].attrs[
+        "info"
+    ] = "the reference point is the space-time coordinate from which the trajectory is calculated"
+    #ds_time_to_seconds(ds_traj)
     fix_units(ds_traj)
     return ds_traj
 

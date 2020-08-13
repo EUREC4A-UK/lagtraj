@@ -2,13 +2,17 @@ import xarray as xr
 from ..domain.sources.era5.load import ERA5DataSet
 
 
-def append_dictionary_to_attrs(input_dictionary, output_ds, init_str=""):
+def create_attributes_dictionary(input_dictionary, init_str=""):
+    attributes_dictionary = {}
     for k, v in input_dictionary.items():
         if isinstance(v, dict):
-            append_dictionary_to_attrs(v, output_ds, init_str=str(k) + "_")
+            attributes_dictionary.update(
+                create_attributes_dictionary(v, init_str=str(k) + "_")
+            )
         elif isinstance(v, xr.Dataset) or isinstance(v, ERA5DataSet):
-            output_ds.attrs[init_str + k] = str(type(v))
+            attributes_dictionary[f"{init_str}{k}"] = v.__class__.__name__
         elif isinstance(v, xr.DataArray):
-            output_ds.attrs[init_str + k] = v.values
+            attributes_dictionary[f"{init_str}{k}"] = v.values
         else:
-            output_ds.attrs[init_str + k] = v
+            attributes_dictionary[f"{init_str}{k}"] = v
+    return attributes_dictionary

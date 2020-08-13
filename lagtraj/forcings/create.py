@@ -9,7 +9,7 @@ from ..utils import optional_debugging
 from ..domain.load import load_data as load_domain_data
 from ..trajectory.load import load_data as load_trajectory_data
 from ..utils.time import ds_time_to_seconds
-from ..utils.xarray import append_dictionary_to_attrs
+from ..utils.xarray import create_attributes_dictionary
 from ..utils.units import fix_units
 
 
@@ -54,9 +54,7 @@ def _make_latlontime_sampling_points(method, ds_trajectory, ds_domain):
     return ds_sampling
 
 
-def make_forcing(
-    ds_trajectory, ds_domain, levels_definition, sampling_method, **kwargs
-):
+def make_forcing(ds_trajectory, ds_domain, levels_definition, sampling_method):
     """
     Make a forcing profiles along ds_trajectory using data in ds_domain.
 
@@ -72,7 +70,7 @@ def make_forcing(
 
     # `origin_` variables from the trajectory aren't needed for the forcing
     # calculations so lets remove them for now
-    ds_sampling = ds_sampling.drop(["origin_lon", "origin_lat", "origin_datetime"])
+    ds_sampling = ds_sampling.drop_vars(["origin_lon", "origin_lat", "origin_datetime"])
 
     ds_sampling["level"] = make_levels(
         method=levels_definition.method,
@@ -152,8 +150,8 @@ def main():
         sampling_method=forcing_defn.sampling,
         trajectory_name=forcing_defn.trajectory,
     )
-    append_dictionary_to_attrs(attr_dict, ds_forcing)
-    ds_time_to_seconds(ds_forcing)
+    ds_forcing.attrs.update(create_attributes_dictionary(attr_dict))
+    #ds_time_to_seconds(ds_forcing)
     fix_units(ds_forcing)
     output_file_path = build_forcing_data_path(
         root_data_path=args.data_path, forcing_name=forcing_defn.name

@@ -203,7 +203,7 @@ def calculate_timestep(ds_profile_posn, ds_domain, sampling_method):
     # remove the `u_traj` and `v_traj` from `ds_profile_posn` before we start
     # doing any interpolation
     u_traj, v_traj = ds_profile_posn.u_traj, ds_profile_posn.v_traj
-    ds_profile_posn = ds_profile_posn.drop(["u_traj", "v_traj"])
+    ds_profile_posn = ds_profile_posn.drop_vars(["u_traj", "v_traj"])
 
     # extract a sampling domain ensuring that the required variables are
     # present and on the correct grid

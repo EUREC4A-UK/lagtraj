@@ -12,3 +12,4 @@ argparse
 dask[array]
 asciitree
 isodate
+psutil

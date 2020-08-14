@@ -29,6 +29,7 @@ def test_create_linear_trajectory(ds_domain_test, ds_trajectory_linear):
     ds_traj.attrs["name"] = "test_trajectory"
     ds_traj.attrs["domain_name"] = "test_domain_data"
     validation.validate_trajectory(ds_traj)
+    validation.check_for_ncview_warnings(ds=ds_traj)
 
 
 def test_create_lagrangian_trajectory(ds_domain_test):

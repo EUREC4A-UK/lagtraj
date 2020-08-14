@@ -8,7 +8,6 @@ from .utils.levels import make_levels
 from ..utils import optional_debugging, validation
 from ..domain.load import load_data as load_domain_data
 from ..trajectory.load import load_data as load_trajectory_data
-from ..utils.time import ds_time_to_seconds
 from ..utils.xarray import create_attributes_dictionary
 from ..utils.units import fix_units
 
@@ -153,7 +152,6 @@ def main():
         trajectory_name=forcing_defn.trajectory,
     )
     ds_forcing.attrs.update(create_attributes_dictionary(attr_dict))
-    # ds_time_to_seconds(ds_forcing)
     fix_units(ds_forcing)
     output_file_path = build_forcing_data_path(
         root_data_path=args.data_path, forcing_name=forcing_defn.name

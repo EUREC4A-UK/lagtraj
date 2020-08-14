@@ -5,7 +5,7 @@ from pathlib import Path
 from .. import DEFAULT_ROOT_DATA_PATH
 from . import profile_calculation, load, build_forcing_data_path
 from .utils.levels import make_levels
-from ..utils import optional_debugging
+from ..utils import optional_debugging, validation
 from ..domain.load import load_data as load_domain_data
 from ..trajectory.load import load_data as load_trajectory_data
 from ..utils.time import ds_time_to_seconds
@@ -100,7 +100,9 @@ def export(file_path, ds_forcing, format):
     # TODO: add hightune format export here
 
     Path(file_path).parent.mkdir(parents=True, exist_ok=True)
-    ds_forcing.to_netcdf(file_path)
+    validation.validate_forcing_profiles(ds_forcing_profiles=ds_forcing)
+    encoding = validation.build_valid_encoding(ds=ds_forcing)
+    ds_forcing.to_netcdf(file_path, encoding=encoding)
 
 
 def main():

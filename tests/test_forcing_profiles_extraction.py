@@ -31,3 +31,4 @@ def test_create_forcing_linear_trajectory(
     )
 
     validation.validate_forcing_profiles(ds_forcing)
+    validation.check_for_ncview_warnings(ds=ds_forcing)

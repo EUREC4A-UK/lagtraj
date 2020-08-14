@@ -121,7 +121,8 @@ def cli(data_path, trajectory_name):
         root_data_path=data_path, trajectory_name=traj_definition.name
     )
     validation.validate_trajectory(ds_traj=ds_trajectory)
-    ds_trajectory.to_netcdf(trajectory_data_path)
+    encoding = validation.build_valid_encoding(ds=ds_trajectory)
+    ds_trajectory.to_netcdf(trajectory_data_path, encoding=encoding)
     print("Saved trajectory to `{}`".format(trajectory_data_path))
 
 

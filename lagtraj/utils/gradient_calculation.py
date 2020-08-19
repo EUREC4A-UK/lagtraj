@@ -76,8 +76,8 @@ def _regression_gradients(x_array, y_array, val_array):
                 ),
                 data_flat_filter,
             )
-            x_gradient_array[this_time, this_level] = theta[0][1]
-            y_gradient_array[this_time, this_level] = theta[0][2]
+            x_gradient_array[this_time, this_level] = theta[1][0]
+            y_gradient_array[this_time, this_level] = theta[2][0]
     return x_gradient_array, y_gradient_array
 
 

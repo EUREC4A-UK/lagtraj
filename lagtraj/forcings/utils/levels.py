@@ -25,7 +25,7 @@ def make_levels(method, n_levels, z_top, dz_min=None):
     return xr.DataArray(
         levels,
         dims=("level",),
-        attrs=dict(long_name="height", units="m", method="linear"),
+        attrs=dict(long_name="altitude", units="m", method=method),
     )
 
 

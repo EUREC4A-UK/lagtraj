@@ -10,15 +10,47 @@ from ..domain.mask import calc_mask
 
 # list of scalars we want to compute forcings of, TODO: move into yaml input
 # definitions
-FORCING_VARS = ["u", "v", "theta", "q"]
+FORCING_VARS = [
+    "u",
+    "v",
+    "theta",
+    "q",
+    "clwc",
+    "ciwc",
+    "t",
+    "p_f",
+    "t_l",
+    "cc",
+    "q_t",
+    "r_t",
+    "r_v",
+    "r_l",
+    "r_i",
+    "theta_l",
+]
 
 # list of variables which must be derived, TODO: move itno yaml input
 # definition, NOTE: the order is important here, `rho` must be derived first as
 # it's needed for `w_corr` and `w_pressure_corr`, TODO: the order here should
 # be automatically resolved in a module specialied to era5 (so we can
 # generalise to model input from other models)
-AUXILIARY_VARS = ["theta", "rho", "w_pressure_corr", "w_corr"]
+AUXILIARY_VARS = [
+    "theta",
+    "rho",
+    "w_pressure_corr",
+    "w_corr",
+    "t_l",
+    "q_t",
+    "q_t_hydromet",
+    "r_t",
+    "r_v",
+    "r_l",
+    "r_i",
+    "theta_l",
+]
 
+# Geostrophic winds can only be calculated after the profile calculations
+FINAL_VARS = ["u_g", "v_g"]
 
 ForcingSamplingDefinition = namedtuple(
     "ForcingSamplingDefinition",
@@ -88,6 +120,14 @@ class InvalidLevelsDefinition(Exception):
     pass
 
 
+def _reset_lat_lon(ds):
+    # Function to ensure lat and lon are not a dimension on this data.
+    ds = ds.reset_coords(["lat", "lon"])
+    ds["lat"].attrs = {"long_name": "latitude", "units": "degrees_north"}
+    ds["lon"].attrs = {"long_name": "longitude", "units": "degrees_east"}
+    return ds
+
+
 def _construct_subdomain(
     ds_profile_posn,
     ds_domain,
@@ -114,6 +154,8 @@ def _construct_subdomain(
     # which are over the ocean)
     da_mask = calc_mask(ds=ds_subdomain, mask_type=mask_type)
     ds_subdomain["mask"] = da_mask
+    # units will be requested whe calculating mean and local values
+    ds_subdomain["mask"].attrs["units"] = "(0 - 1)"
     ds_subdomain = ds_subdomain.where(ds_subdomain.mask, other=np.nan)
     ds_subdomain.attrs["data_source"] = ds_domain.attrs.get("data_source")
 
@@ -161,7 +203,7 @@ def calculate_timestep(ds_profile_posn, ds_domain, sampling_method):
     # remove the `u_traj` and `v_traj` from `ds_profile_posn` before we start
     # doing any interpolation
     u_traj, v_traj = ds_profile_posn.u_traj, ds_profile_posn.v_traj
-    ds_profile_posn = ds_profile_posn.drop(["u_traj", "v_traj"])
+    ds_profile_posn = ds_profile_posn.drop_vars(["u_traj", "v_traj"])
 
     # extract a sampling domain ensuring that the required variables are
     # present and on the correct grid
@@ -175,6 +217,7 @@ def calculate_timestep(ds_profile_posn, ds_domain, sampling_method):
     # start with a profile with just the horizontal wind profiles estimated at
     # the trajectory point (these are needed to compute the advective derivatives)
     ds_profile = ds_profile_posn.copy().set_coords(["time", "level", "lat", "lon"])
+    ds_profile.attrs["data_source"] = "era5"
     ds_profile["u_traj"] = u_traj
     ds_profile["v_traj"] = v_traj
 
@@ -209,4 +252,9 @@ def calculate_timestep(ds_profile_posn, ds_domain, sampling_method):
         ds_profile[f"d{v}dx"] = da_dvdx
         ds_profile[f"d{v}dy"] = da_dvdy
 
+    for v in FINAL_VARS:
+        aux_kwargs = {}
+        ds_profile[v] = calc_auxiliary_domain_variable(ds=ds_profile, v=v, **aux_kwargs)
+
+    ds_profile = _reset_lat_lon(ds_profile)
     return ds_profile

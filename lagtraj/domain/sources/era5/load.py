@@ -5,7 +5,7 @@ import functools
 import warnings
 
 from . import FILENAME_FORMAT
-
+from .utils import add_era5_global_attributes
 
 MODEL_RUN_TYPES = ["an", "fc"]  # analysis and forecast runs
 LEVEL_TYPES = ["model", "single"]  # need model and surface data
@@ -175,6 +175,14 @@ class ERA5DataSet(object):
                 **slices, method=method, tolerance=tolerance, drop=drop,
             )
             ds_v_slice.load()
+            # Change the long name of these variables, so the units are no
+            # longer in contradicting with it (with cfchecker convections)
+            for variable in ["sshf", "slhf", "sshf_local", "slhf_local"]:
+                if variable in variables:
+                    ds_v_slice[variable].attrs = {
+                        "long_name": ds_v_slice[variable].long_name + " time integral",
+                        "units": ds_v_slice[variable].units,
+                    }
             datasets_slices.append(ds_v_slice)
 
         return xr.merge(datasets_slices, compat="override").load()
@@ -268,5 +276,5 @@ def load_data(data_path, use_lazy_loading=False):
         ds = _load_naive(data_path)
     else:
         ds = ERA5DataSet(data_path)
-
+    add_era5_global_attributes(ds)
     return ds

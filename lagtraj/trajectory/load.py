@@ -1,5 +1,4 @@
 import datetime
-
 import xarray as xr
 
 from ..input_definitions import load

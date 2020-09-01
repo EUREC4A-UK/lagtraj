@@ -1,0 +1,2 @@
+include versioneer.py
+include lagtraj/_version.py

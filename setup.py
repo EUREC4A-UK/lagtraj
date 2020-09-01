@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 from setuptools import setup, find_packages
+import versioneer
 
 INSTALL_REQUIRES = open("requirements.txt").readlines()
 
 setup(
     name="lagtraj",
-    version="0.0.0",
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
     description="Python trajectory code for Lagrangian simulations",
     url="https://github.com/EUREC4A-UK/lagtraj",
     maintainer="Leif Denby",

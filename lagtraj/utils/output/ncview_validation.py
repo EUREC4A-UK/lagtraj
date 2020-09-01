@@ -6,24 +6,24 @@ import tempfile
 import signal
 import psutil
 import subprocess
-import os
-
-
-NCVIEW_COMPATIBLE_NETCDF_ENCODING = dict(
-    time=dict(dtype="float64", units="seconds since 1970-01-01 00:00:00")
-)
 
 
 def build_valid_encoding(ds):
     encoding = {}
     for v in list(ds.data_vars) + list(ds.coords):
-        try:
-            ds[
-                v
-            ].dt  # try accessing the datetime accessor, only datetime types have this
-            encoding[v] = dict(NCVIEW_COMPATIBLE_NETCDF_ENCODING["time"])
-        except TypeError:
-            pass
+        if v in ["time", "origin_datetime"]:
+            # ncview prefers have the time in seconds (as floats)
+            encoding[v] = dict(dtype="float64")
+            if v == "time":
+                if "origin_datetime" in ds.data_vars:
+                    t_ref = ds.origin_datetime
+                else:
+                    t_ref = ds.time.isel(time=0)
+                encoding[v]["units"] = t_ref.dt.strftime(
+                    "seconds since %y-%m-%d %H:%M:%S"
+                ).item()
+            else:
+                encoding[v]["units"] = "seconds since 1970-01-01 00:00:00"
     return encoding
 
 

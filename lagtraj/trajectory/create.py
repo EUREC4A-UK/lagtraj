@@ -103,9 +103,12 @@ def cli(data_path, trajectory_name):
             root_data_path=data_path, name=traj_definition.domain
         )
         kwargs["ds_domain"] = ds_domain
+    else:
+        ds_domain = None
 
     ds_trajectory = create_trajectory(**kwargs)
-    ds_trajectory.attrs.update(ds_domain.attrs)
+    if ds_domain is not None:
+        ds_trajectory.attrs.update(ds_domain.attrs)
 
     ds_trajectory.attrs["name"] = trajectory_name
     ds_trajectory.attrs["domain_name"] = traj_definition.domain

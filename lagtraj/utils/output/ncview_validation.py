@@ -15,10 +15,7 @@ def build_valid_encoding(ds):
             # ncview prefers have the time in seconds (as floats)
             encoding[v] = dict(dtype="float64")
             if v == "time":
-                if "origin_datetime" in ds.data_vars:
-                    t_ref = ds.origin_datetime
-                else:
-                    t_ref = ds.time.isel(time=0)
+                t_ref = ds.time.isel(time=0)
                 encoding[v]["units"] = t_ref.dt.strftime(
                     "seconds since %y-%m-%d %H:%M:%S"
                 ).item()

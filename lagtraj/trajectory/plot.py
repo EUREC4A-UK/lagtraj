@@ -1,6 +1,6 @@
-import matplotlib
-
-matplotlib.use("Agg")  # noqa
+if __name__ == "__main__":
+    import matplotlib
+    matplotlib.use("Agg")  # noqa
 
 import xarray as xr
 import cartopy.crs as ccrs
@@ -14,37 +14,48 @@ except ImportError:
     HAS_TWINOTTER = False
 
 
-def main(input_filename, add_ref=None):
-    ds = xr.open_dataset(input_filename)
+def main(ds, add_ref=None, ax=None, reference_time='origin', **kwargs):
+    new_axes = False
+    if ax is None:
+        map_proj = ccrs.Mercator()
+        ax = plt.axes(projection=map_proj)
+        ax.gridlines(draw_labels=True)
+        ax.coastlines(resolution="10m")
+        new_axes = True
 
-    map_proj = ccrs.Mercator()
+    kwargs.setdefault('color', 'darkgreen')
+    kwargs.setdefault('marker', 'o')
+    kwargs['transform'] = ccrs.PlateCarree()
 
-    ax = plt.axes(projection=map_proj)
+    if reference_time == 'origin':
+        t_ref = ds.origin_datetime
+        lat_ref = ds.origin_lat
+        lon_ref = ds.origin_lon
+    else:
+        t_ref = reference_time
+        lat_ref = ds.sel(time=t_ref).lat
+        lon_ref = ds.sel(time=t_ref).lon
 
-    plt_kwargs = dict(transform=ccrs.PlateCarree(), marker="o", color="darkgreen")
-
-    ds_backward = ds.sel(time=slice(None, ds.origin_datetime))
+    ds_backward = ds.sel(time=slice(None, t_ref))
     (line,) = ax.plot(
-        ds_backward.lon, ds_backward.lat, markersize=1, alpha=0.4, **plt_kwargs,
+        ds_backward.lon, ds_backward.lat, markersize=1, alpha=0.4, **kwargs,
     )
 
-    ds_forward = ds.sel(time=slice(ds.origin_datetime, None))
-    ax.plot(ds_forward.lon, ds_forward.lat, markersize=1, **plt_kwargs)
+    ds_forward = ds.sel(time=slice(t_ref, None))
+    ax.plot(ds_forward.lon, ds_forward.lat, markersize=1, **kwargs)
 
     ax.plot(
-        ds.origin_lon, ds.origin_lat, markersize=4, linestyle="", **plt_kwargs,
+        lon_ref, lat_ref, markersize=4, linestyle="", **kwargs,
     )
-
-    ax.gridlines(draw_labels=True)
-    ax.coastlines(resolution="10m")
 
     if add_ref == "eurec4a_circle":
         if not HAS_TWINOTTER:
             raise Exception(
                 "Please install `twinotter` to enable adding the" " EUREC4A circle"
             )
-        twinotter.external.eurec4a.add_halo_circle(ax=ax)
-        ax.set_extent([-64, -53, 10, 16], crs=ccrs.PlateCarree())
+        twinotter.external.eurec4a.add_halo_circle(ax=ax, color=kwargs['color'], alpha=0.5)
+        if new_axes:
+            ax.set_extent([-64, -53, 10, 16], crs=ccrs.PlateCarree())
 
     DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S"
     t_start_str = ds.time.min().dt.strftime(DATETIME_FORMAT).item()
@@ -55,9 +66,7 @@ def main(input_filename, add_ref=None):
         "\n\n"
     )
 
-    output_filename = input_filename.replace(".nc", ".png")
-    plt.savefig(output_filename)
-    print(f"Saved plot to {output_filename}")
+    return ax
 
 
 if __name__ == "__main__":
@@ -68,4 +77,10 @@ if __name__ == "__main__":
     argparser.add_argument("--add-ref", default=None)
     args = argparser.parse_args()
 
-    main(input_filename=vars(args)["trajectory.nc"], add_ref=args.add_ref)
+    input_filename = vars(args)["trajectory.nc"]
+    ds = xr.open_dataset(input_filename)
+    ax = main(ds=ds, add_ref=args.add_ref)
+
+    output_filename = input_filename.replace(".nc", ".png")
+    plt.savefig(output_filename)
+    print(f"Saved plot to {output_filename}")

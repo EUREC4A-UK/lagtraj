@@ -13,7 +13,7 @@ setup(
     maintainer="Leif Denby",
     maintainer_email="l.c.denby@leeds.ac.uk",
     py_modules=["lagtraj"],
-    packages=find_packages(include=['lagtraj']),
+    packages=find_packages(include=["lagtraj"]),
     package_data={"": ["*.csv", "*.yml", "*.html"]},
     include_package_data=True,
     install_requires=INSTALL_REQUIRES,

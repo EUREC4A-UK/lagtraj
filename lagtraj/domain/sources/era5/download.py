@@ -102,7 +102,7 @@ def download_data(
 
 def all_data_is_downloaded(path):
     c = RequestFetchCDSClient()
-    return len(_get_files(path=path, c=c, with_status=['queued', 'running'])) == 0
+    return len(_get_files(path=path, c=c, with_status=["queued", "running"])) == 0
 
 
 def _get_files(path, c, debug=False, with_status=None):

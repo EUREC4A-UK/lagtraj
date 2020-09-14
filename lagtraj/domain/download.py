@@ -99,8 +99,10 @@ def _run_cli(timedomain_lookup="by_arguments"):
         "-o", "--overwrite", dest="l_overwrite", action="store_true", default=False
     )
     argparser.add_argument(
-        "--retry-rate", default=None, type=float,
-        help="Retry time delay (in minutes) when some files are still processing"
+        "--retry-rate",
+        default=None,
+        type=float,
+        help="Retry time delay (in minutes) when some files are still processing",
     )
     args = argparser.parse_args()
 

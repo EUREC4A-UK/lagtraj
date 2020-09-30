@@ -253,10 +253,14 @@ def steffen_1d_no_ep_time(
                 t_3 = t_2 * t_1
                 output_data[time_index, k_out] = a * t_3 + b * t_2 + c * t_1 + d
             # Allow for small deviations in upper/lower levels
-            elif (k_temp == 0) and (abs(output_level_array[k_out]-input_levels[k_temp])<1e-6):
-                output_data[time_index, k_out] = input_data[time_index,0]
-            elif (k_temp == k_max) and (abs(output_level_array[k_out]-input_levels[k_temp])<1e-6):
-                output_data[time_index, k_out] = input_data[time_index,k_max]
+            elif (k_temp == 0) and (
+                abs(output_level_array[k_out] - input_levels[k_temp]) < 1e-6
+            ):
+                output_data[time_index, k_out] = input_data[time_index, 0]
+            elif (k_temp == k_max) and (
+                abs(output_level_array[k_out] - input_levels[k_temp]) < 1e-6
+            ):
+                output_data[time_index, k_out] = input_data[time_index, k_max]
             else:
                 output_data[time_index, k_out] = np.nan
     return output_data

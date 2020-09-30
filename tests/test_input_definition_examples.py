@@ -13,7 +13,7 @@ INPUT_TYPES = {
     "forcing": FORCING_REQUIRED_FIELDS,
     "domain": DOMAIN_REQUIRED_FIELDS,
     "trajectory": TRAJECTORY_REQUIRED_FIELDS,
-    "conversion": CONVERSION_REQUIRED_FIELDS
+    "conversion": CONVERSION_REQUIRED_FIELDS,
 }
 
 

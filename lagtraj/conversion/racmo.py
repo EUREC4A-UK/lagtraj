@@ -41,32 +41,32 @@ racmo_variables = {
     "cc_local": {"units": "0-1", "long_name": "cloud fraction (at domain midpoint)"},
     "tadv": {
         "units": "K/s",
-        "long_name": "tendency in temperature due to "\
+        "long_name": "tendency in temperature due to "
         "large-scale horizontal advection",
         "info": "derived at pressure levels",
-        "lagrangian": "Lagrangian setup: horizontal advection calculated "\
-        "using velocity relative to wind "\
+        "lagrangian": "Lagrangian setup: horizontal advection calculated "
+        "using velocity relative to wind "
         "on trajectory (u_traj,v_traj)",
     },
     "qadv": {
         "units": "kg/kg/s",
         "long_name": "tendency in water vapor due to large-scale horizontal advection",
         "info": "derived at pressure levels",
-        "lagrangian": "Lagrangian setup: horizontal advection calculated "\
+        "lagrangian": "Lagrangian setup: horizontal advection calculated "
         "using velocity relative to wind on trajectory (u_traj,v_traj)",
     },
     "uadv": {
         "units": "m/s2",
         "long_name": "tendency in zonal wind due to large-scale horizontal advection",
         "info": "derived at pressure levels",
-        "lagrangian": "Lagrangian setup: horizontal advection calculated "\
+        "lagrangian": "Lagrangian setup: horizontal advection calculated "
         "using velocity relative to wind on trajectory (u_traj,v_traj)",
     },
     "vadv": {
         "units": "m/s2",
         "long_name": "tendency in meridional wind due to large-scale horizontal advection",
         "info": "derived at pressure levels",
-        "lagrangian": "Lagrangian setup: horizontal advection calculated "\
+        "lagrangian": "Lagrangian setup: horizontal advection calculated "
         "using velocity relative to wind on trajectory (u_traj,v_traj)",
     },
     "ug": {
@@ -117,8 +117,8 @@ racmo_variables = {
     "t_skin": {
         "units": "K",
         "long_name": "skin temperature",
-        "t_skin_correct": "Skin temperature has been corrected by 1.000000. "\
-        "Motivation: value from IFS is actually the open SST, "\
+        "t_skin_correct": "Skin temperature has been corrected by 1.000000. "
+        "Motivation: value from IFS is actually the open SST, "
         "which is lower than the skin temperature.",
     },
     "q_skin": {"units": "m of water", "long_name": "skin reservoir content"},
@@ -139,19 +139,19 @@ racmo_variables = {
     "timDS": {
         "units": "seconds since 1-1-1970 00:00",
         "long_name": "time at trajectory reference point",
-        "info": "the reference point is the space-time "\
+        "info": "the reference point is the space-time "
         "coordinate from which the trajectory is calculated",
     },
     "latDS": {
         "units": "degrees North",
         "long_name": "latitude at trajectory reference point",
-        "info": "the reference point is the space-time coordinate "\
+        "info": "the reference point is the space-time coordinate "
         "from which the trajectory is calculated",
     },
     "lonDS": {
         "units": "degrees East",
         "long_name": "longitude at trajectory reference point",
-        "info": "the reference point is the space-time coordinate "\
+        "info": "the reference point is the space-time coordinate "
         "from which the trajectory is calculated",
     },
     "lat_grid": {

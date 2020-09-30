@@ -25,6 +25,7 @@ from ..domain.sources.era5.constants import rg, cp, rlv
 # - Fix missing variables?
 # Use ..utils.xarray import create_attributes_dictionary
 
+
 def racmo_from_era5(ds_era5, da_levels):
     """Obtain a racmo input file from era5 variable set at high resolution"""
     # Put full levels midway between half-levels, I think this is consistent with DALES
@@ -224,8 +225,8 @@ def racmo_from_era5(ds_era5, da_levels):
         "created": datetime.datetime.now().isoformat(),
         "wilting_point": 0.1715,
         "field_capacity": 0.32275,
-        "t_skin_correct": "Skin temperature has been corrected "\
-        "by 1.000000. Motivation: value from IFS is actually "\
+        "t_skin_correct": "Skin temperature has been corrected "
+        "by 1.000000. Motivation: value from IFS is actually "
         "the open SST, which is lower than the skin temperature.",
     }
     ds_racmo.attrs.update(**racmo_dict)

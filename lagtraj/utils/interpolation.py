@@ -146,7 +146,8 @@ def steffen_3d(
 def steffen_1d_no_ep_time(
     input_data, input_levels, output_level_array,
 ):
-    """ Performs Steffen interpolation on one individual column.
+    """ Performs Steffen interpolation on one individual column for
+    each time step.
     Steffen, M. (1990). A simple method for monotonic interpolation in
     one dimension. Astronomy and Astrophysics, 239, 443. """
     t_max = input_data.shape[0]

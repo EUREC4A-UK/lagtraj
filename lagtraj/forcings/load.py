@@ -1,5 +1,5 @@
-from ..input_definitions import load
 import xarray as xr
+from ..input_definitions import load
 
 from . import (
     INPUT_REQUIRED_FIELDS,
@@ -44,6 +44,7 @@ def load_definition(root_data_path, forcing_name):
 
 
 def load_data(root_data_path, forcing_name):
+    """Function to load the data after creation"""
     forcing_data_path = build_forcing_data_path(
         root_data_path=root_data_path, forcing_name=forcing_name
     )

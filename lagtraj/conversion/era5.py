@@ -1,26 +1,29 @@
-import xarray as xr
-from tqdm import tqdm
+"""Module that enables conversions from era5 format to other formats
+"""
+
 from pathlib import Path
 import datetime
+import xarray as xr
 import numpy as np
 
 from .. import DEFAULT_ROOT_DATA_PATH
 from ..forcings.load import load_data as load_forcing_data
 from . import load, build_conversion_data_path
 from ..utils import optional_debugging, validation
-from ..utils.xarray import create_attributes_dictionary  # Needs using?
 from ..utils.thermo import rh_hightune
 from ..utils.interpolation import steffen_1d_no_ep_time, central_estimate
+from .utils.levels import make_levels
 from .racmo import racmo_variables
 from .hightune import hightune_variables
 from ..domain.sources.era5.constants import rg, cp, rlv
 
+
 # TODO:
 # - Only interpolate if needed?
 # - Check forcing has the right format?
-# Fix time formats
-# Fix missing variables
-
+# - Fix time formats
+# - Fix missing variables?
+# Use ..utils.xarray import create_attributes_dictionary
 
 def racmo_from_era5(ds_era5, da_levels):
     """Obtain a racmo input file from era5 variable set at high resolution"""
@@ -64,11 +67,12 @@ def racmo_from_era5(ds_era5, da_levels):
         da_era5 = ds_era5[era5_var]
         # perform units check
         unit_guess = era5_to_racmo_units.get(da_era5.units, da_era5.units)
-        if not (unit_guess == racmo_variables[variable]["units"]):
+        if not unit_guess == racmo_variables[variable]["units"]:
             except_str = (
                 "Incompatible units between ERA5 and RACMO for variable "
                 + variable
-                + ". Please fix using the fix_era5_to_racmo_units dictionary: ERA converted variable is "
+                + ". Please fix using the fix_era5_to_racmo_units "
+                + "dictionary: ERA converted variable is "
                 + unit_guess
                 + ", RACMO variable is "
                 + racmo_variables[variable]["units"]
@@ -220,7 +224,9 @@ def racmo_from_era5(ds_era5, da_levels):
         "created": datetime.datetime.now().isoformat(),
         "wilting_point": 0.1715,
         "field_capacity": 0.32275,
-        "t_skin_correct": "Skin temperature has been corrected by 1.000000. Motivation: value from IFS is actually the open SST, which is lower than the skin temperature.",
+        "t_skin_correct": "Skin temperature has been corrected "\
+        "by 1.000000. Motivation: value from IFS is actually "\
+        "the open SST, which is lower than the skin temperature.",
     }
     ds_racmo.attrs.update(**racmo_dict)
     return ds_racmo
@@ -242,11 +248,12 @@ def hightune_from_era5(ds_era5, da_levels):
         da_era5 = ds_era5[era5_var]
         # perform units check
         unit_guess = era5_to_hightune_units.get(da_era5.units, da_era5.units)
-        if not (unit_guess == hightune_variables[variable]["units"]):
+        if not unit_guess == hightune_variables[variable]["units"]:
             except_str = (
                 "Incompatible units between ERA5 and hightune for variable "
                 + variable
-                + ". Please fix using the fix_era5_to_hightune_units dictionary: ERA converted variable is "
+                + ". Please fix using the fix_era5_to_hightune_units dictionary:"
+                + "ERA converted variable is "
                 + unit_guess
                 + ", hightune variable is "
                 + hightune_variables[variable]["units"]
@@ -338,7 +345,7 @@ def hightune_from_era5(ds_era5, da_levels):
     wprtp = wpqtp * moisture_ratio
     ds_hightune["wprtp"] = (
         ("time"),
-        sfc_lat_flx,
+        wprtp,
         hightune_variables["wprtp"],
     )
     ds_hightune["rh"] = rh_hightune(
@@ -479,7 +486,6 @@ era5_to_hightune_units = {
 hightune_from_era5_variables = {
     "lat": "lat",
     "lon": "lon",
-    "ps": "sp_mean",
     "height": "height_h_local",
     "pressure": "p_h_mean",
     "u": "u_mean",
@@ -540,9 +546,9 @@ def main():
         )
     except FileNotFoundError:
         raise Exception(
-            f"The output file for forcing `{forcing_defn.name}`"
+            f"The output file for forcing `{args.forcing}`"
             " couldn't be found. Please create the trajectory by running: \n"
-            f"    python -m lagtraj.forcings.create {forcing_defn.name}\n"
+            f"    python -m lagtraj.forcings.create {args.forcing}\n"
             "and then run the forcing creation again"
         )
 
@@ -550,14 +556,14 @@ def main():
         root_data_path=args.data_path, conversion_name=args.conversion
     )
 
-    if conversion_defn.levels.method == None or conversion_defn.levels.method == "copy":
+    if conversion_defn.levels.method is None or conversion_defn.levels.method == "copy":
         da_levels = ds_forcing["level"]
     else:
         da_levels = make_levels(
-            method=levels_definition.method,
-            n_levels=levels_definition.n_levels,
-            z_top=levels_definition.z_top,
-            dz_min=levels_definition.dz_min,
+            method=conversion_defn.levels.method,
+            n_levels=conversion_defn.levels.n_levels,
+            z_top=conversion_defn.levels.z_top,
+            dz_min=conversion_defn.levels.dz_min,
         )
 
     with optional_debugging(args.debug):

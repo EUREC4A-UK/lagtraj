@@ -1,3 +1,5 @@
+"""Module describing the RACMO variables as a dictionary"""
+
 racmo_variables = {
     "lat": {"units": "degrees North", "long_name": "latitude"},
     "lon": {"units": "degrees East", "long_name": "longitude"},
@@ -39,27 +41,33 @@ racmo_variables = {
     "cc_local": {"units": "0-1", "long_name": "cloud fraction (at domain midpoint)"},
     "tadv": {
         "units": "K/s",
-        "long_name": "tendency in temperature due to large-scale horizontal advection",
+        "long_name": "tendency in temperature due to "\
+        "large-scale horizontal advection",
         "info": "derived at pressure levels",
-        "lagrangian": "Lagrangian setup: horizontal advection calculated using velocity relative to wind on trajectory (u_traj,v_traj)",
+        "lagrangian": "Lagrangian setup: horizontal advection calculated "\
+        "using velocity relative to wind "\
+        "on trajectory (u_traj,v_traj)",
     },
     "qadv": {
         "units": "kg/kg/s",
         "long_name": "tendency in water vapor due to large-scale horizontal advection",
         "info": "derived at pressure levels",
-        "lagrangian": "Lagrangian setup: horizontal advection calculated using velocity relative to wind on trajectory (u_traj,v_traj)",
+        "lagrangian": "Lagrangian setup: horizontal advection calculated "\
+        "using velocity relative to wind on trajectory (u_traj,v_traj)",
     },
     "uadv": {
         "units": "m/s2",
         "long_name": "tendency in zonal wind due to large-scale horizontal advection",
         "info": "derived at pressure levels",
-        "lagrangian": "Lagrangian setup: horizontal advection calculated using velocity relative to wind on trajectory (u_traj,v_traj)",
+        "lagrangian": "Lagrangian setup: horizontal advection calculated "\
+        "using velocity relative to wind on trajectory (u_traj,v_traj)",
     },
     "vadv": {
         "units": "m/s2",
         "long_name": "tendency in meridional wind due to large-scale horizontal advection",
         "info": "derived at pressure levels",
-        "lagrangian": "Lagrangian setup: horizontal advection calculated using velocity relative to wind on trajectory (u_traj,v_traj)",
+        "lagrangian": "Lagrangian setup: horizontal advection calculated "\
+        "using velocity relative to wind on trajectory (u_traj,v_traj)",
     },
     "ug": {
         "units": "m/s",
@@ -103,15 +111,15 @@ racmo_variables = {
     },
     "u_traj": {"units": "m/s", "long_name": "zonal wind at trajectory waypoints"},
     "v_traj": {"units": "m/s", "long_name": "meridional wind at trajectory waypoints"},
-    "fradSWnet": {"units": "W/m2", "long_name": "radiative flux - net short wave"},
-    "fradLWnet": {"units": "W/m2", "long_name": "radiative flux - net long wave"},
     "albedo": {"units": "0-1", "long_name": "albedo"},
     "mom_rough": {"units": "m", "long_name": "roughness length for momentum"},
     "heat_rough": {"units": "m", "long_name": "roughness length for heat"},
     "t_skin": {
         "units": "K",
         "long_name": "skin temperature",
-        "t_skin_correct": "Skin temperature has been corrected by 1.000000. Motivation: value from IFS is actually the open SST, which is lower than the skin temperature.",
+        "t_skin_correct": "Skin temperature has been corrected by 1.000000. "\
+        "Motivation: value from IFS is actually the open SST, "\
+        "which is lower than the skin temperature.",
     },
     "q_skin": {"units": "m of water", "long_name": "skin reservoir content"},
     "snow": {"units": "m, liquid equivalent", "long_name": "snow depth"},
@@ -131,17 +139,20 @@ racmo_variables = {
     "timDS": {
         "units": "seconds since 1-1-1970 00:00",
         "long_name": "time at trajectory reference point",
-        "info": "the reference point is the space-time coordinate from which the trajectory is calculated",
+        "info": "the reference point is the space-time "\
+        "coordinate from which the trajectory is calculated",
     },
     "latDS": {
         "units": "degrees North",
         "long_name": "latitude at trajectory reference point",
-        "info": "the reference point is the space-time coordinate from which the trajectory is calculated",
+        "info": "the reference point is the space-time coordinate "\
+        "from which the trajectory is calculated",
     },
     "lonDS": {
         "units": "degrees East",
         "long_name": "longitude at trajectory reference point",
-        "info": "the reference point is the space-time coordinate from which the trajectory is calculated",
+        "info": "the reference point is the space-time coordinate "\
+        "from which the trajectory is calculated",
     },
     "lat_grid": {
         "units": "degrees North",

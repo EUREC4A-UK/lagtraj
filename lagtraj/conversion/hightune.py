@@ -1,7 +1,8 @@
+"""Module describing the hightune variables as a dictionary"""
+
 hightune_variables = {
     "lat": {"long_name": "Latitude", "units": "degrees_north"},
     "lon": {"long_name": "Longitude", "units": "degrees_east"},
-    "ps": {"long_name": "Surface pressure", "units": "Pa"},
     "height": {"long_name": "Height above ground", "units": "m"},
     "pressure": {"long_name": "Pressure", "units": "Pa"},
     "u": {"long_name": "Zonal wind", "units": "m s-1"},

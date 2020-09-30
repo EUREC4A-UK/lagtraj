@@ -1,0 +1,3 @@
+levels_method   : copy
+nudging_time    : 3600.0
+export_format   : racmo

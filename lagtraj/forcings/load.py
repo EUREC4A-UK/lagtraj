@@ -1,9 +1,12 @@
 from ..input_definitions import load
+import xarray as xr
+
 from . import (
     INPUT_REQUIRED_FIELDS,
     ForcingDefinition,
     ForcingLevelsDefinition,
     ForcingSamplingDefinition,
+    build_forcing_data_path,
 )
 
 
@@ -38,3 +41,11 @@ def load_definition(root_data_path, forcing_name):
     )
 
     return forcing_definition
+
+
+def load_data(root_data_path, forcing_name):
+    forcing_data_path = build_forcing_data_path(
+        root_data_path=root_data_path, forcing_name=forcing_name
+    )
+    ds = xr.open_dataset(forcing_data_path)
+    return ds

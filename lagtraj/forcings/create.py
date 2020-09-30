@@ -143,6 +143,9 @@ def main():
             sampling_method=forcing_defn.sampling,
         )
 
+    ds_forcing["origin_lon"] = ds_trajectory["origin_lon"]
+    ds_forcing["origin_lat"] = ds_trajectory["origin_lat"]
+    ds_forcing["origin_datetime"] = ds_trajectory["origin_datetime"]
     ds_forcing.attrs.update(ds_domain.attrs)
     attr_dict = dict(
         levels_definition=forcing_defn.levels,

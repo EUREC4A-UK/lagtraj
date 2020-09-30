@@ -19,7 +19,12 @@ except ImportError:
 DEFAULT_ROOT_DATA_PATH = Path(os.getcwd()) / "data"
 
 
-DATA_TYPE_PLURAL = dict(trajectory="trajectories", domain="domains", forcing="forcings")
+DATA_TYPE_PLURAL = dict(
+    trajectory="trajectories",
+    domain="domains",
+    forcing="forcings",
+    conversion="conversions",
+)
 
 
 def build_data_path(root_data_path, data_type):

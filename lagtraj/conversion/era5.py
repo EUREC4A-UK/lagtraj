@@ -210,7 +210,7 @@ def racmo_from_era5(ds_era5, da_levels):
     racmo_dict = {
         "campaign": "NEEDS ADDING",
         "flight": "NEEDS ADDING",
-        "date": str(ds_era5["origin_datetime"]),
+        "date": ds_era5["origin_datetime"].values.astype("str"),
         "source": "ERA5",
         "source_domain": "NEEDS ADDING",
         "source_grid": "grid0.1x0.1",

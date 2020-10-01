@@ -1,7 +1,10 @@
 from collections import namedtuple
 
 from .. import build_data_path
-from .sources import interpolate_to_height_levels  # noqa
+from .sources import (
+    interpolate_to_height_levels,
+    interpolate_to_pressure_levels,
+)  # noqa
 from .sources import calc_auxiliary_variable  # noqa
 
 LatLonBoundingBox = namedtuple(

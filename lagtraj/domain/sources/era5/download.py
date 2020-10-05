@@ -79,7 +79,7 @@ def download_data(
         with open(path / DATA_REQUESTS_FILENAME, "w") as fh:
             fh.write(yaml.dump(download_requests))
 
-    files_to_download = _get_files_to_download(path=path, c=c, debug=True)
+    files_to_download = _get_files(path=path, c=c, debug=True, with_status="completed")
 
     if len(files_to_download) > 0:
         print("Downloading files which are ready...")
@@ -108,7 +108,7 @@ def download_data(
 
 def all_data_is_downloaded(path):
     c = RequestFetchCDSClient()
-    return len(_get_files_to_download(path=path, c=c)) == 0
+    return len(_get_files(path=path, c=c, with_status=["queued", "running"])) == 0
 
 
 def _request_exists(request_id, c):
@@ -119,7 +119,7 @@ def _request_exists(request_id, c):
         return False
 
 
-def _get_files_to_download(path, c, debug=False):
+def _get_files(path, c, debug=False, with_status=None):
     meta_filename = path / DATA_REQUESTS_FILENAME
     if not meta_filename.exists():
         return []
@@ -127,7 +127,7 @@ def _get_files_to_download(path, c, debug=False):
     with open(meta_filename, "r") as fh:
         download_requests = yaml.load(fh, Loader=yaml.FullLoader)
 
-    files_to_download = []
+    files = []
     if len(download_requests) > 0:
         if debug:
             print("Status on current data requests:")
@@ -137,9 +137,12 @@ def _get_files_to_download(path, c, debug=False):
             if debug:
                 print(" {}:\n\t{} ({})".format(file_path, status, request_id))
 
-            if status == "completed":
-                files_to_download.append(file_path)
-    return files_to_download
+            if with_status is not None:
+                if status == with_status or status in with_status:
+                    files.append(file_path)
+            else:
+                files.append(file_path)
+    return files
 
 
 def _data_valid(file_path, query_hash):

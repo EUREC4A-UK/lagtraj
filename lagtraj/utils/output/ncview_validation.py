@@ -17,7 +17,7 @@ def build_valid_encoding(ds):
             if v == "time":
                 t_ref = ds.time.isel(time=0)
                 encoding[v]["units"] = t_ref.dt.strftime(
-                    "seconds since %y-%m-%d %H:%M:%S"
+                    "seconds since %Y-%m-%d %H:%M:%S"
                 ).item()
             else:
                 encoding[v]["units"] = "seconds since 1970-01-01 00:00:00"

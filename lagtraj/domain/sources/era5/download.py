@@ -52,7 +52,13 @@ def download_data(
                 file_path.unlink()
 
         if download_id in download_requests:
-            if download_requests[download_id]["query_hash"] == query_hash:
+            download_request = download_requests[download_id]
+            has_valid_args = download_request["query_hash"] == query_hash
+            request_id = download_request["request_id"]
+
+            if has_valid_args and _request_exists(request_id=request_id, c=c):
+                # TODO: unqueue invalid requests here so that the server isn't
+                # working on unecessary requests
                 should_make_request = False
             else:
                 del download_requests[download_id]
@@ -103,6 +109,14 @@ def download_data(
 def all_data_is_downloaded(path):
     c = RequestFetchCDSClient()
     return len(_get_files_to_download(path=path, c=c)) == 0
+
+
+def _request_exists(request_id, c):
+    try:
+        c.get_request_status(request_id)
+        return True
+    except c.RequestNotFoundException:
+        return False
 
 
 def _get_files_to_download(path, c, debug=False):
@@ -212,10 +226,6 @@ def _build_query(model_run_type, level_type, date, bbox, latlon_sampling):
         )
     else:
         raise NotImplementedError(model_run_type, level_type)
-
-
-def _get_query_status(request_id):
-    return "TOFIX"
 
 
 def _fingerprint_downloaded_file(query_hash, file_path):

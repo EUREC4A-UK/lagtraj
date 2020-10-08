@@ -47,6 +47,11 @@ def load_definition(root_data_path, name):
             height=params["velocity_method_height"]
         )
 
+    if "velocity_method_pressure" in params:
+        extra_kwargs["velocity_method_kwargs"] = dict(
+            pressure=params["velocity_method_pressure"]
+        )
+
     return TrajectoryDefinition(
         domain=params["domain"],
         origin=origin,

@@ -139,6 +139,138 @@ def steffen_3d(
     return v_out
 
 
+# This can probably be replaced by a generic Steffen interpolation function
+# No extrapolation is performed
+# Time axis present, but not lat, lon
+@njit
+def steffen_1d_no_ep_time(
+    input_data, input_levels, output_level_array,
+):
+    """ Performs Steffen interpolation on one individual column for
+    each time step.
+    Steffen, M. (1990). A simple method for monotonic interpolation in
+    one dimension. Astronomy and Astrophysics, 239, 443. """
+    t_max = input_data.shape[0]
+    k_max = input_data.shape[1]
+    k_max_output = output_level_array.shape[0]
+    k_max_minus = k_max - 1
+    linear_slope = np.empty((k_max))
+    output_data = np.empty((t_max, k_max_output))
+    # first point
+    delta_lower = input_levels[1] - input_levels[0]
+    delta_upper = input_levels[2] - input_levels[1]
+    if delta_lower < 0:
+        raise Exception("Non-montonic increase in input_levels")
+    if delta_upper < 0:
+        raise Exception("Non-montonic increase in input_levels")
+    for time_index in range(t_max):
+        slope_lower = (
+            input_data[time_index, 1] - input_data[time_index, 0]
+        ) / delta_lower
+        slope_upper = (
+            input_data[time_index, 2] - input_data[time_index, 1]
+        ) / delta_upper
+        weighted_slope = slope_lower * (
+            1 + delta_lower / (delta_lower + delta_upper)
+        ) - slope_upper * delta_lower / (delta_lower + delta_upper)
+        if weighted_slope * slope_lower <= 0.0:
+            linear_slope[0] = 0.0
+        elif np.abs(weighted_slope) > 2 * np.abs(slope_lower):
+            linear_slope[0] = 2.0 * slope_lower
+        else:
+            linear_slope[0] = weighted_slope
+
+        # intermediate points
+        for k in range(1, k_max_minus):
+            delta_lower = input_levels[k] - input_levels[k - 1]
+            delta_upper = input_levels[k + 1] - input_levels[k]
+            slope_lower = (
+                input_data[time_index, k] - input_data[time_index, k - 1]
+            ) / delta_lower
+            slope_upper = (
+                input_data[time_index, k + 1] - input_data[time_index, k]
+            ) / delta_upper
+            weighted_slope = (slope_lower * delta_upper + slope_upper * delta_lower) / (
+                delta_lower + delta_upper
+            )
+
+            if slope_lower * slope_upper <= 0.0:
+                linear_slope[k] = 0.0
+            elif np.abs(weighted_slope) > 2.0 * np.abs(slope_lower):
+                linear_slope[k] = np.copysign(2.0, slope_lower) * min(
+                    np.abs(slope_lower), np.abs(slope_upper)
+                )
+            elif np.abs(weighted_slope) > 2.0 * np.abs(slope_upper):
+                linear_slope[k] = np.copysign(2.0, slope_lower) * min(
+                    np.abs(slope_lower), np.abs(slope_upper)
+                )
+            else:
+                linear_slope[k] = weighted_slope
+
+        # last point
+        delta_lower = input_levels[k_max_minus - 1] - input_levels[k_max_minus - 2]
+        delta_upper = input_levels[k_max_minus] - input_levels[k_max_minus - 1]
+        slope_lower = (
+            input_data[time_index, k_max_minus - 1]
+            - input_data[time_index, k_max_minus - 2]
+        ) / delta_lower
+        slope_upper = (
+            input_data[time_index, k_max_minus]
+            - input_data[time_index, k_max_minus - 1]
+        ) / delta_upper
+        weighted_slope = slope_upper * (
+            1 + delta_upper / (delta_upper + delta_lower)
+        ) - slope_lower * delta_upper / (delta_upper + delta_lower)
+        if weighted_slope * slope_upper <= 0.0:
+            linear_slope[k_max_minus] = 0.0
+        elif np.abs(weighted_slope) > 2.0 * np.abs(slope_upper):
+            linear_slope[k_max_minus] = 2.0 * slope_upper
+        else:
+            linear_slope[k_max_minus] = weighted_slope
+
+        # loop over output points
+        k_temp = 0
+        for k_out in range(k_max_output):
+            while (k_temp < k_max) and (
+                input_levels[k_temp] < output_level_array[k_out]
+            ):
+                k_temp = k_temp + 1
+            if 0 < k_temp < k_max:
+                k_high = k_temp
+                k_low = k_high - 1
+                delta = input_levels[k_high] - input_levels[k_low]
+                slope = (
+                    input_data[time_index, k_high] - input_data[time_index, k_low]
+                ) / delta
+                a = (linear_slope[k_low] + linear_slope[k_high] - 2 * slope) / (
+                    delta * delta
+                )
+                b = (3 * slope - 2 * linear_slope[k_low] - linear_slope[k_high]) / delta
+                c = linear_slope[k_low]
+                d = input_data[time_index, k_low]
+                t_1 = output_level_array[k_out] - input_levels[k_low]
+                t_2 = t_1 * t_1
+                t_3 = t_2 * t_1
+                output_data[time_index, k_out] = a * t_3 + b * t_2 + c * t_1 + d
+            # Allow for small deviations in upper/lower levels
+            elif (k_temp == 0) and (
+                abs(output_level_array[k_out] - input_levels[k_temp]) < 1e-6
+            ):
+                output_data[time_index, k_out] = input_data[time_index, 0]
+            elif (k_temp == k_max) and (
+                abs(output_level_array[k_out] - input_levels[k_temp]) < 1e-6
+            ):
+                output_data[time_index, k_out] = input_data[time_index, k_max]
+            else:
+                output_data[time_index, k_out] = np.nan
+    return output_data
+
+
+def central_estimate(a_in):
+    """take a one-sided difference at the edges, and a central difference elsewhere"""
+    return np.concatenate(([a_in[0]], 0.5 * (a_in[1:-1] + a_in[2:]), [a_in[-1]]))
+
+
 def cos_transition(absolute_input, transition_start, transition_end):
     """function that smoothly transitions from 1 to 0 using a
     cosine-shaped transition between start and end"""

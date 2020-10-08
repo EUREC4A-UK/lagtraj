@@ -7,7 +7,7 @@
 
 ## Producing a Lagrangian forcing
 
-There are three steps to making forcing profiles with lagtraj:
+There are four steps to making forcing profiles with lagtraj:
 
 1. Download a domain for a given date-range (small for Eulerian simulations,
 big for Lagrangian)
@@ -16,6 +16,7 @@ big for Lagrangian)
 
 3. Extract forcing profiles along the trajectory
 
+4. Convert forcing to desired output format
 
 ## 0. Getting started
 
@@ -115,6 +116,19 @@ $> python -m lagtraj.trajectory.create lagtraj://eurec4a_20191209_12_lag
 $> python -m lagtraj.forcing.create <forcing_name>
 ```
 
+## 4. Convert forcing to desired output format
+
+```bash
+$> python -m lagtraj.forcing.create <forcing_name> <conversion_specification>
+```
+
+e.g.
+
+```bash
+$>  python -m lagtraj.conversion.era5 eurec4a_20200202_12_lag lagtraj://eurec4a_hightune
+$>  python -m lagtraj.conversion.era5 eurec4a_20200202_12_lag lagtraj://eurec4a_racmo
+```
+
 # Implementation details
 
 Required utilies:
@@ -137,7 +151,7 @@ Required utilies:
 ## Algorithmic approach:
 
 a) Download all data needed (across entire domain, single/model levels+).
-   Currently this creates daily files, but we may aim for the minimum number of 
+   Currently this creates daily files, but we may aim for the minimum number of
    requests from ECMWF (However, grib to netcdf conversion via the cds api
    can only deal with files of up to about 10GB).
 

@@ -1,0 +1,144 @@
+"""Module describing the hightune variables as a dictionary"""
+
+hightune_variables = {
+    "lat": {"long_name": "Latitude", "units": "degrees_north"},
+    "lon": {"long_name": "Longitude", "units": "degrees_east"},
+    "height": {"long_name": "Height above ground", "units": "m"},
+    "pressure": {"long_name": "Pressure", "units": "Pa"},
+    "u": {"long_name": "Zonal wind", "units": "m s-1"},
+    "v": {"long_name": "Meridional wind", "units": "m s-1"},
+    "temp": {"long_name": "Temperature", "units": "K"},
+    "theta": {"long_name": "Potential temperature", "units": "K"},
+    "thetal": {"long_name": "Liquid potential temperature", "units": "K"},
+    "qv": {"long_name": "Specific humidity", "units": "kg kg-1"},
+    "qt": {"long_name": "Total water content", "units": "kg kg-1"},
+    "rv": {"long_name": "Water vapor mixing ratio", "units": "kg kg-1"},
+    "rt": {"long_name": "Total water mixing ratio", "units": "kg kg-1"},
+    "rl": {"long_name": "Liquid water mixing ratio", "units": "kg kg-1"},
+    "ri": {"long_name": "Ice water mixing ratio", "units": "kg kg-1"},
+    "ql": {"long_name": "Liquid water content", "units": "kg kg-1"},
+    "qi": {"long_name": "Ice water content", "units": "kg kg-1"},
+    "tke": {"long_name": "Turbulent kinetic energy", "units": "m2 s-2"},
+    "time": {"long_name": "Forcing time"},
+    "ps_forc": {"long_name": "Surface pressure for forcing", "units": "Pa"},
+    "height_forc": {"long_name": "Height for forcing", "units": "m"},
+    "pressure_forc": {"long_name": "Pressure for forcing", "units": "Pa"},
+    "ug": {"long_name": "Geostrophic zonal wind", "units": "m s-1"},
+    "vg": {"long_name": "Geostrophic meridional wind", "units": "m s-1"},
+    "temp_adv": {"long_name": "Temperature large-scale advection", "units": "K s-1"},
+    "theta_adv": {
+        "long_name": "Potential temperature large-scale advection",
+        "units": "K s-1",
+    },
+    "thetal_adv": {
+        "long_name": "Liquid potential temperature large-scale advection",
+        "units": "K s-1",
+    },
+    "qv_adv": {
+        "long_name": "Specific humidity large-scale advection",
+        "units": "kg kg-1 s-1",
+    },
+    "qt_adv": {
+        "long_name": "Total water content large-scale advection",
+        "units": "kg kg-1 s-1",
+    },
+    "rv_adv": {
+        "long_name": "Water vapor mixing ratio large-scale advection",
+        "units": "kg kg-1 s-1",
+    },
+    "rt_adv": {
+        "long_name": "Total water mixing ratio large-scale advection",
+        "units": "kg kg-1 s-1",
+    },
+    "w": {"long_name": "Vertical velocity", "units": "m s-1"},
+    "ts": {"long_name": "Surface temperature", "units": "K"},
+    "ps": {"long_name": "Surface pressure", "units": "Pa"},
+    "rh": {"long_name": "Relative humidity", "units": "%"},
+    "temp_nudging": {"long_name": "Temperature for nudging", "units": "K"},
+    "theta_nudging": {"long_name": "Potential temperature for nudging", "units": "K"},
+    "thetal_nudging": {
+        "long_name": "Liquid potential temperature for nudging",
+        "units": "K",
+    },
+    "qv_nudging": {
+        "long_name": "Specific humidity profile for nudging",
+        "units": "kg kg-1",
+    },
+    "qt_nudging": {
+        "long_name": "Total water content profile for nudging",
+        "units": "kg kg-1",
+    },
+    "rv_nudging": {
+        "long_name": "Water vapor mixing ratio profile for nudging",
+        "units": "kg kg-1",
+    },
+    "rt_nudging": {
+        "long_name": "Total water mixing ratio profile for nudging",
+        "units": "kg kg-1",
+    },
+    "u_nudging": {"long_name": "Zonal wind profile for nudging", "units": "m s-1"},
+    "v_nudging": {"long_name": "Meridional wind profile for nudging", "units": "m s-1"},
+    "sfc_sens_flx": {
+        "long_name": "Surface sensible heat flux (positive upward)",
+        "units": "W m-2",
+    },
+    "sfc_lat_flx": {
+        "long_name": "Surface latent heat flux (positive upward)",
+        "units": "W m-2",
+    },
+    "wpthetap": {
+        "long_name": "Surface flux of potential temperature",
+        "units": "K m s-1",
+    },
+    "wpqvp": {
+        "long_name": "Surface flux of water vapor specific humidity",
+        "units": "m s-1",
+    },
+    "wpqtp": {
+        "long_name": "Surface flux of total water specific humidity",
+        "units": "m s-1",
+    },
+    "wprvp": {
+        "long_name": "Surface flux of water vapor mixing ratio",
+        "units": "m s-1",
+    },
+    "wprtp": {
+        "long_name": "Surface flux of total water mixing ratio",
+        "units": "m s-1",
+    },
+    "z0m": {"units": "m", "long_name": "roughness length for momentum"},
+    "z0h": {"units": "m", "long_name": "roughness length for heat"},
+    "msnswrf": {
+        "units": "W m-2",
+        "long_name": "Mean surface net short-wave radiation flux",
+    },
+    "msnlwrf": {
+        "units": "W m-2",
+        "long_name": "Mean surface net long-wave radiation flux",
+    },
+    "mtnswrf": {
+        "units": "W m-2",
+        "long_name": "Mean top net short-wave radiation flux",
+    },
+    "mtnlwrf": {"units": "W m-2", "long_name": "Mean top net long-wave radiation flux"},
+    "mtnswrfcs": {
+        "units": "W m-2",
+        "long_name": "Mean top net short-wave radiation flux, clear sky",
+    },
+    "mtnlwrfcs": {
+        "units": "W m-2",
+        "long_name": "Mean top net long-wave radiation flux, clear sky",
+    },
+    "msnswrfcs": {
+        "units": "W m-2",
+        "long_name": "Mean surface net short-wave radiation flux, clear sky",
+    },
+    "msnlwrfcs": {
+        "units": "W m-2",
+        "long_name": "Mean surface net long-wave radiation flux, clear sky",
+    },
+    "mtdwswrf": {
+        "units": "W m-2",
+        "long_name": "Mean top downward short-wave radiation flux",
+    },
+}

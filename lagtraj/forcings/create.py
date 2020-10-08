@@ -1,6 +1,6 @@
-import xarray as xr
-from tqdm import tqdm
 from pathlib import Path
+from tqdm import tqdm
+import xarray as xr
 
 from .. import DEFAULT_ROOT_DATA_PATH
 from . import profile_calculation, load, build_forcing_data_path
@@ -143,6 +143,9 @@ def main():
             sampling_method=forcing_defn.sampling,
         )
 
+    ds_forcing["origin_lon"] = ds_trajectory["origin_lon"]
+    ds_forcing["origin_lat"] = ds_trajectory["origin_lat"]
+    ds_forcing["origin_datetime"] = ds_trajectory["origin_datetime"]
     ds_forcing.attrs.update(ds_domain.attrs)
     attr_dict = dict(
         levels_definition=forcing_defn.levels,

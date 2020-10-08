@@ -1,5 +1,6 @@
 if __name__ == "__main__":
     import matplotlib
+
     matplotlib.use("Agg")  # noqa
 
 import xarray as xr
@@ -14,7 +15,7 @@ except ImportError:
     HAS_TWINOTTER = False
 
 
-def main(ds, add_ref=None, ax=None, reference_time='origin', **kwargs):
+def main(ds, add_ref=None, ax=None, reference_time="origin", **kwargs):
     new_axes = False
     if ax is None:
         map_proj = ccrs.Mercator()
@@ -23,11 +24,11 @@ def main(ds, add_ref=None, ax=None, reference_time='origin', **kwargs):
         ax.coastlines(resolution="10m")
         new_axes = True
 
-    kwargs.setdefault('color', 'darkgreen')
-    kwargs.setdefault('marker', 'o')
-    kwargs['transform'] = ccrs.PlateCarree()
+    kwargs.setdefault("color", "darkgreen")
+    kwargs.setdefault("marker", "o")
+    kwargs["transform"] = ccrs.PlateCarree()
 
-    if reference_time == 'origin':
+    if reference_time == "origin":
         t_ref = ds.origin_datetime
         lat_ref = ds.origin_lat
         lon_ref = ds.origin_lon
@@ -53,7 +54,9 @@ def main(ds, add_ref=None, ax=None, reference_time='origin', **kwargs):
             raise Exception(
                 "Please install `twinotter` to enable adding the" " EUREC4A circle"
             )
-        twinotter.external.eurec4a.add_halo_circle(ax=ax, color=kwargs['color'], alpha=0.5)
+        twinotter.external.eurec4a.add_halo_circle(
+            ax=ax, color=kwargs["color"], alpha=0.5
+        )
         if new_axes:
             ax.set_extent([-64, -53, 10, 16], crs=ccrs.PlateCarree())
 

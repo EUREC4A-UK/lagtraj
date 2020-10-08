@@ -25,8 +25,10 @@ def main(ds):
 
     title = f"{ds.name} {ds.trajectory_type} trajectory\n{ds.domain_name} domain\n"
     if hasattr(ds, "velocity_method"):
-        title += (f"{ds.velocity_method} velocity method using "
-                  "{ds.velocity_method_kwargs_height}m height\n")
+        title += (
+            f"{ds.velocity_method} velocity method using "
+            "{ds.velocity_method_kwargs_height}m height\n"
+        )
 
     plt.suptitle(title, y=1.01)
 

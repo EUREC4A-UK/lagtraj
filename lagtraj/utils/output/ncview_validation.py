@@ -11,10 +11,10 @@ import subprocess
 def build_valid_encoding(ds):
     encoding = {}
     for v in list(ds.data_vars) + list(ds.coords):
-        if v in ["time", "origin_datetime"]:
+        if v in ["time", "origin_datetime", "t0"]:
             # ncview prefers have the time in seconds (as floats)
             encoding[v] = dict(dtype="float64")
-            if v == "time":
+            if v == "time" or "t0":
                 t_ref = ds.time.isel(time=0)
                 encoding[v]["units"] = t_ref.dt.strftime(
                     "seconds since %Y-%m-%d %H:%M:%S"

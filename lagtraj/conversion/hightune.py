@@ -1,8 +1,10 @@
 """Module describing the hightune variables as a dictionary"""
 
 hightune_variables = {
-    "lat": {"long_name": "Latitude", "units": "degrees_north"},
-    "lon": {"long_name": "Longitude", "units": "degrees_east"},
+    "lat_traj": {"long_name": "Latitude", "units": "degrees_north"},
+    "lon_traj": {"long_name": "Longitude", "units": "degrees_east"},
+    "lat0_traj": {"long_name": "Initial latitude", "units": "degrees_north"},
+    "lon0_traj": {"long_name": "Initial longitude", "units": "degrees_east"},
     "height": {"long_name": "Height above ground", "units": "m"},
     "pressure": {"long_name": "Pressure", "units": "Pa"},
     "u": {"long_name": "Zonal wind", "units": "m s-1"},
@@ -25,6 +27,13 @@ hightune_variables = {
     "pressure_forc": {"long_name": "Pressure for forcing", "units": "Pa"},
     "ug": {"long_name": "Geostrophic zonal wind", "units": "m s-1"},
     "vg": {"long_name": "Geostrophic meridional wind", "units": "m s-1"},
+    "u_adv": {"long_name": "Zonal wind large-scale advection", "units": "m s-2"},
+    "v_adv": {"long_name": "Meridional wind large-scale advection", "units": "m s-2"},
+    "temp_adv": {"long_name": "Temperature large-scale advection", "units": "K s-1"},
+    "theta_adv": {
+        "long_name": "Potential temperature large-scale advection",
+        "units": "K s-1",
+    },
     "temp_adv": {"long_name": "Temperature large-scale advection", "units": "K s-1"},
     "theta_adv": {
         "long_name": "Potential temperature large-scale advection",
@@ -32,6 +41,15 @@ hightune_variables = {
     },
     "thetal_adv": {
         "long_name": "Liquid potential temperature large-scale advection",
+        "units": "K s-1",
+    },
+    "temp_rad": {"long_name": "Radiative temperature large-scale tendency", "units": "K s-1"},
+    "theta_rad": {
+        "long_name": "Radiative potential temperature tendency",
+        "units": "K s-1",
+    },
+    "thetal_rad": {
+        "long_name": "Radiative liquid potential temperature tendency",
         "units": "K s-1",
     },
     "qv_adv": {
@@ -51,6 +69,7 @@ hightune_variables = {
         "units": "kg kg-1 s-1",
     },
     "w": {"long_name": "Vertical velocity", "units": "m s-1"},
+    "omega": {"long_name": "Pressure vertical velocity", "units": "Pa s-1"},
     "ts": {"long_name": "Surface temperature", "units": "K"},
     "ps": {"long_name": "Surface pressure", "units": "Pa"},
     "rh": {"long_name": "Relative humidity", "units": "%"},
@@ -106,8 +125,9 @@ hightune_variables = {
         "long_name": "Surface flux of total water mixing ratio",
         "units": "m s-1",
     },
-    "z0m": {"units": "m", "long_name": "roughness length for momentum"},
-    "z0h": {"units": "m", "long_name": "roughness length for heat"},
+    "z0_traj": {"units": "m", "long_name": "Roughness length for momentum"},
+    "z0th_traj": {"units": "m", "long_name": "Roughness length for heat"},
+    "ustar": {"units": "m s-1", "long_name": "Surface friction velocity"},
     "msnswrf": {
         "units": "W m-2",
         "long_name": "Mean surface net short-wave radiation flux",
@@ -141,4 +161,8 @@ hightune_variables = {
         "units": "W m-2",
         "long_name": "Mean top downward short-wave radiation flux",
     },
+    "u_traj": {"units": "m s-1", "long_name": "Zonal wind speed of trajectory"},
+    "v_traj": {"units": "m s-1", "long_name": "Meridional wind speed of trajectory"},
+    "albedo_traj": {"units": "0-1", "long_name": "albedo"},
+    "q_skin_traj": {"units": "m of water", "long_name": "skin reservoir content"},
 }

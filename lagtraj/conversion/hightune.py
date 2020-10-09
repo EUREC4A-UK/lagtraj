@@ -43,7 +43,10 @@ hightune_variables = {
         "long_name": "Liquid potential temperature large-scale advection",
         "units": "K s-1",
     },
-    "temp_rad": {"long_name": "Radiative temperature large-scale tendency", "units": "K s-1"},
+    "temp_rad": {
+        "long_name": "Radiative temperature large-scale tendency",
+        "units": "K s-1",
+    },
     "theta_rad": {
         "long_name": "Radiative potential temperature tendency",
         "units": "K s-1",

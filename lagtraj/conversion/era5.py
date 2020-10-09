@@ -348,10 +348,10 @@ def hightune_from_era5(ds_era5, da_levels):
     da_tke = 0.0 * ds_era5["u_mean"].isel(time=[0]) * ds_era5["u_mean"].isel(time=[0])
     ds_hightune["tke"] = init_field_hightune(da_tke.values, "tke")
     # Radiative tendencies, all-sky, combine SW and LW
-    da_mtt = ds_era5["mttswr_mean"]+ds_era5["mttlwr_mean"]
+    da_mtt = ds_era5["mttswr_mean"] + ds_era5["mttlwr_mean"]
     ds_hightune["temp_rad"] = forcing_field_hightune(da_mtt.values, "temp_rad")
     # In order to get theta/thetal tendencies, multiply by the exner function derived as theta/T
-    da_mthetat = da_mtt*(ds_era5["theta_mean"]/ds_era5["t_mean"])
+    da_mthetat = da_mtt * (ds_era5["theta_mean"] / ds_era5["t_mean"])
     ds_hightune["theta_rad"] = forcing_field_hightune(da_mthetat.values, "theta_rad")
     ds_hightune["thetal_rad"] = forcing_field_hightune(da_mthetat.values, "thetal_rad")
     # Heat roughness, derive from "flsr" variable
@@ -383,7 +383,7 @@ def hightune_from_era5(ds_era5, da_levels):
     wprtp = wpqtp * moisture_ratio
     ds_hightune["wprtp"] = forcing_field_hightune(wprtp, "wprtp")
     rh = rh_hightune(ds_hightune["temp"], ds_hightune["pressure"], ds_hightune["qt"])
-    ds_hightune["rh"] = init_field_hightune(rh.values[:,:,0,0], "rh")
+    ds_hightune["rh"] = init_field_hightune(rh.values[:, :, 0, 0], "rh")
     # Final checks: are all variables present?
     for var in hightune_variables:
         if var not in ds_hightune:
@@ -441,7 +441,7 @@ def hightune_from_era5(ds_era5, da_levels):
         "p_nudging_rv": np.nan,
         "p_nudging_rt": np.nan,
         "zorog": 0.0,
-        "z0" : np.nan,
+        "z0": np.nan,
         "surfaceType": "ocean",
         "surfaceForcing": "ts",
         "surfaceForcingWind": "z0_traj",
@@ -644,10 +644,10 @@ def main():
     with optional_debugging(args.debug):
         if conversion_defn.export_format == "racmo":
             ds_conversion = racmo_from_era5(ds_forcing, da_levels)
-            nc_format=None
+            nc_format = None
         elif conversion_defn.export_format == "hightune":
             ds_conversion = hightune_from_era5(ds_forcing, da_levels)
-            nc_format="NETCDF3_CLASSIC"
+            nc_format = "NETCDF3_CLASSIC"
         else:
             raise NotImplementedError(format)
 
@@ -657,7 +657,7 @@ def main():
         conversion_name=conversion_defn.name,
     )
 
-    export(ds_conversion=ds_conversion, file_path=output_file_path,nc_format=nc_format)
+    export(ds_conversion=ds_conversion, file_path=output_file_path, nc_format=nc_format)
 
     print("Wrote forcing file to `{}`".format(output_file_path))
 

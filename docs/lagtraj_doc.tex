@@ -1,0 +1,77 @@
+\documentclass[a4paper,11pt]{article}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{natbib}
+\usepackage{graphicx}
+
+\title{Lagtraj: a tool for calculation LES forcings along trajectories}
+
+\begin{document}
+
+\maketitle
+
+DRAFT VERSION
+
+TODO \\
+- Test over land and ocean? \\
+- Anti-meridian and pole handling? \\
+- Talk to copernicus about how to best access their data? \\
+
+\section{Introduction}
+
+- Developments in the use of Large-Eddy Simulation: \\
+** Continuous super-site modelling: \cite{neggers2012}, using LES \cite{schalkwijk2015},\cite{laar2019},\cite{gustafson2020}. \\
+** Lagrangian cases: ASTEX \cite{bretherton1999}, \cite{roode2016}, \cite{tomassini2017}, \cite{mohrmann2019}, \cite{neggers2019}, NOAA group. Experience using realistic forcings. \\
+** Details of forcing matter, see e.g. \cite{smalley2019}. \\
+- Replication can be difficult. Sensitive to exact details of setup, such as subsidence \citep{kurowski2020} and implementation of surface fluxes cite \citep{stevens2001} \\
+- Importance of traceable configurations. \\
+- Difficulty comparing models for these situations, and time investment to make models work. \\
+- Need for flexible configurable tool. \\
+- Use of best available data \cite{hersbach2020} (model levels)? Need to represent inversions. \\
+- Extendibility (e.g. merging in observations) \\
+- Lagtraj: python based, dependencies (code is plug-and-go) \\
+
+\section{Methods}
+
+Steps \\
+- Data download \\
+- Trajectory calculations uses an iterative strategy \citep{petterssen1956,sprenger2015} \\
+- Forcing calculations: \\
+** Parameters \\
+** Use of Steffen interpolation \citep{yamaguchi2012} \\
+** Cite references in Wernli about iterative procedure for trajectories \\
+- Format conversion \\
+
+Other factors: \\
+- Topography \\
+- Land-sea mask \\
+
+Code design \\
+Modular, using xarray \citep{hoyer2017}, yaml \citep{ben2009}, pytest \citep{okken2017}
+
+\subsection{Formats}
+
+Input formats: \\
+- ERA5 (model level or pressure level?). Download from CDS \citep{raoult2017} \\
+- ERA5 with JOANNE dropsonde corrections \citep{bony2019} \\
+- ICON/UM? \\
+
+- Close to native, though this includes auxiliary variables. \\
+- KNMI testbed (KPT) \\
+- DEPHY \\
+
+\section{Results}
+
+- EUREC4A trajectories \cite{bony2017} \\
+- Single site (Cardington?, Julich?) \\
+
+\section{Validation against other tools}
+
+
+\section{Discussion}
+
+\bibliographystyle{apalike}
+\bibliography{lagtraj_doc}
+
+\end{document}

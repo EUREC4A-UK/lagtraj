@@ -25,7 +25,7 @@ from ..domain.sources.era5.constants import rg, cp, rlv
 # Add nudging
 
 
-def racmo_from_era5(ds_era5, da_levels):
+def racmo_from_era5(ds_era5, da_levels, parameters, metadata):
     """Obtain a racmo input file from era5 variable set at high resolution"""
     # Put full levels midway between half-levels, I think this is consistent with DALES
     # Reverse order of data, to confirm to other RACMO input
@@ -212,15 +212,15 @@ def racmo_from_era5(ds_era5, da_levels):
             print(var + " is missing in the RACMO formatted output")
     # Needs improvement still
     racmo_dict = {
-        "campaign": "NEEDS ADDING",
-        "flight": "NEEDS ADDING",
+        "campaign": metadata.campaign,
+        "flight": metadata.case,
         "date": ds_era5["origin_datetime"].values.astype("str"),
         "source": "ERA5",
         "source_domain": "NEEDS ADDING",
         "source_grid": "grid0.1x0.1",
         "source_latsamp": ds_era5.sampling_method[1],
         "source_lonsamp": ds_era5.sampling_method[1],
-        "creator": "https://github.com/EUREC4A-UK/lagtraj",
+        "creator": metadata.author+" with https://github.com/EUREC4A-UK/lagtraj",
         "created": datetime.datetime.now().isoformat(),
         "wilting_point": 0.1715,
         "field_capacity": 0.32275,
@@ -232,7 +232,7 @@ def racmo_from_era5(ds_era5, da_levels):
     return ds_racmo
 
 
-def hightune_from_era5(ds_era5, da_levels):
+def hightune_from_era5(ds_era5, da_levels, parameters, metadata):
     def init_field_hightune(field, variable):
         if np.ndim(field) == 1:
             return (
@@ -391,36 +391,36 @@ def hightune_from_era5(ds_era5, da_levels):
     # Needs improvement
     hightune_dictionary = {
         "Conventions": "CF-1.0",
-        "comment": "Forcing and initial conditions for Lagrangian case",
-        "reference": "NEEDS ADDING",
-        "author": "NEEDS ADDING",
-        "modifications": "NEEDS ADDING",
-        "case": "NEEDS ADDING",
+        "comment": metadata.comment,
+        "reference": metadata.reference,
+        "author": metadata.author,
+        "modifications": metadata.modifications,
+        "case": metadata.campaign+' '+metadata.case,
         "script": "https://github.com/EUREC4A-UK/lagtraj",
         "startDate": ds_hightune["time"][0].values.astype("str"),
         "endDate": ds_hightune["time"][-1].values.astype("str"),
-        "adv_temp": 1,
-        "adv_theta": 1,
-        "adv_thetal": 1,
-        "adv_qv": 1,
-        "adv_qt": 1,
-        "adv_rv": 1,
-        "adv_rt": 1,
-        "rad_temp": 0,
-        "rad_theta": 0,
-        "rad_thetal": 0,
-        "forc_omega": 0,
-        "forc_w": 1,
-        "forc_geo": 1,
-        "nudging_u": 0,
-        "nudging_v": 0,
-        "nudging_temp": 0,
-        "nudging_theta": 0,
-        "nudging_thetal": 0,
-        "nudging_qv": 0,
-        "nudging_qt": 0,
-        "nudging_rv": 0,
-        "nudging_rt": 0,
+        "adv_temp": parameters.adv_temp,
+        "adv_theta": parameters.adv_theta,
+        "adv_thetal": parameters.adv_thetal,
+        "adv_qv": parameters.adv_qv,
+        "adv_qt": parameters.adv_qt,
+        "adv_rv": parameters.adv_rv,
+        "adv_rt": parameters.adv_rt,
+        "rad_temp": parameters.rad_temp,
+        "rad_theta": parameters.rad_theta,
+        "rad_thetal": parameters.rad_thetal,
+        "forc_omega": parameters.forc_omega,
+        "forc_w": parameters.forc_w,
+        "forc_geo": parameters.forc_geo,
+        "nudging_u": parameters.nudging_u,
+        "nudging_v": parameters.nudging_v,
+        "nudging_temp": parameters.nudging_temp,
+        "nudging_theta": parameters.nudging_theta,
+        "nudging_thetal": parameters.nudging_thetal,
+        "nudging_qv": parameters.nudging_qv,
+        "nudging_qt": parameters.nudging_qt,
+        "nudging_rv": parameters.nudging_rv,
+        "nudging_rt": parameters.nudging_rt,
         "z_nudging_u": np.nan,
         "z_nudging_v": np.nan,
         "z_nudging_temp": np.nan,
@@ -442,9 +442,9 @@ def hightune_from_era5(ds_era5, da_levels):
         "p_nudging_rt": np.nan,
         "zorog": 0.0,
         "z0": np.nan,
-        "surfaceType": "ocean",
-        "surfaceForcing": "ts",
-        "surfaceForcingWind": "z0_traj",
+        "surfaceType": parameters.surfaceType,
+        "surfaceForcing": parameters.surfaceForcing,
+        "surfaceForcingWind": parameters.surfaceForcingWind,
     }
     ds_hightune.attrs.update(hightune_dictionary)
     return ds_hightune
@@ -643,10 +643,20 @@ def main():
 
     with optional_debugging(args.debug):
         if conversion_defn.export_format == "racmo":
-            ds_conversion = racmo_from_era5(ds_forcing, da_levels)
+            ds_conversion = racmo_from_era5(
+                ds_forcing,
+                da_levels,
+                parameters=conversion_defn.parameters,
+                metadata=conversion_defn.metadata,
+            )
             nc_format = None
         elif conversion_defn.export_format == "hightune":
-            ds_conversion = hightune_from_era5(ds_forcing, da_levels)
+            ds_conversion = hightune_from_era5(
+                ds_forcing,
+                da_levels,
+                parameters=conversion_defn.parameters,
+                metadata=conversion_defn.metadata,
+            )
             nc_format = "NETCDF3_CLASSIC"
         else:
             raise NotImplementedError(format)

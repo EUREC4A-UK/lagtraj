@@ -100,6 +100,42 @@ hightune_variables = {
     },
     "u_nudging": {"long_name": "Zonal wind profile for nudging", "units": "m s-1"},
     "v_nudging": {"long_name": "Meridional wind profile for nudging", "units": "m s-1"},
+    "nudging_u_traj": {
+        "long_name": "Nudging time profile for zonal wind",
+        "units": "s",
+    },
+    "nudging_v_traj": {
+        "long_name": "Nudging time profile for meridional wind",
+        "units": "s",
+    },
+    "nudging_temp_traj": {
+        "long_name": "Nudging time profile for temperature",
+        "units": "s",
+    },
+    "nudging_theta_traj": {
+        "long_name": "Nudging time profile for potential temperature",
+        "units": "s",
+    },
+    "nudging_thetal_traj": {
+        "long_name": "Nudging time profile for liquid potential temperature",
+        "units": "s",
+    },
+    "nudging_qv_traj": {
+        "long_name": "Nudging time profile for specific humidity",
+        "units": "s",
+    },
+    "nudging_qt_traj": {
+        "long_name": "Nudging time profile for total water content",
+        "units": "s",
+    },
+    "nudging_rv_traj": {
+        "long_name": "Nudging time profile for water vapor mixing ratio",
+        "units": "s",
+    },
+    "nudging_rt_traj": {
+        "long_name": "Nudging time profile for total water mixing ratio",
+        "units": "s",
+    },
     "sfc_sens_flx": {
         "long_name": "Surface sensible heat flux (positive upward)",
         "units": "W m-2",

@@ -420,7 +420,7 @@ def hightune_from_era5(ds_era5, da_levels):
         "nudging_qv": 0,
         "nudging_qt": 0,
         "nudging_rv": 0,
-        "z_nudging_rt": np.nan,
+        "nudging_rt": 0,
         "z_nudging_u": np.nan,
         "z_nudging_v": np.nan,
         "z_nudging_temp": np.nan,

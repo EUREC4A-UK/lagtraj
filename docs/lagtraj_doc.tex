@@ -13,26 +13,57 @@
 
 DRAFT VERSION
 
-TODO \\
-- Test over land and ocean? \\
-- Anti-meridian and pole handling? \\
-- Talk to copernicus about how to best access their data? \\
+\section*{Abstract}
+
+In recent years, Large-Eddy Simulation (LES) that spans a length of
+multiple days have become increasingly popular. These simulations are
+often performed in the context of observational campaigns, or to study
+the development of convection over multiple days at observational
+supersites. Their main purpose is to simulate the behaviour of
+convection and associatied process (microphysics, radiation) at the
+scale of metres to a few hundred kilometres.
+
+%~ For case studies over the
+%~ ocean, the simulations often follow an air-mass in a reference frame
+%~ that moves along with the boundary layer or lower cloud layer. For LES
+%~ that uses doubly periodic boundary conditions, so-called large-scale
+%~ forcings need to be prescribed. These include the effects of advection
+%~ of air at levels where the flow velocity is different from the
+%~ reference frame velocity, and optionally a nudging term that corrects
+%~ for differences in the mean state between the LES and observations.
+
+Lagtraj is a novel framework for calculation of the large-scale
+forcings that these simulations require based on forecast or reanalysis
+data, in some cases complemented by observational constraints. It aims
+to streamline and the workflow that is required to perform routine LES
+and sensitivity studies based on realistic cases, and ensure
+simulations are set up in a traceable fashion. Lagtraj has been
+developed to serve as a community tool that can be further extended
+with different input and output formats.
 
 \section{Introduction}
 
 - Developments in the use of Large-Eddy Simulation: \\
-** Continuous super-site modelling: \cite{neggers2012}, using LES \cite{schalkwijk2015},\cite{laar2019},\cite{gustafson2020}. \\
-** Lagrangian cases: ASTEX \cite{bretherton1999}, \cite{roode2016}, \cite{tomassini2017}, \cite{mohrmann2019}, \cite{neggers2019}, NOAA group. Experience using realistic forcings. \\
+** Continuous super-site modelling: useful for long-term systematic
+evaluation of parametrisation \cite{neggers2012}. Routine LES operation
+to improve parametrisations
+\cite{schalkwijk2015},\cite{laar2019},\cite{gustafson2020}. \\
+** Lagrangian case studies: for convection over the ocean, useful to
+follow air in boundary layer or low clouds. Aim: capture development of
+organisation. ASTEX \cite{bretherton1999}, \cite{roode2016},
+\cite{tomassini2017}, \cite{mohrmann2019}, \cite{neggers2019}, NOAA
+group. Experience using realistic forcings. \\
 ** Details of forcing matter, see e.g. \cite{smalley2019}. \\
-- Replication can be difficult. Sensitive to exact details of setup, such as subsidence \citep{kurowski2020} and implementation of surface fluxes cite \citep{stevens2001} \\
-- Importance of traceable configurations. \\
+- Replication can be difficult. Sensitive to exact details of setup, such as subsidence \citep{kurowski2020} and implementation of surface fluxes cite \citep{stevens2001}. \\
 - Difficulty comparing models for these situations, and time investment to make models work. \\
+- Importance of traceable configurations: even for idealised cases, there have often been small but important variations in the forcings used (mention BOMEX?). \\
+- Traditionally, text files have been used to share configurations. \\
 - Need for flexible configurable tool. \\
 - Use of best available data \cite{hersbach2020} (model levels)? Need to represent inversions. \\
 - Extendibility (e.g. merging in observations) \\
 - Lagtraj: python based, dependencies (code is plug-and-go) \\
 
-\section{Methods}
+\section{Code design}
 
 Steps \\
 - Data download \\
@@ -40,34 +71,47 @@ Steps \\
 - Forcing calculations: \\
 ** Parameters \\
 ** Use of Steffen interpolation \citep{yamaguchi2012} \\
+** Gradient calculation
 ** Cite references in Wernli about iterative procedure for trajectories \\
-- Format conversion \\
+- Format conversion and additional parameters \\
 
 Other factors: \\
 - Topography \\
 - Land-sea mask \\
 
-Code design \\
-Modular, using xarray \citep{hoyer2017}, yaml \citep{ben2009}, pytest \citep{okken2017}
+Code design: \\
+Modular, using xarray \citep{hoyer2017}, yaml \citep{ben2009}
 
 \subsection{Formats}
 
 Input formats: \\
 - ERA5 (model level or pressure level?). Download from CDS \citep{raoult2017} \\
-- ERA5 with JOANNE dropsonde corrections \citep{bony2019} \\
+- ERA5 with dropsonde corrections \citep{bony2019} \\
 - ICON/UM? \\
 
-- Close to native, though this includes auxiliary variables. \\
-- KNMI testbed (KPT) \\
-- DEPHY \\
+Output formats:
+- ERA5 close to native, including auxiliary variables. \\
+- KNMI parametrisation testbed (KPT) \\
+- DEPHY/iDEPHYx: the DEPHY format (implémentation DEPHY avec extensions). \\
 
-\section{Results}
+\section{Examples}
 
 - EUREC4A trajectories \cite{bony2017} \\
 - Single site (Cardington?, Julich?) \\
+- Include plots
 
-\section{Validation against other tools}
+\section{Evaluation}
 
+- Continuous integration and unit testing.
+pytest \citep{okken2017}
+- Sensitivity of trajectory and forcing to parameters
+- Validation against other codes
+
+\section{Todo?}
+
+- Test over land and ocean? \\
+- Anti-meridian and pole handling? \\
+- Talk to Copernicus about how to best access their data? \\
 
 \section{Discussion}
 

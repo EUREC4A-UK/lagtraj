@@ -5,6 +5,7 @@ from . import (
     ConversionParametersDefinition,
     ConversionMetadataDefinition,
     ConversionLevelsDefinition,
+    ConversionNudgingDefinition,
 )
 
 
@@ -21,6 +22,20 @@ def load_definition(root_data_path, conversion_name):
         z_top=conversion_params.get("levels_ztop", None),
         dz_min=conversion_params.get("levels_dzmin", None),
         method=conversion_params.get("levels_method", None),
+    )
+
+    conversion_nudging_momentum_definition = ConversionNudgingDefinition(
+        method=conversion_params.get("nudging_method_momentum_traj", None),
+        time=conversion_params.get("nudging_time_momentum_traj", None),
+        height=conversion_params.get("nudging_height_momentum_traj", None),
+        transition=conversion_params.get("nudging_transition_momentum_traj", None),
+    )
+
+    conversion_nudging_scalar_definition = ConversionNudgingDefinition(
+        method=conversion_params.get("nudging_method_scalar_traj", None),
+        time=conversion_params.get("nudging_time_scalar_traj", None),
+        height=conversion_params.get("nudging_height_scalar_traj", None),
+        transition=conversion_params.get("nudging_transition_scalar_traj", None),
     )
 
     conversion_parameters_definition = ConversionParametersDefinition(
@@ -49,24 +64,8 @@ def load_definition(root_data_path, conversion_name):
         surfaceType=conversion_params["surfaceType"],
         surfaceForcing=conversion_params["surfaceForcing"],
         surfaceForcingWind=conversion_params["surfaceForcingWind"],
-        nudging_time_scalar_traj=conversion_params.get(
-            "nudging_time_scalar_traj", None
-        ),
-        nudging_method_scalar_traj=conversion_params.get(
-            "nudging_method_scalar_traj", None
-        ),
-        nudging_parameters_scalar_traj=conversion_params.get(
-            "nudging_parameters_scalar_traj", None
-        ),
-        nudging_time_momentum_traj=conversion_params.get(
-            "nudging_time_momentum_traj", None
-        ),
-        nudging_method_momentum_traj=conversion_params.get(
-            "nudging_method_momentum_traj", None
-        ),
-        nudging_parameters_momentum_traj=conversion_params.get(
-            "nudging_parameters_momentum_traj", None
-        ),
+        nudging_parameters_momentum_traj=conversion_nudging_momentum_definition,
+        nudging_parameters_scalar_traj=conversion_nudging_scalar_definition,
     )
 
     conversion_metadata_definition = ConversionMetadataDefinition(

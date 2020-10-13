@@ -44,12 +44,14 @@ INPUT_REQUIRED_FIELDS = dict(
     surfaceType=["ocean", "land", "mixed"],
     surfaceForcing=["ts", "Flux", "surfaceFlux"],
     surfaceForcingWind=["z0", "ustar", "z0_traj"],
-    nudging_time_scalar_traj=(None, float),
     nudging_method_scalar_traj=(None, str),
-    nudging_parameters_scalar_traj=(None, list),
-    nudging_time_momentum_traj=(None, float),
+    nudging_time_scalar_traj=(None, float),
+    nudging_height_scalar_traj=(None, float),
+    nudging_transition_scalar_traj=(None, float),
     nudging_method_momentum_traj=(None, str),
-    nudging_parameters_momentum_traj=(None, list),
+    nudging_time_momentum_traj=(None, float),
+    nudging_height_momentum_traj=(None, float),
+    nudging_transition_momentum_traj=(None, float),
 )
 
 ConversionDefinition = namedtuple(
@@ -85,13 +87,13 @@ ConversionParametersDefinition = namedtuple(
         "surfaceType",
         "surfaceForcing",
         "surfaceForcingWind",
-        "nudging_time_scalar_traj",
-        "nudging_method_scalar_traj",
         "nudging_parameters_scalar_traj",
-        "nudging_time_momentum_traj",
-        "nudging_method_momentum_traj",
         "nudging_parameters_momentum_traj",
     ],
+)
+
+ConversionNudgingDefinition = namedtuple(
+    "ConversionNudgingDefinition", ["method", "time", "height", "transition",],
 )
 
 ConversionMetadataDefinition = namedtuple(

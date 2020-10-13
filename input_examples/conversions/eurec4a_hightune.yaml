@@ -32,9 +32,11 @@ nudging_rt      : 0
 surfaceType     : ocean
 surfaceForcing  : ts
 surfaceForcingWind               : z0_traj
-# nudging_time_scalar_traj         :
-# nudging_method_scalar_traj       :
-# nudging_parameters_scalar_traj   :
-# nudging_time_momentum_traj       :
-# nudging_method_momentum_traj     :
-#  nudging_parameters_momentum_traj :
+nudging_method_scalar_traj       : cos
+nudging_time_scalar_traj         : 10800.
+nudging_height_scalar_traj       : 600.
+nudging_transition_scalar_traj   : 200.
+nudging_method_momentum_traj     : cos
+nudging_time_momentum_traj       : 10800.
+nudging_height_momentum_traj     : 600.
+nudging_transition_momentum_traj : 200.

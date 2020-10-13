@@ -11,7 +11,11 @@ from ..forcings.load import load_data as load_forcing_data
 from . import load, build_conversion_data_path
 from ..utils import optional_debugging, validation
 from ..utils.thermo import rh_hightune
-from ..utils.interpolation import steffen_1d_no_ep_time, central_estimate
+from ..utils.interpolation import (
+    steffen_1d_no_ep_time,
+    central_estimate,
+    cos_transition,
+)
 from .utils.levels import make_levels
 from .racmo import racmo_variables
 from .hightune import hightune_variables
@@ -220,7 +224,7 @@ def racmo_from_era5(ds_era5, da_levels, parameters, metadata):
         "source_grid": "grid0.1x0.1",
         "source_latsamp": ds_era5.sampling_method[1],
         "source_lonsamp": ds_era5.sampling_method[1],
-        "creator": metadata.author+" with https://github.com/EUREC4A-UK/lagtraj",
+        "creator": metadata.author + " with https://github.com/EUREC4A-UK/lagtraj",
         "created": datetime.datetime.now().isoformat(),
         "wilting_point": 0.1715,
         "field_capacity": 0.32275,
@@ -384,18 +388,69 @@ def hightune_from_era5(ds_era5, da_levels, parameters, metadata):
     ds_hightune["wprtp"] = forcing_field_hightune(wprtp, "wprtp")
     rh = rh_hightune(ds_hightune["temp"], ds_hightune["pressure"], ds_hightune["qt"])
     ds_hightune["rh"] = init_field_hightune(rh.values[:, :, 0, 0], "rh")
+
+    def nudging_time_prof(nudging_parameters, variable):
+        height_array = ds_hightune["height_forc"].values
+        nudging_method = nudging_parameters.method
+        nudging_time = nudging_parameters.time
+        nudging_height = nudging_parameters.height
+        nudging_transition = nudging_parameters.transition
+        if nudging_method == None:
+            inv_time_array = 0.0 * height_array
+        elif nudging_method == "cos":
+            div_factor = cos_transition(
+                height_array,
+                nudging_height + 0.5 * nudging_transition,
+                nudging_height - 0.5 * nudging_transition,
+            )
+            inv_time_array = div_factor/nudging_time
+        else:
+            raise Exception("Method for calculating ")
+        return (("time", "lev", "lat", "lon"), inv_time_array, hightune_variables[variable])
+
+    nudging_parameters_momentum_traj = parameters.nudging_parameters_momentum_traj
+    nudging_parameters_scalar_traj = parameters.nudging_parameters_scalar_traj
+    ds_hightune["nudging_u_traj"] = nudging_time_prof(
+        nudging_parameters_momentum_traj, "nudging_u_traj"
+    )
+    ds_hightune["nudging_v_traj"] = nudging_time_prof(
+        nudging_parameters_momentum_traj, "nudging_v_traj"
+    )
+    ds_hightune["nudging_temp_traj"] = nudging_time_prof(
+        nudging_parameters_scalar_traj, "nudging_temp_traj"
+    )
+    ds_hightune["nudging_theta_traj"] = nudging_time_prof(
+        nudging_parameters_scalar_traj, "nudging_theta_traj"
+    )
+    ds_hightune["nudging_thetal_traj"] = nudging_time_prof(
+        nudging_parameters_scalar_traj, "nudging_thetal_traj"
+    )
+    ds_hightune["nudging_qv_traj"] = nudging_time_prof(
+        nudging_parameters_scalar_traj, "nudging_qv_traj"
+    )
+    ds_hightune["nudging_qt_traj"] = nudging_time_prof(
+        nudging_parameters_scalar_traj, "nudging_qt_traj"
+    )
+    ds_hightune["nudging_rv_traj"] = nudging_time_prof(
+        nudging_parameters_scalar_traj, "nudging_rv_traj"
+    )
+    ds_hightune["nudging_rt_traj"] = nudging_time_prof(
+        nudging_parameters_scalar_traj, "nudging_rt_traj"
+    )
+
     # Final checks: are all variables present?
     for var in hightune_variables:
         if var not in ds_hightune:
             print(var + " is missing in the hightune formatted output")
     # Needs improvement
+
     hightune_dictionary = {
         "Conventions": "CF-1.0",
         "comment": metadata.comment,
         "reference": metadata.reference,
         "author": metadata.author,
         "modifications": metadata.modifications,
-        "case": metadata.campaign+' '+metadata.case,
+        "case": metadata.campaign + " " + metadata.case,
         "script": "https://github.com/EUREC4A-UK/lagtraj",
         "startDate": ds_hightune["time"][0].values.astype("str"),
         "endDate": ds_hightune["time"][-1].values.astype("str"),

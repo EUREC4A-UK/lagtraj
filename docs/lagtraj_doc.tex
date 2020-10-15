@@ -44,43 +44,80 @@ with different input and output formats.
 \section{Introduction}
 
 - Developments in the use of Large-Eddy Simulation: \\
-** Continuous super-site modelling: useful for long-term systematic
+** Due to the computational cost, LES was initially used for short
+case studies. Initial conditions and forcings were often initialised. \\
+** Eulerian LES modelling for campaign periods (e.g. TWP-ICE).
+Continuous super-site modelling: useful for long-term systematic
 evaluation of parametrisation \cite{neggers2012}. Routine LES operation
 to improve parametrisations
-\cite{schalkwijk2015},\cite{laar2019},\cite{gustafson2020}. \\
+\cite{schalkwijk2015}, \cite{laar2019},\cite{gustafson2020}. \\
 ** Lagrangian case studies: for convection over the ocean, useful to
 follow air in boundary layer or low clouds. Aim: capture development of
 organisation. ASTEX \cite{bretherton1999}, \cite{roode2016},
 \cite{tomassini2017}, \cite{mohrmann2019}, \cite{neggers2019}, NOAA
 group. Experience using realistic forcings. \\
-** Details of forcing matter, see e.g. \cite{smalley2019}. \\
-- Replication can be difficult. Sensitive to exact details of setup, such as subsidence \citep{kurowski2020} and implementation of surface fluxes cite \citep{stevens2001}. \\
-- Difficulty comparing models for these situations, and time investment to make models work. \\
-- Importance of traceable configurations: even for idealised cases, there have often been small but important variations in the forcings used (mention BOMEX?). \\
-- Traditionally, text files have been used to share configurations. \\
-- Need for flexible configurable tool. \\
-- Use of best available data \cite{hersbach2020} (model levels)? Need to represent inversions. \\
-- Extendibility (e.g. merging in observations) \\
-- Lagtraj: python based, dependencies (code is plug-and-go) \\
+- Details of forcing matter, see e.g. \cite{smalley2019}. Replication
+can be difficult. Sensitive to exact details of setup, such as
+subsidence \citep{hohenegger2013,kurowski2020} and implementation of
+surface fluxes cite \citep{stevens2001}. \\
+- Replication is particularly important when comparing diffent LES
+models. The time investment to produce the forcings can be an obstacle
+to participation in an intercomparison. \\
+- For replication, it is important for these configurations that the
+workflow is traceable. The use of the NetCDF format (rather than a
+text-based format) makes it easy to add meta-data. \\
+- The forcings for LES intercomparison studies are often derived
+through an iterative process. In order to document and accelerate this
+process, a versioning system and a flexible format for specifying
+configurations are desirable. \\
+- Lagtraj is a tool that aims to support and document the design of LES
+case studies. \\
+- It was originally developed to use ERA-5 reanalysis data
+\citep{hersbach2020}, though this is extendable. In particular, Lagtraj
+aims to facilitate blending reanalysis and observational data. As LES
+modelling is particularly sensitive to the level of inversions in input
+and nudging profiles, reanalyis data on model levels is used. \\
+- Two formats for sharing LES setups have become adopted by multiple
+groups over the past years. In particular, the KNMI parametrisation
+testbed format has been used for LES modelling at observational
+supersites, whereas the DEPHY format is a recent community effort where
+one of the goals was to make existing case studies available to the LES
+community.
+- Lagtraj is python-based, and though it has several dependencies, once
+these dependencies are installed the code does not need further
+installation or compilation. \\
+- This document is outlined as follows. Section \ref{sec:design}
+describes the code design, including input and output formats. Section
+\ref{sec:examples} shows two case studies, one at a continuous supersite
+and one using a Lagrangian reference frame, and section
+\ref{sec:evaluation} describes both the way the code itself is
+maintained and tested, as well as some examples of parameters that the
+output of the code is sensitive to. \\
 
-\section{Code design}
+\section{Code design}\label{sec:design}
+
+General code design: \\
+Lagtraj is a modular code
+Use of xarray \citep{hoyer2017}, yaml \citep{ben2009}
 
 Steps \\
-- Data download \\
-- Trajectory calculations uses an iterative strategy \citep{petterssen1956,sprenger2015} \\
+- Data download. This has been implemented for ERA5. The ERA5 data
+resides on the MARS archive. Four types of data: model levels and
+single levels, hourly reanalysis data and ERA5 hourly `forecast' data.
+Requested as one file per day, currently using NetCDF format on regular
+lat-lon grid. Domain needs to be specified or can be obtained from an
+existing trajectory. This involves reinterpolation on ECMWF side,
+horizontal interpolation needs to be defined. The download script
+places requests at the CDS data store.
+** Request can be left pending \\
+** Situations dealts with: requested data already available, requested data deleted \\
+- Trajectory calculations uses an iterative strategy \citep{petterssen1956,sprenger2015}. \\
+** Options: use a single level, use a weighted average.
 - Forcing calculations: \\
-** Parameters \\
-** Use of Steffen interpolation \citep{yamaguchi2012} \\
-** Gradient calculation
-** Cite references in Wernli about iterative procedure for trajectories \\
-- Format conversion and additional parameters \\
-
-Other factors: \\
-- Topography \\
-- Land-sea mask \\
-
-Code design: \\
-Modular, using xarray \citep{hoyer2017}, yaml \citep{ben2009}
+** Parameters: gradient method, levels, averaging width. \\
+** Calculation of height levels.
+** Use of Steffen interpolation to interpolate to height levels, following \cite{yamaguchi2012} \\
+** Gradient calculation currently based on regular grid. Can use either a regression or edges. Use of masks and treatment of topography (what to do for land? ignore points . \\
 
 \subsection{Formats}
 
@@ -94,13 +131,13 @@ Output formats:
 - KNMI parametrisation testbed (KPT) \\
 - DEPHY/iDEPHYx: the DEPHY format (implémentation DEPHY avec extensions). \\
 
-\section{Examples}
+\section{Examples}\label{sec:examples}
 
 - EUREC4A trajectories \cite{bony2017} \\
 - Single site (Cardington?, Julich?) \\
 - Include plots
 
-\section{Evaluation}
+\section{Evaluation}\label{sec:evaluation}
 
 \subsection{Continuous integration and unit testing.}
 
@@ -119,6 +156,7 @@ Check: is Lagtraj indeed less "noisy", as our initial experiments suggested. can
 \section*{Things to look into}
 
 - Test over land and ocean? \\
+- Support for cfgrib?
 - Anti-meridian and pole handling? \\
 - Talk to Copernicus about how to best access their data? \\
 

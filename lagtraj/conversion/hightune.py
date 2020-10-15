@@ -100,39 +100,39 @@ hightune_variables = {
     },
     "u_nudging": {"long_name": "Zonal wind profile for nudging", "units": "m s-1"},
     "v_nudging": {"long_name": "Meridional wind profile for nudging", "units": "m s-1"},
-    "nudging_u_traj": {
+    "nudging_inv_u_traj": {
         "long_name": "Inverse nudging time profile for zonal wind",
         "units": "s-1",
     },
-    "nudging_v_traj": {
+    "nudging_inv_v_traj": {
         "long_name": "Inverse nudging time profile for meridional wind",
         "units": "s-1",
     },
-    "nudging_temp_traj": {
+    "nudging_inv_temp_traj": {
         "long_name": "Inverse nudging time profile for temperature",
         "units": "s-1",
     },
-    "nudging_theta_traj": {
+    "nudging_inv_theta_traj": {
         "long_name": "Inverse nudging time profile for potential temperature",
         "units": "s-1",
     },
-    "nudging_thetal_traj": {
+    "nudging_inv_thetal_traj": {
         "long_name": "Inverse nudging time profile for liquid potential temperature",
         "units": "s-1",
     },
-    "nudging_qv_traj": {
+    "nudging_inv_qv_traj": {
         "long_name": "Inverse nudging time profile for specific humidity",
         "units": "s-1",
     },
-    "nudging_qt_traj": {
+    "nudging_inv_qt_traj": {
         "long_name": "Inverse nudging time profile for total water content",
         "units": "s-1",
     },
-    "nudging_rv_traj": {
+    "nudging_inv_rv_traj": {
         "long_name": "Inverse nudging time profile for water vapor mixing ratio",
         "units": "s-1",
     },
-    "nudging_rt_traj": {
+    "nudging_inv_rt_traj": {
         "long_name": "Inverse nudging time profile for total water mixing ratio",
         "units": "s-1",
     },

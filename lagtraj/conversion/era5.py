@@ -389,7 +389,7 @@ def hightune_from_era5(ds_era5, da_levels, parameters, metadata):
     rh = rh_hightune(ds_hightune["temp"], ds_hightune["pressure"], ds_hightune["qt"])
     ds_hightune["rh"] = init_field_hightune(rh.values[:, :, 0, 0], "rh")
 
-    def nudging_time_prof(nudging_parameters, variable):
+    def nudging_inv_time_prof(nudging_parameters, variable):
         height_array = ds_hightune["height_forc"].values
         nudging_method = nudging_parameters.method
         nudging_time = nudging_parameters.time
@@ -405,37 +405,37 @@ def hightune_from_era5(ds_era5, da_levels, parameters, metadata):
             )
             inv_time_array = div_factor/nudging_time
         else:
-            raise Exception("Method for calculating ")
+            raise Exception("Method for calculating inverse nudging time profile undefined")
         return (("time", "lev", "lat", "lon"), inv_time_array, hightune_variables[variable])
 
     nudging_parameters_momentum_traj = parameters.nudging_parameters_momentum_traj
     nudging_parameters_scalar_traj = parameters.nudging_parameters_scalar_traj
-    ds_hightune["nudging_u_traj"] = nudging_time_prof(
-        nudging_parameters_momentum_traj, "nudging_u_traj"
+    ds_hightune["nudging_inv_u_traj"] = nudging_inv_time_prof(
+        nudging_parameters_momentum_traj, "nudging_inv_u_traj"
     )
-    ds_hightune["nudging_v_traj"] = nudging_time_prof(
-        nudging_parameters_momentum_traj, "nudging_v_traj"
+    ds_hightune["nudging_inv_v_traj"] = nudging_inv_time_prof(
+        nudging_parameters_momentum_traj, "nudging_inv_v_traj"
     )
-    ds_hightune["nudging_temp_traj"] = nudging_time_prof(
-        nudging_parameters_scalar_traj, "nudging_temp_traj"
+    ds_hightune["nudging_inv_temp_traj"] = nudging_inv_time_prof(
+        nudging_parameters_scalar_traj, "nudging_inv_temp_traj"
     )
-    ds_hightune["nudging_theta_traj"] = nudging_time_prof(
-        nudging_parameters_scalar_traj, "nudging_theta_traj"
+    ds_hightune["nudging_inv_theta_traj"] = nudging_inv_time_prof(
+        nudging_parameters_scalar_traj, "nudging_inv_theta_traj"
     )
-    ds_hightune["nudging_thetal_traj"] = nudging_time_prof(
-        nudging_parameters_scalar_traj, "nudging_thetal_traj"
+    ds_hightune["nudging_inv_thetal_traj"] = nudging_inv_time_prof(
+        nudging_parameters_scalar_traj, "nudging_inv_thetal_traj"
     )
-    ds_hightune["nudging_qv_traj"] = nudging_time_prof(
-        nudging_parameters_scalar_traj, "nudging_qv_traj"
+    ds_hightune["nudging_inv_qv_traj"] = nudging_inv_time_prof(
+        nudging_parameters_scalar_traj, "nudging_inv_qv_traj"
     )
-    ds_hightune["nudging_qt_traj"] = nudging_time_prof(
-        nudging_parameters_scalar_traj, "nudging_qt_traj"
+    ds_hightune["nudging_inv_qt_traj"] = nudging_inv_time_prof(
+        nudging_parameters_scalar_traj, "nudging_inv_qt_traj"
     )
-    ds_hightune["nudging_rv_traj"] = nudging_time_prof(
-        nudging_parameters_scalar_traj, "nudging_rv_traj"
+    ds_hightune["nudging_inv_rv_traj"] = nudging_inv_time_prof(
+        nudging_parameters_scalar_traj, "nudging_inv_rv_traj"
     )
-    ds_hightune["nudging_rt_traj"] = nudging_time_prof(
-        nudging_parameters_scalar_traj, "nudging_rt_traj"
+    ds_hightune["nudging_inv_rt_traj"] = nudging_inv_time_prof(
+        nudging_parameters_scalar_traj, "nudging_inv_rt_traj"
     )
 
     # Final checks: are all variables present?

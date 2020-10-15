@@ -403,10 +403,16 @@ def hightune_from_era5(ds_era5, da_levels, parameters, metadata):
                 nudging_height + 0.5 * nudging_transition,
                 nudging_height - 0.5 * nudging_transition,
             )
-            inv_time_array = div_factor/nudging_time
+            inv_time_array = div_factor / nudging_time
         else:
-            raise Exception("Method for calculating inverse nudging time profile undefined")
-        return (("time", "lev", "lat", "lon"), inv_time_array, hightune_variables[variable])
+            raise Exception(
+                "Method for calculating inverse nudging time profile undefined"
+            )
+        return (
+            ("time", "lev", "lat", "lon"),
+            inv_time_array,
+            hightune_variables[variable],
+        )
 
     nudging_parameters_momentum_traj = parameters.nudging_parameters_momentum_traj
     nudging_parameters_scalar_traj = parameters.nudging_parameters_scalar_traj

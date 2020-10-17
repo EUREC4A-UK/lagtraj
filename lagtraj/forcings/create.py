@@ -96,7 +96,7 @@ def make_forcing(ds_trajectory, ds_domain, levels_definition, sampling_method):
 def export(file_path, ds_forcing, format):
     if format != "dummy_netcdf":
         raise NotImplementedError(format)
-    # TODO: add hightune format export here
+    # TODO: add dephy format export here
 
     Path(file_path).parent.mkdir(parents=True, exist_ok=True)
     validation.validate_forcing_profiles(ds_forcing_profiles=ds_forcing)

@@ -125,8 +125,8 @@ $> python -m lagtraj.forcing.create <forcing_name> <conversion_specification>
 e.g.
 
 ```bash
-$>  python -m lagtraj.conversion.era5 eurec4a_20200202_12_lag lagtraj://eurec4a_hightune
-$>  python -m lagtraj.conversion.era5 eurec4a_20200202_12_lag lagtraj://eurec4a_racmo
+$>  python -m lagtraj.conversion.era5 eurec4a_20200202_12_lag lagtraj://eurec4a_dephy
+$>  python -m lagtraj.conversion.era5 eurec4a_20200202_12_lag lagtraj://eurec4a_kpt
 ```
 
 # Implementation details
@@ -143,7 +143,7 @@ Required utilies:
 
 - plotting (to some extent)
 
-- generating HighTune formatted output netCDF files
+- generating dephy formatted output netCDF files
 
 - timing (can use tqdm for this)
 

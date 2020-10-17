@@ -1,5 +1,5 @@
-# Utilities related to HIGH-TUNE data
+# Utilities related to DEPHY data
 # TODO
 # - Add list of variables
 
-hightune_variables = {}
+dephy_variables = {}

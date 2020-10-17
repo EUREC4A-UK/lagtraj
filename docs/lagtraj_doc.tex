@@ -4,6 +4,7 @@
 \usepackage{amssymb}
 \usepackage{natbib}
 \usepackage{graphicx}
+\usepackage[a4paper,left=2cm,right=2cm,top=2cm,bottom=2cm]{geometry}
 
 \title{Lagtraj: a tool for calculation LES forcings along trajectories}
 
@@ -15,7 +16,7 @@ DRAFT VERSION
 
 \section*{Abstract}
 
-In recent years, Large-Eddy Simulation (LES) that spans a length of
+In recent years, Large-Eddy Simulations that span a length of
 multiple days have become increasingly popular. These simulations are
 often performed in the context of observational campaigns, or to study
 the development of convection over multiple days at observational
@@ -35,21 +36,23 @@ scale of metres to a few hundred kilometres.
 Lagtraj is a novel framework for calculation of the large-scale
 forcings that these simulations require based on forecast or reanalysis
 data, in some cases complemented by observational constraints. It aims
-to streamline and the workflow that is required to perform routine LES
-and sensitivity studies based on realistic cases, and ensure
-simulations are set up in a traceable fashion. Lagtraj has been
-developed to serve as a community tool that can be further extended
-with different input and output formats.
+to streamline and the workflow that is required to perform routine
+Large-Eddy Simulation and sensitivity studies based on realistic cases,
+and ensure simulations are set up in a traceable fashion. Lagtraj has
+been developed to serve as a community tool that can be further
+extended with different input and output formats.
 
 \section{Introduction}
 
-- Developments in the use of Large-Eddy Simulation: \\
+- Developments in the use of Large-Eddy Simulation (LES): \\
+** Development of LES for atmospheric science dates back to \cite{deardorff1970}. \\
 ** Due to the computational cost, LES was initially used for short
-case studies. Initial conditions and forcings were often initialised. \\
-** Eulerian LES modelling for campaign periods (e.g. TWP-ICE).
-Continuous super-site modelling: useful for long-term systematic
-evaluation of parametrisation \cite{neggers2012}. Routine LES operation
-to improve parametrisations
+case studies. Initial conditions and forcings were often initialised in order
+to make it easier to set up a simulation. \\
+** Over the last two decades, Eulerian LES modelling for campaign
+periods (e.g. TWP-ICE). Continuous super-site modelling: useful for
+long-term systematic evaluation of parametrisation \cite{neggers2012}.
+Routine LES operation to improve parametrisations
 \cite{schalkwijk2015}, \cite{laar2019},\cite{gustafson2020}. \\
 ** Lagrangian case studies: for convection over the ocean, useful to
 follow air in boundary layer or low clouds. Aim: capture development of
@@ -117,19 +120,21 @@ places requests at the CDS data store.
 ** Parameters: gradient method, levels, averaging width. \\
 ** Calculation of height levels.
 ** Use of Steffen interpolation to interpolate to height levels, following \cite{yamaguchi2012} \\
-** Gradient calculation currently based on regular grid. Can use either a regression or edges. Use of masks and treatment of topography (what to do for land? ignore points . \\
+** Gradient calculation currently based on regular grid. Can use either a regression or edges. Use of masks and treatment of topography (what to do for land? ignore points). \\
 
 \subsection{Formats}
 
 Input formats: \\
-- ERA5 (model level or pressure level?). Download from CDS \citep{raoult2017} \\
+- ERA5 (model level or pressure level?). Download from CDS \citep{raoult2017}. \\
 - ERA5 with dropsonde corrections \citep{bony2019} \\
 - ICON/UM? \\
 
 Output formats:
 - ERA5 close to native, including auxiliary variables. \\
+
+Driver formats:
 - KNMI parametrisation testbed (KPT) \\
-- DEPHY/iDEPHYx: the DEPHY format (implémentation DEPHY avec extensions). \\
+- DEPHY/iDEPHYx: the DEPHY format (impl\'ementation DEPHY avec extensions). \\
 
 \section{Examples}\label{sec:examples}
 

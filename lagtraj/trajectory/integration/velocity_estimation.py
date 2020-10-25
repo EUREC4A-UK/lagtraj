@@ -59,9 +59,6 @@ def estimate_horizontal_velocities(ds_column, method, **kwargs):
                 " `pressure` kwarg is required"
             )
         u_traj, v_traj = velocity_at_pressure(ds_column, **kwargs)
-    elif method == "column_mean":
-        u_traj = np.float64(ds_column.u.mean())
-        v_traj = np.float64(ds_column.v.mean())
     else:
         raise NotImplementedError(
             f"`{method}` trajectory velocity method" " not implemented"

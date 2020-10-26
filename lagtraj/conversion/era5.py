@@ -34,9 +34,7 @@ def kpt_from_era5(ds_era5, da_levels, parameters, metadata):
     # Put full levels midway between half-levels, I think this is consistent with DALES
     # Reverse order of data, to confirm to other kpt input
     kpt_half_level_array = da_levels.values
-    kpt_full_level_array = 0.5 * (
-        kpt_half_level_array[:-1] + kpt_half_level_array[1:]
-    )
+    kpt_full_level_array = 0.5 * (kpt_half_level_array[:-1] + kpt_half_level_array[1:])
     kpt_half_level_coord = {
         "nlevp1": (
             "nlevp1",

@@ -29,7 +29,6 @@ INPUT_REQUIRED_FIELDS = {
         "lower_troposphere_humidity_weighted",
         "single_height_level",
         "single_pressure_level",
-        "column_mean",
     ],
     "velocity_method_height": [None, float],
     "velocity_method_pressure": [None, float],

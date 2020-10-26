@@ -29,7 +29,12 @@ def validate_input(input_params, required_fields):
             )
         elif callable(f_option):
             return f_option(input_params[f_name])
-        elif type(f_option) == str and input_params[f_name] == f_option:
+        elif (
+            type(f_option) == str
+            or type(f_option) == int
+            or type(f_option) == float
+            and input_params[f_name] == f_option
+        ):
             # allows setting an option to be just a string
             pass
         elif type(f_option) == list or type(f_option) == tuple:

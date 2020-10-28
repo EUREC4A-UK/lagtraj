@@ -1,6 +1,6 @@
-"""Module describing the RACMO variables as a dictionary"""
+"""Module describing the KPT variables as a dictionary"""
 
-racmo_variables = {
+kpt_variables = {
     "lat": {"units": "degrees North", "long_name": "latitude"},
     "lon": {"units": "degrees East", "long_name": "longitude"},
     "zf": {"units": "m", "long_name": "full level height"},

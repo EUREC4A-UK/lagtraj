@@ -1,6 +1,6 @@
-"""Module describing the hightune variables as a dictionary"""
+"""Module describing the dephy variables as a dictionary"""
 
-hightune_variables = {
+dephy_variables = {
     "lat_traj": {"long_name": "Latitude", "units": "degrees_north"},
     "lon_traj": {"long_name": "Longitude", "units": "degrees_east"},
     "lat0_traj": {"long_name": "Initial latitude", "units": "degrees_north"},

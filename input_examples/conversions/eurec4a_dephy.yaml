@@ -1,8 +1,12 @@
-export_format: racmo
-levels_dzmin: 20.0
-levels_method: exponential
-levels_number: 120
-levels_ztop: 72000.0
+levels_method   : copy
+export_format   : dephy
+comment         : Forcing and initial conditions for Lagrangian case
+campaign        : EUREC4A
+source_domain   : n/a
+reference       : n/a
+author          : s.j. boeing
+modifications   : First version
+case            : n/a
 adv_temp        : 1
 adv_theta       : 1
 adv_thetal      : 1

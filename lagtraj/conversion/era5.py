@@ -10,15 +10,15 @@ from .. import DEFAULT_ROOT_DATA_PATH
 from ..forcings.load import load_data as load_forcing_data
 from . import load, build_conversion_data_path
 from ..utils import optional_debugging, validation
-from ..utils.thermo import rh_hightune
+from ..utils.thermo import rh_dephy
 from ..utils.interpolation import (
     steffen_1d_no_ep_time,
     central_estimate,
     cos_transition,
 )
 from .utils.levels import make_levels
-from .racmo import racmo_variables
-from .hightune import hightune_variables
+from .kpt import kpt_variables
+from .dephy import dephy_variables
 from ..domain.sources.era5.constants import rg, cp, rlv
 
 
@@ -29,81 +29,79 @@ from ..domain.sources.era5.constants import rg, cp, rlv
 # Add nudging
 
 
-def racmo_from_era5(ds_era5, da_levels, parameters, metadata):
-    """Obtain a racmo input file from era5 variable set at high resolution"""
+def kpt_from_era5(ds_era5, da_levels, parameters, metadata):
+    """Obtain a kpt input file from era5 variable set at high resolution"""
     # Put full levels midway between half-levels, I think this is consistent with DALES
-    # Reverse order of data, to confirm to other RACMO input
-    racmo_half_level_array = da_levels.values
-    racmo_full_level_array = 0.5 * (
-        racmo_half_level_array[:-1] + racmo_half_level_array[1:]
-    )
-    racmo_half_level_coord = {
+    # Reverse order of data, to confirm to other kpt input
+    kpt_half_level_array = da_levels.values
+    kpt_full_level_array = 0.5 * (kpt_half_level_array[:-1] + kpt_half_level_array[1:])
+    kpt_half_level_coord = {
         "nlevp1": (
             "nlevp1",
-            (np.arange(len(racmo_half_level_array)) + 1.0)[::-1],
+            (np.arange(len(kpt_half_level_array)) + 1.0)[::-1],
             {"long_name": "model half levels"},
         )
     }
-    racmo_full_level_coord = {
+    kpt_full_level_coord = {
         "nlev": (
             "nlev",
-            (np.arange(len(racmo_full_level_array)) + 1.0)[::-1],
+            (np.arange(len(kpt_full_level_array)) + 1.0)[::-1],
             {"long_name": "model full levels"},
         )
     }
     nDS_coord = {"nDS": ("nDS", [0], {},)}
-    racmo_soil_coord = {
+    kpt_soil_coord = {
         "nlevs": ("nlevs", np.arange(4) + 1.0, {"long_name": "soil levels"})
     }
-    ds_racmo = xr.Dataset(
+    ds_kpt = xr.Dataset(
         coords={
             "time": ds_era5.time,
-            **racmo_full_level_coord,
-            **racmo_half_level_coord,
-            **racmo_soil_coord,
+            **kpt_full_level_coord,
+            **kpt_half_level_coord,
+            **kpt_soil_coord,
             **nDS_coord,
         }
     )
     # Variables from dictionary
     # Including unit checks
-    for variable in racmo_from_era5_variables:
-        era5_var = racmo_from_era5_variables[variable]
+    for variable in kpt_from_era5_variables:
+        era5_var = kpt_from_era5_variables[variable]
         da_era5 = ds_era5[era5_var]
         # perform units check
-        unit_guess = era5_to_racmo_units.get(da_era5.units, da_era5.units)
-        if not unit_guess == racmo_variables[variable]["units"]:
+        unit_guess = era5_to_kpt_units.get(da_era5.units, da_era5.units)
+        if not unit_guess == kpt_variables[variable]["units"]:
             except_str = (
-                "Incompatible units between ERA5 and RACMO for variable "
+                "Incompatible units between ERA5 and kpt for variable "
                 + variable
-                + ". Please fix using the fix_era5_to_racmo_units "
+                + ". Please fix using the fix_era5_to_kpt_units "
                 + "dictionary: ERA converted variable is "
                 + unit_guess
-                + ", RACMO variable is "
-                + racmo_variables[variable]["units"]
+                + ", kpt variable is "
+                + kpt_variables[variable]["units"]
             )
             raise Exception(except_str)
         # single level variable
         if np.ndim(da_era5.values) == 1:
-            ds_racmo[variable] = (("time"), da_era5, racmo_variables[variable])
+            ds_kpt[variable] = (("time"), da_era5, kpt_variables[variable])
         # half level variable
         elif variable in ["zh", "presh"]:
             da_era5_on_half_levels = steffen_1d_no_ep_time(
-                da_era5.values, ds_era5["level"].values, racmo_half_level_array
+                da_era5.values, ds_era5["level"].values, kpt_half_level_array
             )
-            ds_racmo[variable] = (
+            ds_kpt[variable] = (
                 ("time", "nlevp1"),
                 da_era5_on_half_levels,
-                racmo_variables[variable],
+                kpt_variables[variable],
             )
         # full level variable
         else:
             da_era5_on_full_levels = steffen_1d_no_ep_time(
-                da_era5.values, ds_era5["level"].values, racmo_full_level_array
+                da_era5.values, ds_era5["level"].values, kpt_full_level_array
             )
-            ds_racmo[variable] = (
+            ds_kpt[variable] = (
                 ("time", "nlev"),
                 da_era5_on_full_levels,
-                racmo_variables[variable],
+                kpt_variables[variable],
             )
     # Simple unit fix fails for these variables
     # So these are added manually after checking
@@ -119,8 +117,8 @@ def racmo_from_era5(ds_era5, da_levels, parameters, metadata):
         "lsm": "lsm_mean",
     }
     for variable in variables_to_manually_add:
-        ds_racmo[variable] = ds_era5[variables_to_manually_add[variable]]
-        ds_racmo[variable].attrs.update(**racmo_variables[variable])
+        ds_kpt[variable] = ds_era5[variables_to_manually_add[variable]]
+        ds_kpt[variable].attrs.update(**kpt_variables[variable])
     variables_to_centralise = {
         "msnswrf": "msnswrf_mean",
         "msnlwrf": "msnlwrf_mean",
@@ -136,10 +134,10 @@ def racmo_from_era5(ds_era5, da_levels, parameters, metadata):
         this_central_estimate = central_estimate(
             ds_era5[variables_to_centralise[variable]].values
         )
-        ds_racmo[variable] = (
+        ds_kpt[variable] = (
             ("time"),
             this_central_estimate,
-            racmo_variables[variable],
+            kpt_variables[variable],
         )
     # Soil moisture: combine levels
     swvl1 = ds_era5["swvl1_mean"].values
@@ -147,10 +145,10 @@ def racmo_from_era5(ds_era5, da_levels, parameters, metadata):
     swvl3 = ds_era5["swvl3_mean"].values
     swvl4 = ds_era5["swvl4_mean"].values
     q_soil = np.stack((swvl1, swvl2, swvl3, swvl4), axis=-1)
-    ds_racmo["q_soil"] = (
+    ds_kpt["q_soil"] = (
         ("time", "nlevs"),
         q_soil,
-        racmo_variables["q_soil"],
+        kpt_variables["q_soil"],
     )
     # Soil temperature: combine levels
     stl1 = ds_era5["stl1_mean"].values
@@ -158,64 +156,64 @@ def racmo_from_era5(ds_era5, da_levels, parameters, metadata):
     stl3 = ds_era5["stl3_mean"].values
     stl4 = ds_era5["stl4_mean"].values
     t_soil = np.stack((stl1, stl2, stl3, stl4), axis=-1)
-    ds_racmo["t_soil"] = (
+    ds_kpt["t_soil"] = (
         ("time", "nlevs"),
         t_soil,
-        racmo_variables["t_soil"],
+        kpt_variables["t_soil"],
     )
     # Soil thickness: combine levels
     h_soil = np.array([0.07, 0.21, 0.72, 1.89])
-    ds_racmo["h_soil"] = (
+    ds_kpt["h_soil"] = (
         ("nlevs"),
         h_soil,
-        racmo_variables["h_soil"],
+        kpt_variables["h_soil"],
     )
     # Orography: derive from surface geopotential
-    ds_racmo["orog"] = ds_era5["z_mean"] / rg
-    ds_racmo["orog"].attrs.update(**racmo_variables["orog"])
+    ds_kpt["orog"] = ds_era5["z_mean"] / rg
+    ds_kpt["orog"].attrs.update(**kpt_variables["orog"])
     # Heat roughness, derive from "flsr" variable
-    ds_racmo["heat_rough"] = np.exp(ds_era5["flsr_mean"])
-    ds_racmo["heat_rough"].attrs.update(**racmo_variables["heat_rough"])
+    ds_kpt["heat_rough"] = np.exp(ds_era5["flsr_mean"])
+    ds_kpt["heat_rough"].attrs.update(**kpt_variables["heat_rough"])
     # Apply correction to t_skin (see output files)
-    ds_racmo["t_skin"] = ds_era5["stl1_mean"] + 1.0
-    ds_racmo["t_skin"].attrs.update(**racmo_variables["t_skin"])
+    ds_kpt["t_skin"] = ds_era5["stl1_mean"] + 1.0
+    ds_kpt["t_skin"].attrs.update(**kpt_variables["t_skin"])
     # Surface fluxes: obtain from time mean in ERA data, do not change sign
     sfc_sens_flx = central_estimate(ds_era5["msshf_mean"].values)
-    ds_racmo["sfc_sens_flx"] = (
+    ds_kpt["sfc_sens_flx"] = (
         ("time"),
         sfc_sens_flx,
-        racmo_variables["sfc_sens_flx"],
+        kpt_variables["sfc_sens_flx"],
     )
     sfc_lat_flx = central_estimate(ds_era5["mslhf_mean"].values)
-    ds_racmo["sfc_lat_flx"] = (
+    ds_kpt["sfc_lat_flx"] = (
         ("time"),
         sfc_lat_flx,
-        racmo_variables["sfc_lat_flx"],
+        kpt_variables["sfc_lat_flx"],
     )
     # Final checks: are all variables present?
-    ds_racmo["time_traj"] = (
+    ds_kpt["time_traj"] = (
         ds_era5["time"] - np.datetime64("1970-01-01T00:00")
     ) / np.timedelta64(1, "s")
-    ds_racmo["time_traj"].attrs.update(**racmo_variables["time_traj"])
-    ds_racmo["DS"] = (("nDS"), ["Trajectory origin"], racmo_variables["DS"])
-    ds_racmo["timDS"] = (
+    ds_kpt["time_traj"].attrs.update(**kpt_variables["time_traj"])
+    ds_kpt["DS"] = (("nDS"), ["Trajectory origin"], kpt_variables["DS"])
+    ds_kpt["timDS"] = (
         ("nDS"),
         [
             (ds_era5["origin_datetime"] - np.datetime64("1970-01-01T00:00"))
             / np.timedelta64(1, "s")
         ],
-        racmo_variables["timDS"],
+        kpt_variables["timDS"],
     )
-    ds_racmo["latDS"] = (("nDS"), [ds_era5["origin_lat"]], racmo_variables["latDS"])
-    ds_racmo["lonDS"] = (("nDS"), [ds_era5["origin_lon"]], racmo_variables["lonDS"])
-    # Change order of data, to confirm to other RACMO input
-    ds_racmo = ds_racmo.sortby("nlev", ascending=True)
-    ds_racmo = ds_racmo.sortby("nlevp1", ascending=True)
-    for var in racmo_variables:
-        if var not in ds_racmo:
-            print(var + " is missing in the RACMO formatted output")
+    ds_kpt["latDS"] = (("nDS"), [ds_era5["origin_lat"]], kpt_variables["latDS"])
+    ds_kpt["lonDS"] = (("nDS"), [ds_era5["origin_lon"]], kpt_variables["lonDS"])
+    # Change order of data, to confirm to other kpt input
+    ds_kpt = ds_kpt.sortby("nlev", ascending=True)
+    ds_kpt = ds_kpt.sortby("nlevp1", ascending=True)
+    for var in kpt_variables:
+        if var not in ds_kpt:
+            print(var + " is missing in the kpt formatted output")
     # Needs improvement still
-    racmo_dict = {
+    kpt_dict = {
         "campaign": metadata.campaign,
         "flight": metadata.case,
         "date": ds_era5["origin_datetime"].values.astype("str"),
@@ -232,104 +230,104 @@ def racmo_from_era5(ds_era5, da_levels, parameters, metadata):
         "by 1.000000. Motivation: value from IFS is actually "
         "the open SST, which is lower than the skin temperature.",
     }
-    ds_racmo.attrs.update(**racmo_dict)
-    return ds_racmo
+    ds_kpt.attrs.update(**kpt_dict)
+    return ds_kpt
 
 
-def hightune_from_era5(ds_era5, da_levels, parameters, metadata):
-    def init_field_hightune(field, variable):
+def dephy_from_era5(ds_era5, da_levels, parameters, metadata):
+    def init_field_dephy(field, variable):
         if np.ndim(field) == 1:
             return (
                 ("t0", "lat", "lon"),
                 field[:, None, None],
-                hightune_variables[variable],
+                dephy_variables[variable],
             )
         elif np.ndim(field) == 2:
             steffen_field = steffen_1d_no_ep_time(
-                field, ds_era5["level"].values, hightune_level_array
+                field, ds_era5["level"].values, dephy_level_array
             )
             return (
                 ("t0", "lev", "lat", "lon"),
                 steffen_field[:, :, None, None],
-                hightune_variables[variable],
+                dephy_variables[variable],
             )
         else:
-            raise Exception("wrong dimension for hightune init field")
+            raise Exception("wrong dimension for dephy init field")
 
-    def forcing_field_hightune(field, variable):
+    def forcing_field_dephy(field, variable):
         if np.ndim(field) == 1:
             return (
                 ("time", "lat", "lon"),
                 field[:, None, None],
-                hightune_variables[variable],
+                dephy_variables[variable],
             )
         elif np.ndim(field) == 2:
             steffen_field = steffen_1d_no_ep_time(
-                field, ds_era5["level"].values, hightune_level_array
+                field, ds_era5["level"].values, dephy_level_array
             )
             return (
                 ("time", "lev", "lat", "lon"),
                 steffen_field[:, :, None, None],
-                hightune_variables[variable],
+                dephy_variables[variable],
             )
         else:
-            raise Exception("wrong dimension for hightune forcing field")
+            raise Exception("wrong dimension for dephy forcing field")
 
     def unit_check(unit_guess, variable):
-        if not unit_guess == hightune_variables[variable]["units"]:
+        if not unit_guess == dephy_variables[variable]["units"]:
             except_str = (
-                "Incompatible units between ERA5 and hightune for variable "
+                "Incompatible units between ERA5 and dephy for variable "
                 + variable
-                + ". Please fix using the fix_era5_to_hightune_units dictionary:"
+                + ". Please fix using the fix_era5_to_dephy_units dictionary:"
                 + "ERA converted variable is "
                 + unit_guess
-                + ", hightune variable is "
-                + hightune_variables[variable]["units"]
+                + ", dephy variable is "
+                + dephy_variables[variable]["units"]
             )
             raise Exception(except_str)
 
-    """Obtain a hightune input file from era5 variable set at high resolution"""
-    hightune_level_array = da_levels.values
-    hightune_level_coord = {
+    """Obtain a dephy input file from era5 variable set at high resolution"""
+    dephy_level_array = da_levels.values
+    dephy_level_coord = {
         "lev": ("lev", da_levels.values, {"long_name": "altitude", "units": "m"},),
     }
-    hightune_t0_coord = {
+    dephy_t0_coord = {
         "t0": ("t0", [ds_era5.time.values[0]], {"long_name": "Initial time"})
     }
-    hightune_time_coord = {
+    dephy_time_coord = {
         "time": ("time", ds_era5.time.values, {"long_name": "Forcing time"})
     }
-    hightune_lat_coord = {
+    dephy_lat_coord = {
         "lat": ("lat", [np.nan], {"long_name": "Latitude", "units": "degrees_north"})
     }
-    hightune_lon_coord = {
+    dephy_lon_coord = {
         "lon": ("lon", [np.nan], {"long_name": "Longitude", "units": "degrees_east"})
     }
-    ds_hightune = xr.Dataset(
+    ds_dephy = xr.Dataset(
         coords={
-            **hightune_time_coord,
-            **hightune_t0_coord,
-            **hightune_level_coord,
-            **hightune_lat_coord,
-            **hightune_lon_coord,
+            **dephy_time_coord,
+            **dephy_t0_coord,
+            **dephy_level_coord,
+            **dephy_lat_coord,
+            **dephy_lon_coord,
         }
     )
     # Variables from dictionary
     # Including unit checks
-    for variable in hightune_from_era5_initial_variables:
-        era5_var = hightune_from_era5_initial_variables[variable]
+    for variable in dephy_from_era5_initial_variables:
+        era5_var = dephy_from_era5_initial_variables[variable]
         da_era5 = ds_era5[era5_var].isel(time=[0])
         # perform units check
-        unit_guess = era5_to_hightune_units.get(da_era5.units, da_era5.units)
+        unit_guess = era5_to_dephy_units.get(da_era5.units, da_era5.units)
         unit_check(unit_guess, variable)
-        ds_hightune[variable] = init_field_hightune(da_era5.values, variable)
-    for variable in hightune_from_era5_forcing_variables:
-        era5_var = hightune_from_era5_forcing_variables[variable]
+        ds_dephy[variable] = init_field_dephy(da_era5.values, variable)
+    for variable in dephy_from_era5_forcing_variables:
+        era5_var = dephy_from_era5_forcing_variables[variable]
         da_era5 = ds_era5[era5_var]
         # perform units check
-        unit_guess = era5_to_hightune_units.get(da_era5.units, da_era5.units)
+        unit_guess = era5_to_dephy_units.get(da_era5.units, da_era5.units)
         unit_check(unit_guess, variable)
-        ds_hightune[variable] = forcing_field_hightune(da_era5.values, variable)
+        ds_dephy[variable] = forcing_field_dephy(da_era5.values, variable)
     variables_to_centralise = {
         "msnswrf": "msnswrf_mean",
         "msnlwrf": "msnlwrf_mean",
@@ -345,52 +343,52 @@ def hightune_from_era5(ds_era5, da_levels, parameters, metadata):
         this_central_estimate = central_estimate(
             ds_era5[variables_to_centralise[variable]].values
         )
-        ds_hightune[variable] = forcing_field_hightune(this_central_estimate, variable)
+        ds_dephy[variable] = forcing_field_dephy(this_central_estimate, variable)
     q_skin_field = ds_era5["src_mean"].values
-    ds_hightune["q_skin_traj"] = forcing_field_hightune(q_skin_field, "q_skin_traj")
+    ds_dephy["q_skin_traj"] = forcing_field_dephy(q_skin_field, "q_skin_traj")
     # TKE (initial field) set to zero
     da_tke = 0.0 * ds_era5["u_mean"].isel(time=[0]) * ds_era5["u_mean"].isel(time=[0])
-    ds_hightune["tke"] = init_field_hightune(da_tke.values, "tke")
+    ds_dephy["tke"] = init_field_dephy(da_tke.values, "tke")
     # Radiative tendencies, all-sky, combine SW and LW
     da_mtt = ds_era5["mttswr_mean"] + ds_era5["mttlwr_mean"]
-    ds_hightune["temp_rad"] = forcing_field_hightune(da_mtt.values, "temp_rad")
+    ds_dephy["temp_rad"] = forcing_field_dephy(da_mtt.values, "temp_rad")
     # In order to get theta/thetal tendencies, multiply by the exner function derived as theta/T
     da_mthetat = da_mtt * (ds_era5["theta_mean"] / ds_era5["t_mean"])
-    ds_hightune["theta_rad"] = forcing_field_hightune(da_mthetat.values, "theta_rad")
-    ds_hightune["thetal_rad"] = forcing_field_hightune(da_mthetat.values, "thetal_rad")
+    ds_dephy["theta_rad"] = forcing_field_dephy(da_mthetat.values, "theta_rad")
+    ds_dephy["thetal_rad"] = forcing_field_dephy(da_mthetat.values, "thetal_rad")
     # Heat roughness, derive from "flsr" variable
     z0th_traj = np.exp(ds_era5["flsr_mean"].values)
-    ds_hightune["z0th_traj"] = forcing_field_hightune(z0th_traj, "z0th_traj")
+    ds_dephy["z0th_traj"] = forcing_field_dephy(z0th_traj, "z0th_traj")
     # Include same t_skin correction used for DALES, may need further work
     ts = ds_era5["stl1_mean"].values + 1.0
-    ds_hightune["ts"] = forcing_field_hightune(ts, "ts")
-    # Surface fluxes: obtain from time mean in ERA data, change sign for hightune!
+    ds_dephy["ts"] = forcing_field_dephy(ts, "ts")
+    # Surface fluxes: obtain from time mean in ERA data, change sign for dephy!
     sfc_sens_flx = -central_estimate(ds_era5["msshf_mean"].values)
-    ds_hightune["sfc_sens_flx"] = forcing_field_hightune(sfc_sens_flx, "sfc_sens_flx")
+    ds_dephy["sfc_sens_flx"] = forcing_field_dephy(sfc_sens_flx, "sfc_sens_flx")
     sfc_lat_flx = -central_estimate(ds_era5["mslhf_mean"].values)
-    ds_hightune["sfc_lat_flx"] = forcing_field_hightune(sfc_lat_flx, "sfc_lat_flx")
+    ds_dephy["sfc_lat_flx"] = forcing_field_dephy(sfc_lat_flx, "sfc_lat_flx")
     wpthetap = (
         (sfc_sens_flx / (cp * ds_era5["rho_mean"].sel(level=0.0)))
         * (ds_era5["theta_mean"].sel(level=0.0) / ds_era5["t_mean"].sel(level=0.0))
     ).values
-    ds_hightune["wpthetap"] = forcing_field_hightune(wpthetap, "wpthetap")
+    ds_dephy["wpthetap"] = forcing_field_dephy(wpthetap, "wpthetap")
     wpqvp = (sfc_lat_flx / (rlv * ds_era5["rho_mean"].sel(level=0.0))).values
-    ds_hightune["wpqvp"] = forcing_field_hightune(wpqvp, "wpqvp")
+    ds_dephy["wpqvp"] = forcing_field_dephy(wpqvp, "wpqvp")
     wpqtp = wpqvp
-    ds_hightune["wpqtp"] = forcing_field_hightune(wpqtp, "wpqtp")
+    ds_dephy["wpqtp"] = forcing_field_dephy(wpqtp, "wpqtp")
     # Ratio of fluxes (mixing ratio vs. specific humidity) is same for all fluxes
     moisture_ratio = (
         ds_era5["r_t_local"].sel(level=0.0) / ds_era5["q_t_local"].sel(level=0.0)
     ).values
     wprvp = wpqvp * moisture_ratio
-    ds_hightune["wprvp"] = forcing_field_hightune(wprvp, "wprvp")
+    ds_dephy["wprvp"] = forcing_field_dephy(wprvp, "wprvp")
     wprtp = wpqtp * moisture_ratio
-    ds_hightune["wprtp"] = forcing_field_hightune(wprtp, "wprtp")
-    rh = rh_hightune(ds_hightune["temp"], ds_hightune["pressure"], ds_hightune["qt"])
-    ds_hightune["rh"] = init_field_hightune(rh.values[:, :, 0, 0], "rh")
+    ds_dephy["wprtp"] = forcing_field_dephy(wprtp, "wprtp")
+    rh = rh_dephy(ds_dephy["temp"], ds_dephy["pressure"], ds_dephy["qt"])
+    ds_dephy["rh"] = init_field_dephy(rh.values[:, :, 0, 0], "rh")
 
     def nudging_inv_time_prof(nudging_parameters, variable):
-        height_array = ds_hightune["height_forc"].values
+        height_array = ds_dephy["height_forc"].values
         nudging_method = nudging_parameters.method
         nudging_time = nudging_parameters.time
         nudging_height = nudging_parameters.height
@@ -411,46 +409,46 @@ def hightune_from_era5(ds_era5, da_levels, parameters, metadata):
         return (
             ("time", "lev", "lat", "lon"),
             inv_time_array,
-            hightune_variables[variable],
+            dephy_variables[variable],
         )
 
     nudging_parameters_momentum_traj = parameters.nudging_parameters_momentum_traj
     nudging_parameters_scalar_traj = parameters.nudging_parameters_scalar_traj
-    ds_hightune["nudging_inv_u_traj"] = nudging_inv_time_prof(
+    ds_dephy["nudging_inv_u_traj"] = nudging_inv_time_prof(
         nudging_parameters_momentum_traj, "nudging_inv_u_traj"
     )
-    ds_hightune["nudging_inv_v_traj"] = nudging_inv_time_prof(
+    ds_dephy["nudging_inv_v_traj"] = nudging_inv_time_prof(
         nudging_parameters_momentum_traj, "nudging_inv_v_traj"
     )
-    ds_hightune["nudging_inv_temp_traj"] = nudging_inv_time_prof(
+    ds_dephy["nudging_inv_temp_traj"] = nudging_inv_time_prof(
         nudging_parameters_scalar_traj, "nudging_inv_temp_traj"
     )
-    ds_hightune["nudging_inv_theta_traj"] = nudging_inv_time_prof(
+    ds_dephy["nudging_inv_theta_traj"] = nudging_inv_time_prof(
         nudging_parameters_scalar_traj, "nudging_inv_theta_traj"
     )
-    ds_hightune["nudging_inv_thetal_traj"] = nudging_inv_time_prof(
+    ds_dephy["nudging_inv_thetal_traj"] = nudging_inv_time_prof(
         nudging_parameters_scalar_traj, "nudging_inv_thetal_traj"
     )
-    ds_hightune["nudging_inv_qv_traj"] = nudging_inv_time_prof(
+    ds_dephy["nudging_inv_qv_traj"] = nudging_inv_time_prof(
         nudging_parameters_scalar_traj, "nudging_inv_qv_traj"
     )
-    ds_hightune["nudging_inv_qt_traj"] = nudging_inv_time_prof(
+    ds_dephy["nudging_inv_qt_traj"] = nudging_inv_time_prof(
         nudging_parameters_scalar_traj, "nudging_inv_qt_traj"
     )
-    ds_hightune["nudging_inv_rv_traj"] = nudging_inv_time_prof(
+    ds_dephy["nudging_inv_rv_traj"] = nudging_inv_time_prof(
         nudging_parameters_scalar_traj, "nudging_inv_rv_traj"
     )
-    ds_hightune["nudging_inv_rt_traj"] = nudging_inv_time_prof(
+    ds_dephy["nudging_inv_rt_traj"] = nudging_inv_time_prof(
         nudging_parameters_scalar_traj, "nudging_inv_rt_traj"
     )
 
     # Final checks: are all variables present?
-    for var in hightune_variables:
-        if var not in ds_hightune:
-            print(var + " is missing in the hightune formatted output")
+    for var in dephy_variables:
+        if var not in ds_dephy:
+            print(var + " is missing in the dephy formatted output")
     # Needs improvement
 
-    hightune_dictionary = {
+    dephy_dictionary = {
         "Conventions": "CF-1.0",
         "comment": metadata.comment,
         "reference": metadata.reference,
@@ -458,8 +456,8 @@ def hightune_from_era5(ds_era5, da_levels, parameters, metadata):
         "modifications": metadata.modifications,
         "case": metadata.campaign + " " + metadata.case,
         "script": "https://github.com/EUREC4A-UK/lagtraj",
-        "startDate": ds_hightune["time"][0].values.astype("str"),
-        "endDate": ds_hightune["time"][-1].values.astype("str"),
+        "startDate": ds_dephy["time"][0].values.astype("str"),
+        "endDate": ds_dephy["time"][-1].values.astype("str"),
         "adv_temp": parameters.adv_temp,
         "adv_theta": parameters.adv_theta,
         "adv_thetal": parameters.adv_thetal,
@@ -507,8 +505,8 @@ def hightune_from_era5(ds_era5, da_levels, parameters, metadata):
         "surfaceForcing": parameters.surfaceForcing,
         "surfaceForcingWind": parameters.surfaceForcingWind,
     }
-    ds_hightune.attrs.update(hightune_dictionary)
-    return ds_hightune
+    ds_dephy.attrs.update(dephy_dictionary)
+    return ds_dephy
 
 
 def export(file_path, ds_conversion, nc_format=None):
@@ -517,9 +515,9 @@ def export(file_path, ds_conversion, nc_format=None):
     ds_conversion.to_netcdf(file_path, encoding=encoding, format=nc_format)
 
 
-# racmo variable : era5 variable
-# (we loop over racmo variables here)
-racmo_from_era5_variables = {
+# kpt variable : era5 variable
+# (we loop over kpt variables here)
+kpt_from_era5_variables = {
     "zf": "height_h_local",
     "zh": "height_h_local",
     "ps": "sp_mean",
@@ -551,8 +549,12 @@ racmo_from_era5_variables = {
     "qladv": "dclwcdt_adv",
     "qiadv": "dciwcdt_adv",
     "ccadv": "dccdt_adv",
+    "lat": "lat",
+    "lon": "lon",
     "lat_traj": "lat",
     "lon_traj": "lon",
+    "lat_grid": "lat",
+    "lon_grid": "lon",
     "u_traj": "u_traj",
     "v_traj": "v_traj",
     "albedo": "fal_mean",
@@ -570,9 +572,9 @@ racmo_from_era5_variables = {
     "anor": "anor_mean",
 }
 
-# era5 units : racmo units
+# era5 units : kpt units
 # we replace era5 units here
-era5_to_racmo_units = {
+era5_to_kpt_units = {
     "m s**-1": "m/s",
     "1": "0-1",
     "degrees_north": "degrees North",
@@ -588,9 +590,9 @@ era5_to_racmo_units = {
     "W m**-2": "W/m2",
 }
 
-# era5 units : hightune units
+# era5 units : dephy units
 # we replace era5 units here
-era5_to_hightune_units = {
+era5_to_dephy_units = {
     "m s**-1": "m s-1",
     "Pa s**-1": "Pa s-1",
     "m s**-1 s**-1": "m s-2",
@@ -602,9 +604,9 @@ era5_to_hightune_units = {
     "1": "0-1",
 }
 
-# hightune variable : era5 variable
-# we loop over hightune variables here
-hightune_from_era5_initial_variables = {
+# dephy variable : era5 variable
+# we loop over dephy variables here
+dephy_from_era5_initial_variables = {
     "lat0_traj": "lat",
     "lon0_traj": "lon",
     "height": "height_h_local",
@@ -626,9 +628,9 @@ hightune_from_era5_initial_variables = {
 }
 
 
-# hightune variable : era5 variable
-# we loop over hightune variables here
-hightune_from_era5_forcing_variables = {
+# dephy variable : era5 variable
+# we loop over dephy variables here
+dephy_from_era5_forcing_variables = {
     "lat_traj": "lat",
     "lon_traj": "lon",
     "ps_forc": "sp_mean",
@@ -703,16 +705,16 @@ def main():
         )
 
     with optional_debugging(args.debug):
-        if conversion_defn.export_format == "racmo":
-            ds_conversion = racmo_from_era5(
+        if conversion_defn.export_format == "kpt":
+            ds_conversion = kpt_from_era5(
                 ds_forcing,
                 da_levels,
                 parameters=conversion_defn.parameters,
                 metadata=conversion_defn.metadata,
             )
             nc_format = None
-        elif conversion_defn.export_format == "hightune":
-            ds_conversion = hightune_from_era5(
+        elif conversion_defn.export_format == "dephy":
+            ds_conversion = dephy_from_era5(
                 ds_forcing,
                 da_levels,
                 parameters=conversion_defn.parameters,

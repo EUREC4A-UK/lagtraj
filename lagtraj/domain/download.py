@@ -1,6 +1,7 @@
 import dateutil.parser
 from pathlib import Path
 from time import sleep
+import datetime
 
 from .sources import era5
 from .. import DEFAULT_ROOT_DATA_PATH
@@ -135,7 +136,9 @@ def _run_cli(timedomain_lookup="by_arguments"):
             if download_complete(args.data_path, domain_name=domain):
                 break
             else:
-                print(f"Sleeping {args.retry_rate}min...")
+                t_now = datetime.datetime.now()
+                t_now_s = t_now.strftime("%Y%m%dT%H%M")
+                print(f"{t_now_s}: Sleeping {args.retry_rate}min...")
                 sleep(args.retry_rate * 60.0)
                 print("Retrying download")
     else:

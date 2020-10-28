@@ -7,6 +7,7 @@ from pathlib import Path
 
 import netCDF4
 import yaml
+import requests
 
 from .... import utils
 from .cdsapi_request import RequestFetchCDSClient
@@ -89,10 +90,14 @@ def download_data(
             query_hash = request_details["query_hash"]
 
             Path(file_path).parent.mkdir(exist_ok=True, parents=True)
-            c.download_data_by_request(request_id=request_id, target=file_path)
-            _fingerprint_downloaded_file(query_hash=query_hash, file_path=file_path)
-
-            del download_requests[file_path]
+            try:
+                c.download_data_by_request(request_id=request_id, target=file_path)
+                _fingerprint_downloaded_file(query_hash=query_hash, file_path=file_path)
+                del download_requests[file_path]
+            except requests.exceptions.HTTPError as e:
+                import ipdb
+                ipdb.set_trace()
+                a = 5
 
     # save download requets again now we've downloaded the files that were
     # ready

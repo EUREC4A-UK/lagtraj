@@ -23,9 +23,9 @@ def download_data(
     path, t_start, t_end, bbox, latlon_sampling, overwrite_existing=False
 ):
 
-    dl_queries = _build_queries(
+    dl_queries = list(_build_queries(
         t_start=t_start, t_end=t_end, bbox=bbox, latlon_sampling=latlon_sampling
-    )
+    ))
 
     c = RequestFetchCDSClient()
 
@@ -93,11 +93,23 @@ def download_data(
             try:
                 c.download_data_by_request(request_id=request_id, target=file_path)
                 _fingerprint_downloaded_file(query_hash=query_hash, file_path=file_path)
-                del download_requests[file_path]
-            except requests.exceptions.HTTPError as e:
-                import ipdb
-                ipdb.set_trace()
-                a = 5
+            except requests.exceptions.HTTPError as ex:
+                if ex.response.status_code == 404:
+                    print(f"Request {request_details['request_id']} wasn't found"
+                          " on the CDS backend, it has probably expired."
+                          " Re-requesting...")
+                    # delete the stored request and re-request the data
+                    query_kwargs = dict(dl_queries)[Path(file_path).name]
+                    request_id = c.queue_data_request(
+                        repository_name=REPOSITORY_NAME, query_kwargs=query_kwargs
+                    )
+                    assert request_id is not None
+                    download_requests[download_id] = dict(
+                        request_id=request_id, query_hash=query_hash
+                    )
+                else:
+                    raise
+            del download_requests[file_path]
 
     # save download requets again now we've downloaded the files that were
     # ready

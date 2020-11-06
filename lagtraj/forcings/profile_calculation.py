@@ -157,7 +157,6 @@ def _construct_subdomain(
     # units will be requested whe calculating mean and local values
     ds_subdomain["mask"].attrs["units"] = "(0 - 1)"
     ds_subdomain = ds_subdomain.where(ds_subdomain.mask, other=np.nan)
-    ds_subdomain.attrs["data_source"] = ds_domain.attrs.get("data_source")
 
     # TODO: this interpolates all domain variables to height levels, but we
     # should only interpolate the variables necessary to produce the requested

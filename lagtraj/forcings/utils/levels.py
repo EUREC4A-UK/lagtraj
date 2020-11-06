@@ -17,9 +17,9 @@ ForcingLevelsDefinition = namedtuple(
 
 def make_levels(method, n_levels, z_top, dz_min=None):
     if method == "linear":
-        levels = _make_exponential_levels(dz_min, z_top, n_levels)
-    elif method == "exponential":
         levels = _make_linear_levels(z_top, n_levels)
+    elif method == "exponential":
+        levels = _make_exponential_levels(dz_min, z_top, n_levels)
     else:
         raise Exception("Unknown strategy for making levels")
     return xr.DataArray(

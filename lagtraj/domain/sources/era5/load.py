@@ -185,7 +185,9 @@ class ERA5DataSet(object):
                     }
             datasets_slices.append(ds_v_slice)
 
-        return xr.merge(datasets_slices, compat="override").load()
+        ds_ = xr.merge(datasets_slices, compat="override").load()
+        ds_.attrs["data_source"] = "era5"
+        return ds_
 
     def interp(self, kwargs, method="linear", **interp_to):
         """
@@ -257,7 +259,9 @@ class ERA5DataSet(object):
         extra_dims = list(set(interp_to.keys()).difference(ds_slice.dims))
         for d in extra_dims:
             del interp_to[d]
-        return ds_slice.interp(**interp_to, kwargs=kwargs, method=method).load()
+        ds_ = ds_slice.interp(**interp_to, kwargs=kwargs, method=method).load()
+        ds_.attrs["data_source"] = "era5"
+        return ds_
 
 
 def _load_naive(data_path):

@@ -11,12 +11,12 @@ from ..forcings.load import load_data as load_forcing_data
 from . import load, build_conversion_data_path
 from ..utils import optional_debugging, validation
 from ..utils.thermo import rh_dephy
-from ..utils.interpolation import (
+from ..utils.interpolation.methods import (
     steffen_1d_no_ep_time,
     central_estimate,
     cos_transition,
 )
-from .utils.levels import make_levels
+from ..utils.interpolation.levels import make_levels
 from .kpt import kpt_variables
 from .dephy import dephy_variables
 from ..domain.sources.era5.constants import rg, cp, rlv

@@ -102,8 +102,8 @@ def compute_adv_profile(ds_profile, da_domain, gradient_method):
     # compute the relative velocities (`_local` being the velocities
     # interpolated to the trajectory (lat, lon) and `_traj` being the velocity
     # of the trajectory itself)
-    da_u_rel = ds_profile.u_local - ds_profile.u_traj
-    da_v_rel = ds_profile.v_local - ds_profile.v_traj
+    da_u_rel = ds_profile.u_mean - ds_profile.u_traj
+    da_v_rel = ds_profile.v_mean - ds_profile.v_traj
 
     # dphi/dt = - dphi/dx * u - dphi/dy * v
     da_dphidt = -da_dphidx * da_u_rel - da_dphidy * da_v_rel
@@ -156,7 +156,6 @@ def _construct_subdomain(
     ds_subdomain["mask"] = da_mask
     # units will be requested whe calculating mean and local values
     ds_subdomain["mask"].attrs["units"] = "(0 - 1)"
-    ds_subdomain = ds_subdomain.where(ds_subdomain.mask, other=np.nan)
 
     # TODO: this interpolates all domain variables to height levels, but we
     # should only interpolate the variables necessary to produce the requested
@@ -225,6 +224,18 @@ def calculate_timestep(ds_profile_posn, ds_domain, sampling_method):
     # required when calculating the representative vertical profile and
     # horizontal gradients
     ds_ref_pt = ds_profile_posn[["lat", "lon", "time"]]
+    
+    ds_subdomain = ds_subdomain.where(True, other=np.nan)
+    
+    for v in ds_subdomain.data_vars:
+        da_field = ds_subdomain[v]
+        da_v__local = da_field.squeeze().interp(ds_ref_pt)
+        da_v__local.attrs["long_name"] = f"trajectory-centered {da_field.long_name}"
+        da_v__local.attrs["units"] = da_field.units
+        ds_profile[f"{v}_local"] = da_v__local
+
+    ds_subdomain = ds_subdomain.where(ds_subdomain.mask, other=np.nan)
+
     for v in ds_subdomain.data_vars:
         da_field = ds_subdomain[v]
         # have to provide `dtype` kwarg otherwise `bottleneck` might use
@@ -234,11 +245,6 @@ def calculate_timestep(ds_profile_posn, ds_domain, sampling_method):
         )
         da_v__mean.attrs["long_name"] = f"sampling-domain mean {da_field.long_name}"
         ds_profile[f"{v}_mean"] = da_v__mean
-
-        da_v__local = da_field.squeeze().interp(ds_ref_pt)
-        da_v__local.attrs["long_name"] = f"trajectory-centered {da_field.long_name}"
-        da_v__local.attrs["units"] = da_field.units
-        ds_profile[f"{v}_local"] = da_v__local
 
     for v in FORCING_VARS:
         da_subdomain = ds_subdomain[v]

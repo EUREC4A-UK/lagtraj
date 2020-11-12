@@ -6,9 +6,17 @@ from lagtraj.forcings import ForcingLevelsDefinition, ForcingSamplingDefinition
 from lagtraj.utils import validation
 
 
-@pytest.mark.parametrize("gradient_method", ["boundary", "regression"])
+@pytest.mark.parametrize(
+    "gradient_method, advection_velocity_method",
+    [
+        ("boundary", "mean"),
+        ("regression", "mean"),
+        ("boundary", "local"),
+        ("regression", "local"),
+    ],
+)
 def test_create_forcing_linear_trajectory(
-    ds_domain_test, ds_trajectory_linear, gradient_method
+    ds_domain_test, ds_trajectory_linear, gradient_method, advection_velocity_method
 ):
     # just use five timesteps to make the tests execute faster
     ds_traj = ds_trajectory_linear.isel(time=slice(0, 5))
@@ -19,6 +27,7 @@ def test_create_forcing_linear_trajectory(
     )
     sampling_definition = ForcingSamplingDefinition(
         gradient_method=gradient_method,
+        advection_velocity_method=advection_velocity_method,
         averaging_width=2.0,
         time_sampling_method="domain_data",
         mask="ocean_only",

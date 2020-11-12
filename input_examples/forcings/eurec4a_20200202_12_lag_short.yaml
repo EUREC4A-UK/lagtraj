@@ -1,6 +1,7 @@
 trajectory      : eurec4a_20200202_12_lag_short
 domain          : eurec4a_circle_eul
 gradient_method : regression
+advection_velocity_method : mean
 averaging_width : 2.0
 levels_method   : exponential
 levels_number   : 250

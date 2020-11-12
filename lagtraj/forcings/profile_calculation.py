@@ -54,7 +54,13 @@ FINAL_VARS = ["u_g", "v_g"]
 
 ForcingSamplingDefinition = namedtuple(
     "ForcingSamplingDefinition",
-    ["gradient_method", "averaging_width", "time_sampling_method", "mask"],
+    [
+        "gradient_method",
+        "advection_velocity_method",
+        "averaging_width",
+        "time_sampling_method",
+        "mask",
+    ],
 )
 
 
@@ -79,7 +85,9 @@ def _build_domain_profile(da_field, method="single_point", **kwargs):
         raise NotImplementedError(method)
 
 
-def compute_adv_profile(ds_profile, da_domain, gradient_method):
+def compute_adv_profile(
+    ds_profile, da_domain, gradient_method, advection_velocity_method
+):
     """
     Compute the horizontal advective tendency profile and reference profile for
     a field `da_domain` (named `phi` here) for a point on trajectory (defined
@@ -102,9 +110,16 @@ def compute_adv_profile(ds_profile, da_domain, gradient_method):
     # compute the relative velocities (`_local` being the velocities
     # interpolated to the trajectory (lat, lon) and `_traj` being the velocity
     # of the trajectory itself)
-    da_u_rel = ds_profile.u_mean - ds_profile.u_traj
-    da_v_rel = ds_profile.v_mean - ds_profile.v_traj
-
+    if advection_velocity_method == "mean":
+        da_u_rel = ds_profile.u_mean - ds_profile.u_traj
+        da_v_rel = ds_profile.v_mean - ds_profile.v_traj
+    elif advection_velocity_method == "local":
+        da_u_rel = ds_profile.u_local - ds_profile.u_traj
+        da_v_rel = ds_profile.v_local - ds_profile.v_traj
+    else:
+        raise NotImplementedError(
+            f"Velocity advection method `{advection_velocity_method}` not implemented"
+        )
     # dphi/dt = - dphi/dx * u - dphi/dy * v
     da_dphidt = -da_dphidx * da_u_rel - da_dphidy * da_v_rel
 
@@ -224,9 +239,9 @@ def calculate_timestep(ds_profile_posn, ds_domain, sampling_method):
     # required when calculating the representative vertical profile and
     # horizontal gradients
     ds_ref_pt = ds_profile_posn[["lat", "lon", "time"]]
-    
+
     ds_subdomain = ds_subdomain.where(True, other=np.nan)
-    
+
     for v in ds_subdomain.data_vars:
         da_field = ds_subdomain[v]
         da_v__local = da_field.squeeze().interp(ds_ref_pt)
@@ -252,6 +267,7 @@ def calculate_timestep(ds_profile_posn, ds_domain, sampling_method):
             da_domain=da_subdomain,
             ds_profile=ds_profile,
             gradient_method=sampling_method.gradient_method,
+            advection_velocity_method=sampling_method.advection_velocity_method,
         )
         ds_profile[f"d{v}dt_adv"] = da_adv_profile
         ds_profile[f"d{v}dx"] = da_dvdx

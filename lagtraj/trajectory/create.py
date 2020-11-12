@@ -278,6 +278,7 @@ def _create_extrapolated_trajectory(origin, da_times, extrapolation_func):
         else:
             raise Exception
 
+        print("Creating "+dir+" part of trajectory")
         for t in tqdm.tqdm(da_integrate_times):
             ds_prev_posn = points[-1]
             dt = _calculate_seconds(t - ds_prev_posn.time)

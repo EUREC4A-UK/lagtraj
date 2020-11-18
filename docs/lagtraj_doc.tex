@@ -36,7 +36,7 @@ scale of metres to a few hundred kilometres.
 Lagtraj is a novel framework for calculation of the large-scale
 forcings that these simulations require based on forecast or reanalysis
 data, in some cases complemented by observational constraints. It aims
-to streamline and the workflow that is required to perform routine
+to streamline the workflow that is required to perform routine
 Large-Eddy Simulation and sensitivity studies based on realistic cases,
 and ensure simulations are set up in a traceable fashion. Lagtraj has
 been developed to serve as a community tool that can be further
@@ -44,85 +44,124 @@ extended with different input and output formats.
 
 \section{Introduction}
 
-- Developments in the use of Large-Eddy Simulation (LES): \\
+Developments in the use of Large-Eddy Simulation (LES): \\
 ** Development of LES for atmospheric science dates back to \cite{deardorff1970}. \\
 ** Due to the computational cost, LES was initially used for short
 case studies. Initial conditions and forcings were often initialised in order
 to make it easier to set up a simulation. \\
-** Over the last two decades, Eulerian LES modelling for campaign
-periods (e.g. TWP-ICE). Continuous super-site modelling: useful for
-long-term systematic evaluation of parametrisation \cite{neggers2012}.
-Routine LES operation to improve parametrisations
-\cite{schalkwijk2015}, \cite{laar2019},\cite{gustafson2020}. \\
-** Lagrangian case studies: for convection over the ocean, useful to
-follow air in boundary layer or low clouds. Aim: capture development of
-organisation. ASTEX \cite{bretherton1999}, \cite{roode2016},
-\cite{tomassini2017}, \cite{mohrmann2019}, \cite{neggers2019}, NOAA
-group. Experience using realistic forcings. \\
-- Details of forcing matter, see e.g. \cite{smalley2019}. Replication
-can be difficult. Sensitive to exact details of setup, such as
-subsidence \citep{hohenegger2013,kurowski2020} and implementation of
-surface fluxes cite \citep{stevens2001}. \\
-- Replication is particularly important when comparing diffent LES
-models. The time investment to produce the forcings can be an obstacle
-to participation in an intercomparison. \\
-- For replication, it is important for these configurations that the
-workflow is traceable. The use of the NetCDF format (rather than a
-text-based format) makes it easy to add meta-data. \\
-- The forcings for LES intercomparison studies are often derived
+** Over the last two decades, high-resolution convection-permitting
+modelling and LES have been performed for intensive observational
+campaigns, such as TWP-ICE \citep{fridlind2012}. Such studies are
+particularly useful when detailed information about clouds or
+turbulence are available. Another novel application of LES is within a
+continuous framework around an observational super-site. This
+super-site modelling has proven a useful strategy for long-term
+systematic evaluation of parametrisations in NWP models
+\cite{neggers2012}. Routine LES operation in such a context is useful
+both for testing the LES itself (for example, its surface
+parametrisation and its representation of clouds), and to help improve
+and evaluate parameterisations in NWP and climat models
+\cite{schalkwijk2015}, \cite{laar2019},\cite{gustafson2020}. For
+modelling of case studies over land, often a Eulerian frame of
+reference is preferred, both because the observations are often made
+around a single location and because the height of the ground level can
+vary along a flow trajectory.
+** For convection over the ocean, it can be useful to follow air in
+boundary layer or low clouds in a Lagrangian framework. This is
+particularly relant for capturing the development of organisation and
+clouds. Examples include \cite{bretherton1999}, \cite{roode2016},
+\cite{tomassini2017}, \cite{mohrmann2019}, \cite{neggers2019} and work
+from the NOAA group (add citation). The details of the exact setup matter, see e.g.
+\cite{smalley2019}. Replication, is particularly important when comparing diffent LES
+models, can be difficult, as it is sensitive to
+exact details of setup, such as subsidence
+\citep{hohenegger2013,kurowski2020} and implementation of surface
+fluxes \citep{stevens2001}.
+The time investment to produce the forcings can be an obstacle to
+participation in an intercomparison. For replication, it is important
+that the workflow to produce model setups is traceable. The use of a
+fully automated framework and the retention of metadata regarding its
+configuration are key here. The use of the
+NetCDF format (rather than a text-based format) makes it easy to store
+this metadata. The forcings for LES intercomparison studies are often derived
 through an iterative process. In order to document and accelerate this
 process, a versioning system and a flexible format for specifying
-configurations are desirable. \\
-- Lagtraj is a tool that aims to support and document the design of LES
-case studies. \\
-- It was originally developed to use ERA-5 reanalysis data
-\citep{hersbach2020}, though this is extendable. In particular, Lagtraj
-aims to facilitate blending reanalysis and observational data. As LES
-modelling is particularly sensitive to the level of inversions in input
-and nudging profiles, reanalyis data on model levels is used. \\
-- Two formats for sharing LES setups have become adopted by multiple
-groups over the past years. In particular, the KNMI parametrisation
-testbed format has been used for LES modelling at observational
-supersites, whereas the DEPHY format is a recent community effort where
-one of the goals was to make existing case studies available to the LES
-community.
-- Lagtraj is python-based, and though it has several dependencies, once
-these dependencies are installed the code does not need further
-installation or compilation. \\
-- This document is outlined as follows. Section \ref{sec:design}
+configurations are desirable.
+
+Lagtraj is a tool that aims to support and document the design of LES
+case studies, and produce case studies using both of these formats. It
+has been developed to use ERA-5 reanalysis data \citep{hersbach2020},
+though the input format could be changed and moreover Lagtraj aims to
+facilitate blending reanalysis and observational data. As LES modelling
+is particularly sensitive to the level of inversions in input and
+nudging profiles, reanalyis data on model levels is used.
+
+This document describes the Lagtraj software in more detail. Section \ref{sec:design}
 describes the code design, including input and output formats. Section
 \ref{sec:examples} shows two case studies, one at a continuous supersite
 and one using a Lagrangian reference frame, and section
 \ref{sec:evaluation} describes both the way the code itself is
 maintained and tested, as well as some examples of parameters that the
-output of the code is sensitive to. \\
+output of the code is sensitive to.
 
 \section{Code design}\label{sec:design}
 
-General code design: \\
-Lagtraj is a modular code
-Use of xarray \citep{hoyer2017}, yaml \citep{ben2009}
+Lagtraj is organised in a modular fashion. The source code is organised
+into directories that containe the code dealing with retrieving data,
+setting up the Lagrangian trajectory or Eulerian time window, producing
+the input (forcings) for LES models, and converting these inputs to
+different formats. Lagtraj comes with input examples, unit tests, and
+documentation. The code is python-based, and though it has several
+dependencies, once these dependencies are installed the code does not
+need further installation or compilation.
 
-Steps \\
-- Data download. This has been implemented for ERA5. The ERA5 data
-resides on the MARS archive. Four types of data: model levels and
-single levels, hourly reanalysis data and ERA5 hourly `forecast' data.
-Requested as one file per day, currently using NetCDF format on regular
-lat-lon grid. Domain needs to be specified or can be obtained from an
-existing trajectory. This involves reinterpolation on ECMWF side,
-horizontal interpolation needs to be defined. The download script
-places requests at the CDS data store.
-** Request can be left pending \\
-** Situations dealts with: requested data already available, requested data deleted \\
-- Trajectory calculations uses an iterative strategy \citep{petterssen1956,sprenger2015}. \\
+Its input files use the yaml format \citep{ben2009}, whereas data is
+internally stored using xarray DataSets \citep{hoyer2017}. The latter
+format was chosen as it provides for easy conversion from and to the
+NetCDF format.
+
+\subsection{Data download.}
+
+A download module has has been implemented for ERA5. This facilitates
+creating requests for the data that is used in the creation of the LES
+input, and also serves to submit and track requests.
+
+The ERA5 data resides on the MARS archive. The data is retrieved in
+NetCDF format on a regular latitude-longitude grid. For each day of the
+simulation, four separate requests are created, which handle data on
+all model levels and levels model on single levels (e.g. surface
+levels, vertically integrated quantities) separately. The other
+distinction is between reanalysis data that is available on an hourly
+basis, and data from the `forecast' that corresponds to the reanalysis
+(some of the fields are only available on an hourly basis in this
+forecast data).
+
+The domain can be either specified or calculated using an existing
+trajectory. Retrieving the files involves reinterpolation, which is
+done on the Copernicus Data Store side, and the resolution for this
+horizontal interpolation needs to be defined (we typically use 0.1
+degrees). The download script places requests at the CDS data store.
+
+Request can be left pending \\ ** Situations dealts with: requested
+data already available, requested data deleted \\
+
+Trajectory calculations uses an iterative strategy \citep{petterssen1956,sprenger2015}. \\
 ** Options: use a single level, use a weighted average.
-- Forcing calculations: \\
+
+Forcing calculations: \\
 ** Parameters: gradient method, levels, averaging width. \\
 ** Calculation of height levels.
 ** Use of Steffen interpolation to interpolate to height levels, following \cite{yamaguchi2012} \\
 ** Gradient calculation currently based on regular grid. Can use either a regression or edges. Use of masks and treatment of topography (what to do for land? ignore points). \\
 
 \subsection{Formats}
+
+Two file formats for sharing LES setups have become adopted by multiple
+groups over the past years. The KNMI parametrisation
+testbed format has been used for LES modelling at observational
+supersites, whereas the DEPHY format is a recent community effort where
+one of the goals was to make existing case studies available to the LES
+community.
 
 Input formats: \\
 - ERA5 (model level or pressure level?). Download from CDS \citep{raoult2017}. \\

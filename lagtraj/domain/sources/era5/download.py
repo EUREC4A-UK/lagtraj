@@ -20,7 +20,7 @@ REPOSITORY_NAME = "reanalysis-era5-complete"
 
 
 def download_data(
-    path, t_start, t_end, bbox, latlon_sampling, overwrite_existing=False
+    path, t_start, t_end, bbox, latlon_sampling, version, overwrite_existing=False
 ):
 
     dl_queries = list(
@@ -114,7 +114,6 @@ def download_data(
                 else:
                     raise
             del download_requests[file_path]
-
     # save download requets again now we've downloaded the files that were
     # ready
     if len(download_requests) > 0:
@@ -124,6 +123,11 @@ def download_data(
         data_requests_file = Path(path / DATA_REQUESTS_FILENAME)
         if data_requests_file.exists():
             data_requests_file.unlink()
+
+            version_filename = Path(path)/VERSION_FILENAME
+            with open(version_filename, "w") as fh:
+                fh.write(version)
+
         print("All files downloaded!")
 
 

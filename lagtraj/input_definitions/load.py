@@ -113,4 +113,7 @@ def load_definition(input_name, input_type, root_data_path, required_fields):
     validate_input(input_params=params, required_fields=required_fields)
     params["name"] = input_name
 
+    if not "version" in params:
+        params["version"] = "unversioned"
+
     return params

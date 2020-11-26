@@ -1,4 +1,5 @@
 levels_method   : copy
+version         : v1
 export_format   : kpt
 comment         : Forcing and initial conditions for Lagrangian case
 campaign        : EUREC4A

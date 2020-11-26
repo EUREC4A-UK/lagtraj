@@ -1,4 +1,5 @@
 trajectory_type : eulerian
+version         : v1
 domain          : lagtraj://eurec4a_circle_eul
 lat_origin      : 13.3
 lon_origin      : -57.717

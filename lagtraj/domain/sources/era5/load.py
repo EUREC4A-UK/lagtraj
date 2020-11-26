@@ -1,10 +1,11 @@
 import xarray as xr
 import numpy as np
 
+from pathlib import Path
 import functools
 import warnings
 
-from . import FILENAME_FORMAT
+from . import FILENAME_FORMAT, VERSION_FILENAME
 from .utils import add_era5_global_attributes
 
 MODEL_RUN_TYPES = ["an", "fc"]  # analysis and forecast runs
@@ -281,4 +282,12 @@ def load_data(data_path, use_lazy_loading=False):
     else:
         ds = ERA5DataSet(data_path)
     add_era5_global_attributes(ds)
+
+    version_filename = Path(data_path)/VERSION_FILENAME
+    if version_filename.exists():
+        version = open(version_filename).read()
+    else:
+        version = "unversioned"
+    ds.attrs["version"] = version
+
     return ds

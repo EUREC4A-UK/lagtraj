@@ -10,7 +10,7 @@ TrajectoryDuration = namedtuple("TrajectoryDuration", ["forward", "backward"])
 
 TrajectoryDefinition = namedtuple(
     "TrajectoryDefinition",
-    ["domain", "duration", "origin", "name", "type", "timestep", "extra_kwargs"],
+    ["domain", "duration", "origin", "name", "type", "timestep", "extra_kwargs", "version"],
 )
 
 

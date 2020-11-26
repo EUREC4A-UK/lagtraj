@@ -56,9 +56,16 @@ def test_load_example(input_example):
         if v == input_type_plural:
             input_type = k
 
-    lagtraj.input_definitions.load.load_definition(
+    params = lagtraj.input_definitions.load.load_definition(
         input_name=f"lagtraj://{input_name}",
         input_type=input_type,
         root_data_path=DEFAULT_ROOT_DATA_PATH,
         required_fields=INPUT_TYPES[input_type],
     )
+
+    # if any of the param values starts with `lagtraj://` we can assume this is
+    # referring to another input-definition, so we should check here that it
+    # exists
+    for k, v in params.items():
+        if v.startswith("lagtraj://"):
+            lagtraj.input_definitions.examples.attempt_read(input_name=v, input_type=k)

@@ -11,7 +11,7 @@ import requests
 
 from .... import utils
 from .cdsapi_request import RequestFetchCDSClient
-from . import FILENAME_FORMAT
+from . import FILENAME_FORMAT, VERSION_FILENAME
 
 DATA_REQUESTS_FILENAME = "data_requests.yaml"
 DATE_FORMAT = "%Y-%m-%d"

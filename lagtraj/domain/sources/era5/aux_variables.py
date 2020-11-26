@@ -2,7 +2,7 @@ import xarray as xr
 import numpy as np
 
 from .constants import rd, rv_over_rd_minus_one, cp, p_ref, rg, rlv, rls, omega
-from ....utils.interpolation import cos_transition
+from ....utils.interpolation.methods import cos_transition
 from ....utils.thermo import theta_l_detailed
 
 rd_over_cp = rd / cp

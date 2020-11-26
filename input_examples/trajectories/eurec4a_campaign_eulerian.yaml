@@ -1,6 +1,6 @@
 trajectory_type : eulerian
-version         : 1
-domain          : lagtraj://eurec4a_circle_eul
+version         : 1.0.0
+domain          : lagtraj://eurec4a_circle
 lat_origin      : 13.3
 lon_origin      : -57.717
 datetime_origin : "2020-01-17T00:00"

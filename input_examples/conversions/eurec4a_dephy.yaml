@@ -1,5 +1,5 @@
 levels_method   : copy
-version         : 1
+version         : 1.0.0
 export_format   : dephy
 comment         : Forcing and initial conditions for Lagrangian case
 campaign        : EUREC4A

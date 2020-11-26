@@ -1,6 +1,6 @@
 trajectory_type : linear
-version         : 1
-domain          : lagtraj://eurec4a_circle_eul
+version         : 1.0.0
+domain          : lagtraj://eurec4a_circle
 lat_origin      : 13.3
 lon_origin      : -57.717
 u_vel           : -5.0

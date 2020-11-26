@@ -55,7 +55,7 @@ def load_data(root_data_path, forcing_name):
     )
     ds = xr.open_dataset(forcing_data_path)
 
-    if not "version" in ds.attrs:
+    if "version" not in ds.attrs:
         raise Exception(
             f"The forcing stored in `{forcing_data_path}` "
             "doesn't `version` attribute set. Please delete and "
@@ -68,8 +68,8 @@ def load_data(root_data_path, forcing_name):
         raise Exception(
             f"The version of the forcing stored in `{forcing_data_path}` "
             "doesn't match the version in the input definition yaml file "
-            f"for a forcing named `{name}`. Please delete the forcing netCDF "
-            "file and recreate it"
+            f"for a forcing named `{forcing_name}`. Please delete the forcing "
+            "netCDF file and recreate it"
         )
 
     return ds

@@ -11,9 +11,9 @@ def create_attributes_dictionary(*args, **kwargs):
 
     def _serialize_item(item, prefix=""):
         if type(item) == str:
-            yield (label, item)
+            yield (prefix, item)
         elif type(item) in [float, int]:
-            yield (label, str(item))
+            yield (prefix, str(item))
         else:
             sub_items = []
             if type(item) == dict:
@@ -29,7 +29,7 @@ def create_attributes_dictionary(*args, **kwargs):
                     lambda item: not item[0].startswith("_"), vars(item).items()
                 )
 
-            for (k, v) in items:
+            for (k, v) in sub_items:
                 if prefix != "":
                     label = f"{prefix}_{k}"
                 else:

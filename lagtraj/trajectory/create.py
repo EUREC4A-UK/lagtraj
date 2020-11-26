@@ -1,6 +1,5 @@
 import datetime
 from pathlib import Path
-from collections import namedtuple
 
 import xarray as xr
 import numpy as np
@@ -114,7 +113,7 @@ def cli(data_path, trajectory_name):
     # attributes of the dataset
     configuration = dict(name=trajectory_name)
     if ds_domain is not None:
-        configuration["domain"] = domain.attrs
+        configuration["domain"] = ds_domain.attrs
     ds_trajectory.attrs.update(
         create_attributes_dictionary(traj_definition, **configuration)
     )

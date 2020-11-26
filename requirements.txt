@@ -1,7 +1,6 @@
 xarray
 pytest
 netCDF4
-cfgrib
 datetime
 numpy
 pyyaml

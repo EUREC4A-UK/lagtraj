@@ -1,5 +1,5 @@
 trajectory_type : lagrangian
-version         : v1
+version         : 1
 velocity_method : single_height_level
 velocity_method_height: 700.
 domain          : lagtraj://eurec4a_circle_eul

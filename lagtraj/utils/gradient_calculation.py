@@ -3,7 +3,7 @@ import xarray as xr
 
 
 from .. import njit
-from .distance import lat_dist, lon_dist
+from .geometry import lat_dist, lon_dist
 
 
 @njit

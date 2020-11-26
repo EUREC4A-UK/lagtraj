@@ -84,8 +84,10 @@ def validate_input(input_params, required_fields):
 
     if "version" in input_params:
         if not input_params["version"].startswith("v"):
-            raise Exception("Versioning labels should start with `v`, e.g. `v1`. "
-                            f"Version is currenty given as `input_params['version']`")
+            raise Exception(
+                "Versioning labels should start with `v`, e.g. `v1`. "
+                f"Version is currenty given as `input_params['version']`"
+            )
         else:
             checked_valid_fields.append("version")
 

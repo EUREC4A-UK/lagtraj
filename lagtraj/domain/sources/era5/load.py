@@ -283,7 +283,7 @@ def load_data(data_path, use_lazy_loading=False):
         ds = ERA5DataSet(data_path)
     add_era5_global_attributes(ds)
 
-    version_filename = Path(data_path)/VERSION_FILENAME
+    version_filename = Path(data_path) / VERSION_FILENAME
     if version_filename.exists():
         version = open(version_filename).read()
     else:

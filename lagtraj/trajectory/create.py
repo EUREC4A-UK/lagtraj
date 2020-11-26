@@ -55,10 +55,9 @@ def create_trajectory(origin, trajectory_type, da_times, **kwargs):
         )
     else:
         raise NotImplementedError(f"`{trajectory_type}` trajectory type not available")
-    ds_traj.attrs.update(create_attributes_dictionary(
-        trajectory_type=trajectory_type,
-        **kwargs
-    ))
+    ds_traj.attrs.update(
+        create_attributes_dictionary(trajectory_type=trajectory_type, **kwargs)
+    )
     return ds_traj
 
 
@@ -115,10 +114,10 @@ def cli(data_path, trajectory_name):
     # attributes of the dataset
     configuration = dict(name=trajectory_name)
     if ds_domain is not None:
-        configuration['domain'] = domain.attrs
-    ds_trajectory.attrs.update(create_attributes_dictionary(
-        traj_definition, **configuration
-    ))
+        configuration["domain"] = domain.attrs
+    ds_trajectory.attrs.update(
+        create_attributes_dictionary(traj_definition, **configuration)
+    )
 
     trajectory_data_path = build_data_path(
         root_data_path=data_path, trajectory_name=traj_definition.name

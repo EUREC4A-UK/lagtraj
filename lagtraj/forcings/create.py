@@ -150,9 +150,7 @@ def main():
     # create the serialised attributes from the domai, trajectory and forcing
     # input definition
     forcing_attrs = create_attributes_dictionary(
-        forcing_defn,
-        domain=ds_domain,
-        trajectory=ds_trajectory,
+        forcing_defn, domain=ds_domain, trajectory=ds_trajectory,
     )
     ds_forcing.attrs.update(forcing_attrs)
     fix_units(ds_forcing)

@@ -65,9 +65,7 @@ def load_definition(root_data_path, name):
 
 
 def load_data(root_data_path, name):
-    trajectory_definition = load_definition(
-        root_data_path=root_data_path, name=name
-    )
+    trajectory_definition = load_definition(root_data_path=root_data_path, name=name)
 
     trajectory_data_path = build_data_path(
         root_data_path=root_data_path, trajectory_name=name
@@ -75,16 +73,20 @@ def load_data(root_data_path, name):
     ds = xr.open_dataset(trajectory_data_path)
 
     if not "version" in ds.attrs:
-        raise Exception(f"The trajectory stored in `{trajectory_data_path}` "
-                         "doesn't `version` attribute set. Please delete and "
-                         "recreate the trajectory or set the correct version. "
-                         "Was expecting to find trajectory with version "
-                         f"`{trajectory_definition['version']}`")
+        raise Exception(
+            f"The trajectory stored in `{trajectory_data_path}` "
+            "doesn't `version` attribute set. Please delete and "
+            "recreate the trajectory or set the correct version. "
+            "Was expecting to find trajectory with version "
+            f"`{trajectory_definition['version']}`"
+        )
 
-    if ds.version != trajectory_definition['version']:
-        raise Exception(f"The version of the trajectory stored in `{trajectory_data_path}` "
-                         "doesn't match the version in the input definition yaml file "
-                        f"for a trajectory named `{name}`. Please delete the trajectory "
-                        " and recreate it")
+    if ds.version != trajectory_definition["version"]:
+        raise Exception(
+            f"The version of the trajectory stored in `{trajectory_data_path}` "
+            "doesn't match the version in the input definition yaml file "
+            f"for a trajectory named `{name}`. Please delete the trajectory "
+            " and recreate it"
+        )
 
     return ds

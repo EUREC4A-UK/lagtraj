@@ -124,7 +124,7 @@ def download_data(
         if data_requests_file.exists():
             data_requests_file.unlink()
 
-            version_filename = Path(path)/VERSION_FILENAME
+            version_filename = Path(path) / VERSION_FILENAME
             with open(version_filename, "w") as fh:
                 fh.write(version)
 

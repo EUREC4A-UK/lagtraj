@@ -64,6 +64,8 @@ def test_load_example(input_example):
     )
 
     if input_defn["version"] == "unversioned":
-        raise Exception("All input definitions included with lagtraj should "
-                        "be versioned. Currently the input definition for "
-                        f"the `{input_name}` {input_type} is not")
+        raise Exception(
+            "All input definitions included with lagtraj should "
+            "be versioned. Currently the input definition for "
+            f"the `{input_name}` {input_type} is not"
+        )

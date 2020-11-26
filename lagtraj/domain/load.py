@@ -37,8 +37,10 @@ def load_data(root_data_path, name):
     ds.attrs["data_source"] = domain_def["source"]
 
     if ds.version != domain_def["version"]:
-        raise Exception("The domain data in `{data_path}` doesn't match the version"
-                        " stored in the data definition for `{name}`. Please delete"
-                        " the domain data and re-download.")
+        raise Exception(
+            "The domain data in `{data_path}` doesn't match the version"
+            " stored in the data definition for `{name}`. Please delete"
+            " the domain data and re-download."
+        )
 
     return ds

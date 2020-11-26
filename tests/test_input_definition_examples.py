@@ -56,11 +56,15 @@ def test_load_example(input_example):
         if v == input_type_plural:
             input_type = k
 
-    params = lagtraj.input_definitions.load.load_definition(
+    lagtraj.input_definitions.load.load_definition(
         input_name=f"lagtraj://{input_name}",
         input_type=input_type,
         root_data_path=DEFAULT_ROOT_DATA_PATH,
         required_fields=INPUT_TYPES[input_type],
+    )
+
+    params = lagtraj.input_definitions.examples.attempt_read(
+        input_name=input_name, input_type=input_type
     )
 
     # if any of the param values starts with `lagtraj://` we can assume this is

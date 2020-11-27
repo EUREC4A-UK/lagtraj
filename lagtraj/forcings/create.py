@@ -3,9 +3,9 @@ from pathlib import Path
 from tqdm import tqdm
 import xarray as xr
 
-from .utils.levels import make_levels
 from .. import DEFAULT_ROOT_DATA_PATH
 from . import profile_calculation, load, build_forcing_data_path, conversion
+from ..utils.interpolation.levels import make_levels
 from ..utils import optional_debugging, validation
 from ..domain.load import load_data as load_domain_data
 from ..trajectory.load import load_data as load_trajectory_data
@@ -172,8 +172,7 @@ def main():
                 import ipdb
                 ipdb.set_trace()
                 diff_str = "\n".join([
-                    (f"{k}:\n\tfound: {different_attrs[k][0]}"
-                      "\n\texpected: {different_attrs[k][1]})")
+                    (f"{k}:\n\tfound: {different_attrs[k][0]}\n\texpected: {different_attrs[k][1]})")
                     for k in different_attrs.keys()
                 ])
                 raise Exception(f"A forcing file already exists at the path `{output_file_path}`. "

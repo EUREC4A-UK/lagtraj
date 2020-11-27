@@ -24,6 +24,8 @@ def create_attributes_dictionary(*args, **kwargs):
                 or isinstance(item, ERA5DataSet)
             ):
                 sub_items = item.attrs.items()
+            elif isinstance(item, list):
+                sub_items = zip(range(len(item)), item)
             else:
                 sub_items = filter(
                     lambda item: not item[0].startswith("_"), vars(item).items()

@@ -4,7 +4,7 @@ import xarray as xr
 
 from .. import DEFAULT_ROOT_DATA_PATH
 from . import profile_calculation, load, build_forcing_data_path
-from .utils.levels import make_levels
+from ..utils.interpolation.levels import make_levels
 from ..utils import optional_debugging, validation
 from ..domain.load import load_data as load_domain_data
 from ..trajectory.load import load_data as load_trajectory_data

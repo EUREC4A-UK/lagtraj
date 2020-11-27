@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.constants import pi
 
-from .. import njit
+from ... import njit
 
 
 @njit

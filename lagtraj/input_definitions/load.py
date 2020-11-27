@@ -2,7 +2,6 @@ import yaml
 import sys
 from pathlib import Path
 import difflib
-import tempfile
 import shutil
 
 
@@ -76,7 +75,7 @@ def load_definition(input_name, input_type, root_data_path, required_fields):
                 lagtraj_input_examples = list(
                     get_available_input_examples(input_types=[input_type])
                 )
-                s = ", ".join(lagtraj_input_examples[:3])  #  show the first three only
+                s = ", ".join(lagtraj_input_examples[:3])  # show the first three only
                 raise Exception(
                     "The yaml input-file you provided does not"
                     " exist in the correct direction structure."
@@ -115,7 +114,7 @@ def load_definition(input_name, input_type, root_data_path, required_fields):
     except InvalidInputDefinition as ex:
         raise Exception(
             "There was a problem parsing the input-definition "
-            f"stored in `{input_local_path}`: {ex}"
+            f"stored in `{input_path}`: {ex}"
         )
     params["name"] = input_name
 

@@ -12,3 +12,4 @@ dask[array]
 asciitree
 isodate
 psutil
+semver==2.13.0

@@ -1,10 +1,14 @@
 from .. import build_data_path
 
 
-def build_input_definition_path(root_data_path, input_name, input_type):
+def build_input_definition_path(root_data_path, input_name, input_type, input_subtype=None):
     data_path = build_data_path(root_data_path=root_data_path, data_type=input_type)
 
-    return data_path / (input_name + ".yaml")
+    if input_subtype is None:
+        filename = f"{input_name}.yaml"
+    else:
+        filename = f"{input_name}.{input_subtype}.yaml"
+    return data_path / filename
 
 
 class InvalidInputDefinition(Exception):

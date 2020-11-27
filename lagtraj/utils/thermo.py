@@ -85,8 +85,3 @@ def qvsl(tt, pp):
 def qvsi(tt, pp):
     """saturation specific humidity over the ice phase"""
     return rd / rv * esati(tt) / (pp - (1.0 - rd / rv) * esati(tt))
-
-
-def rh_dephy(tt, pp, qt):
-    """relative humidity, switching from liquid to ice at tref"""
-    return xr.where(tt < tref, 100.0 * qt / qvsi(tt, pp), 100.0 * qt / qvsl(tt, pp))

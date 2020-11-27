@@ -1,10 +1,11 @@
+import warnings
 from pathlib import Path
 from tqdm import tqdm
 import xarray as xr
 
-from .. import DEFAULT_ROOT_DATA_PATH
-from . import profile_calculation, load, build_forcing_data_path
 from .utils.levels import make_levels
+from .. import DEFAULT_ROOT_DATA_PATH
+from . import profile_calculation, load, build_forcing_data_path, conversion
 from ..utils import optional_debugging, validation
 from ..domain.load import load_data as load_domain_data
 from ..trajectory.load import load_data as load_trajectory_data
@@ -90,7 +91,9 @@ def make_forcing(ds_trajectory, ds_domain, levels_definition, sampling_method):
         )
         forcing_profiles.append(ds_forcing_profile)
 
-    return xr.concat(forcing_profiles, dim="time")
+    ds_forcing = xr.concat(forcing_profiles, dim="time")
+    fix_units(ds_forcing)
+    return ds_forcing
 
 
 def export(file_path, ds_forcing, format):
@@ -113,6 +116,14 @@ def main():
         "-d", "--data-path", default=DEFAULT_ROOT_DATA_PATH, type=Path
     )
     argparser.add_argument("-f", "--output-format", default="dummy_netcdf", type=str)
+    available_conversion_targets = conversion.targets.available.keys()
+    argparser.add_argument(
+        "-t",
+        "--target-model",
+        help="name of the model to target, available targets: "
+        f"{', '.join(available_conversion_targets)}",
+        default=None,
+    )
     argparser.add_argument("--debug", default=False, action="store_true")
     args = argparser.parse_args()
 
@@ -135,18 +146,10 @@ def main():
             "and then run the forcing creation again"
         )
 
-    with optional_debugging(args.debug):
-        ds_forcing = make_forcing(
-            levels_definition=forcing_defn.levels,
-            ds_domain=ds_domain,
-            ds_trajectory=ds_trajectory,
-            sampling_method=forcing_defn.sampling,
-        )
+    output_file_path = build_forcing_data_path(
+        root_data_path=args.data_path, forcing_name=forcing_defn.name
+    )
 
-    ds_forcing["origin_lon"] = ds_trajectory["origin_lon"]
-    ds_forcing["origin_lat"] = ds_trajectory["origin_lat"]
-    ds_forcing["origin_datetime"] = ds_trajectory["origin_datetime"]
-    ds_forcing.attrs.update(ds_domain.attrs)
     attr_dict = dict(
         levels_definition=forcing_defn.levels,
         ds_domain=ds_domain,
@@ -154,15 +157,54 @@ def main():
         sampling_method=forcing_defn.sampling,
         trajectory_name=forcing_defn.trajectory,
     )
+
+    if output_file_path.exists():
+        ds_forcing = xr.open_dataset(output_file_path)
+        if args.target_model is None:
+            raise Exception(f"A file already exists at the path `{output_file_path}`. "
+                            "Please delete this file and run the forcing creation again")
+        else:
+            different_attrs = {}
+            for (k, v) in create_attributes_dictionary(attr_dict).items():
+                if ds_forcing.attrs[k] != v:
+                    different_attrs[k] = (ds_forcing.attrs[k], v)
+            if len(different_attrs) > 0:
+                import ipdb
+                ipdb.set_trace()
+                diff_str = "\n".join([
+                    (f"{k}:\n\tfound: {different_attrs[k][0]}"
+                      "\n\texpected: {different_attrs[k][1]})")
+                    for k in different_attrs.keys()
+                ])
+                raise Exception(f"A forcing file already exists at the path `{output_file_path}`. "
+                                f"Applying the `{args.target_model}` conversion was halted "
+                                "because the following attributes of the file were different than "
+                                f"expected: {diff_str}")
+            else:
+                warnings.warn(f"Using existing forcing file `{output_file_path}` to convert to "
+                              f"`{args.target_model}` format.")
+
+    else:
+        with optional_debugging(args.debug):
+            ds_forcing = make_forcing(
+                levels_definition=forcing_defn.levels,
+                ds_domain=ds_domain,
+                ds_trajectory=ds_trajectory,
+                sampling_method=forcing_defn.sampling,
+            )
+
+    ds_forcing["origin_lon"] = ds_trajectory["origin_lon"]
+    ds_forcing["origin_lat"] = ds_trajectory["origin_lat"]
+    ds_forcing["origin_datetime"] = ds_trajectory["origin_datetime"]
+    ds_forcing.attrs.update(ds_domain.attrs)
     ds_forcing.attrs.update(create_attributes_dictionary(attr_dict))
-    fix_units(ds_forcing)
-    output_file_path = build_forcing_data_path(
-        root_data_path=args.data_path, forcing_name=forcing_defn.name
-    )
 
-    export(ds_forcing=ds_forcing, file_path=output_file_path, format=args.output_format)
-
-    print("Wrote forcing file to `{}`".format(output_file_path))
+    if args.target_model is not None:
+        conversion.export_for_target(
+            ds_forcing=ds_forcing, target_name=args.target_model, root_data_path=args.data_path)
+    else:
+        export(ds_forcing=ds_forcing, file_path=output_file_path, format=args.output_format)
+        print("Wrote forcing file to `{}`".format(output_file_path))
 
 
 if __name__ == "__main__":

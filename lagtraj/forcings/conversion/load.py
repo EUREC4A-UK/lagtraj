@@ -1,4 +1,4 @@
-from ..input_definitions import load
+from ...input_definitions import load
 from . import (
     INPUT_REQUIRED_FIELDS,
     ConversionDefinition,
@@ -9,7 +9,7 @@ from . import (
 )
 
 
-def load_definition(root_data_path, conversion_name):
+def load_definition(root_data_path, forcing_name, conversion_name):
     conversion_params = load.load_definition(
         root_data_path=root_data_path,
         input_name=conversion_name,

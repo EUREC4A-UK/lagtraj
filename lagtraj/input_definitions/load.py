@@ -23,7 +23,7 @@ data
 """
 
 
-def load_definition(input_name, input_type, root_data_path, required_fields):
+def load_definition(input_name, input_type, root_data_path, required_fields, input_subtype=None):
     if input_name.startswith("lagtraj://"):
         try:
             input_name = input_name.replace("lagtraj://", "")
@@ -36,6 +36,7 @@ def load_definition(input_name, input_type, root_data_path, required_fields):
                 root_data_path=root_data_path,
                 input_name=input_name,
                 input_type=input_type,
+                input_subtype=input_subtype,
             )
 
             if not input_local_path.exists():
@@ -96,6 +97,7 @@ def load_definition(input_name, input_type, root_data_path, required_fields):
                 root_data_path=root_data_path,
                 input_name=input_name,
                 input_type=input_type,
+                input_subtype=input_subtype,
             )
             if not input_local_path.exists():
                 input_type_plural = DATA_TYPE_PLURAL[input_type]

@@ -23,7 +23,11 @@ ForcingDefinition = namedtuple(
 )
 
 
-def build_forcing_data_path(root_data_path, forcing_name):
+def build_forcing_data_path(root_data_path, forcing_name, target_name=None):
+    if target_name is None:
+        filename = f"{forcing_name}.nc"
+    else:
+        filename = f"{forcing_name}.{target_name}.nc"
     return build_data_path(root_data_path=root_data_path, data_type="forcing") / (
-        forcing_name + ".nc"
+        filename
     )

@@ -56,7 +56,7 @@ def test_load_example(input_example):
         if v == input_type_plural:
             input_type = k
 
-    lagtraj.input_definitions.load.load_definition(
+    input_defn = lagtraj.input_definitions.load.load_definition(
         input_name=f"lagtraj://{input_name}",
         input_type=input_type,
         root_data_path=DEFAULT_ROOT_DATA_PATH,
@@ -73,3 +73,10 @@ def test_load_example(input_example):
     for k, v in params.items():
         if v.startswith("lagtraj://"):
             lagtraj.input_definitions.examples.attempt_read(input_name=v, input_type=k)
+
+    if input_defn["version"] == "unversioned":
+        raise Exception(
+            "All input definitions included with lagtraj should "
+            "be versioned. Currently the input definition for "
+            f"the `{input_name}` {input_type} is not"
+        )

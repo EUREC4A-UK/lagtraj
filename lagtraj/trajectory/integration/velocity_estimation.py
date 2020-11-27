@@ -1,12 +1,12 @@
 import numpy as np
 
-from .. import interpolation
+from ...utils.interpolation import methods as interpolation_methods
 from ...domain import interpolate_to_height_levels, interpolate_to_pressure_levels
 
 
 def weighted_velocity(ds_column, pres_cutoff_start, pres_cutoff_end):
     """Weighted velocity: needs more work"""
-    height_factor = interpolation.cos_transition(
+    height_factor = interpolation_methods.cos_transition(
         ds_column["p_f"][:, 1:, :, :].values, pres_cutoff_start, pres_cutoff_end
     )
     weights = (

@@ -1,3 +1,6 @@
+import semver
+
+
 from .. import build_data_path
 
 
@@ -81,6 +84,19 @@ def validate_input(input_params, required_fields):
             if new_val is not None:
                 input_params[f_name] = new_val
             checked_valid_fields.append(f_name)
+
+    if "version" in input_params:
+        try:
+            semver.parse(str(input_params["version"]))
+        except ValueError:
+            raise InvalidInputDefinition(
+                "Versioning labels should follow the semver convention "
+                "(http://semver.org) of `MINOR.MAJOR.PATCH` (e.g. the "
+                "first version you make might be `1.0.0`)."
+                f" The version is currenty given as `{input_params['version']}`."
+            )
+        else:
+            checked_valid_fields.append("version")
 
     extra_fields = set(input_params.keys()).difference(checked_valid_fields)
 

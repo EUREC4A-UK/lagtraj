@@ -1,5 +1,5 @@
 from collections import namedtuple
-from .utils.levels import ForcingLevelsDefinition  # noqa
+from ..utils.interpolation.levels import ForcingLevelsDefinition  # noqa
 from .profile_calculation import ForcingSamplingDefinition  # noqa
 from .. import build_data_path
 
@@ -19,7 +19,8 @@ INPUT_REQUIRED_FIELDS = dict(
 
 
 ForcingDefinition = namedtuple(
-    "ForcingDefinition", ["trajectory", "domain", "sampling", "levels", "name"],
+    "ForcingDefinition",
+    ["trajectory", "domain", "sampling", "levels", "name", "version"],
 )
 
 

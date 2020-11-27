@@ -1,4 +1,5 @@
 source    : era5
+version   : 1.0.0
 lat_min   : 9.8
 lat_max   : 16.8
 lon_min   : -62.217

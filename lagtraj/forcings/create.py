@@ -150,6 +150,8 @@ def main():
         root_data_path=args.data_path, forcing_name=forcing_defn.name
     )
 
+    # collect variables which are used for creating attributes of the forcing
+    # output file
     attr_dict = dict(
         levels_definition=forcing_defn.levels,
         ds_domain=ds_domain,
@@ -192,11 +194,11 @@ def main():
                 sampling_method=forcing_defn.sampling,
             )
 
-    ds_forcing["origin_lon"] = ds_trajectory["origin_lon"]
-    ds_forcing["origin_lat"] = ds_trajectory["origin_lat"]
-    ds_forcing["origin_datetime"] = ds_trajectory["origin_datetime"]
-    ds_forcing.attrs.update(ds_domain.attrs)
-    ds_forcing.attrs.update(create_attributes_dictionary(attr_dict))
+        ds_forcing["origin_lon"] = ds_trajectory["origin_lon"]
+        ds_forcing["origin_lat"] = ds_trajectory["origin_lat"]
+        ds_forcing["origin_datetime"] = ds_trajectory["origin_datetime"]
+        ds_forcing.attrs.update(ds_domain.attrs)
+        ds_forcing.attrs.update(create_attributes_dictionary(attr_dict))
 
     if args.target_model is not None:
         conversion.export_for_target(

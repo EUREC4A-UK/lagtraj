@@ -5,7 +5,12 @@ import difflib
 import shutil
 
 
-from . import validate_input, build_input_definition_path, examples as input_examples
+from . import (
+    validate_input,
+    build_input_definition_path,
+    examples as input_examples,
+    InvalidInputDefinition,
+)
 from .. import DATA_TYPE_PLURAL
 from .examples import get_available as get_available_input_examples
 
@@ -105,8 +110,17 @@ def load_definition(input_name, input_type, root_data_path, required_fields, inp
     with open(input_path) as fh:
         params = yaml.load(fh, Loader=yaml.FullLoader)
 
-    validate_input(input_params=params, required_fields=required_fields)
+    try:
+        validate_input(input_params=params, required_fields=required_fields)
+    except InvalidInputDefinition as ex:
+        raise Exception(
+            "There was a problem parsing the input-definition "
+            f"stored in `{input_path}`: {ex}"
+        )
     params["name"] = input_name
+
+    if "version" not in params:
+        params["version"] = "unversioned"
 
     if requesting_lagtraj_bundled_input:
         # when the user requests a lagtraj-bundled input definition we copy it

@@ -19,7 +19,8 @@ INPUT_REQUIRED_FIELDS = dict(
 
 
 ForcingDefinition = namedtuple(
-    "ForcingDefinition", ["trajectory", "domain", "sampling", "levels", "name"],
+    "ForcingDefinition",
+    ["trajectory", "domain", "sampling", "levels", "name", "version"],
 )
 
 

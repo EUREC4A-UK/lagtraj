@@ -107,7 +107,6 @@ ConversionMetadataDefinition = namedtuple(
     ],
 )
 
-from . import targets
-from .. import build_data_path
-from .utils.levels import ConversionLevelsDefinition
+from . import targets  # noqa
+from ...utils.interpolation.levels import LevelsDefinition as ConversionLevelsDefinition  # noqa
 from .process import export_for_target

@@ -9,7 +9,7 @@ import datetime
 
 
 from ....domain.sources.era5.constants import rg
-from ....utils.interpolation import (
+from ....utils.interpolation.methods import (
     steffen_1d_no_ep_time,
     central_estimate,
 )

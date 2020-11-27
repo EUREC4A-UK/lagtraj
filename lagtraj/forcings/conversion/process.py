@@ -5,7 +5,7 @@ from pathlib import Path
 import xarray as xr
 
 from ...utils import validation
-from ..utils.levels import make_levels
+from ...utils.interpolation.levels import make_levels
 from ... import DEFAULT_ROOT_DATA_PATH
 from .targets import available as available_targets
 from .load import load_definition as load_conversion_defn

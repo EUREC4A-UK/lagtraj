@@ -34,7 +34,9 @@ def create_attributes_dictionary(*args, **kwargs):
                     label = f"{prefix}_{k}"
                 else:
                     label = k
-                _serialize_item(v, prefix=label)
+
+                for serialized_item in _serialize_item(v, prefix=label):
+                    yield serialized_item
 
     attrs = {}
     items = list(args) + [

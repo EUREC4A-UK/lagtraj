@@ -3,7 +3,7 @@ import os
 
 # Optional numba dependency
 try:
-    from numba import njit
+    from numba import nnjit
 
     print("Running with numba")
 except ImportError:

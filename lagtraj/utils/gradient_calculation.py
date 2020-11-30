@@ -26,24 +26,36 @@ def _boundary_gradients(x_array, y_array, val_array):
                 vals_at_lat = val_array[this_time, this_level, this_lat, :].flatten()
                 x_at_lat = x_array[this_lat, :].flatten()
                 vals_filtered = vals_at_lat[~np.isnan(vals_at_lat)]
-                x_filtered = x_at_lat[~np.isnan(vals_at_lat)]
-                dvals = vals_filtered[-1] - vals_filtered[0]
-                dval_dx[this_lat] = dvals / (x_filtered[-1] - x_filtered[0])
+                if len(vals_filtered) > 1:
+                    x_filtered = x_at_lat[~np.isnan(vals_at_lat)]
+                    dvals = vals_filtered[-1] - vals_filtered[0]
+                    dval_dx[this_lat] = dvals / (x_filtered[-1] - x_filtered[0])
+                else:
+                    dval_dx[this_lat] = np.nan
             # This similarly calculates the y-gradient at each longitude
             for this_lon in range(len_lons):
                 vals_at_lon = val_array[this_time, this_level, :, this_lon].flatten()
                 y_at_lat = y_array[:, this_lon].flatten()
                 vals_filtered = vals_at_lon[~np.isnan(vals_at_lon)]
-                y_filtered = y_at_lat[~np.isnan(vals_at_lon)]
-                dvals = vals_filtered[-1] - vals_filtered[0]
-                dval_dy[this_lon] = dvals / (y_filtered[-1] - y_filtered[0])
+                if len(vals_filtered) > 1:
+                    y_filtered = y_at_lat[~np.isnan(vals_at_lon)]
+                    dvals = vals_filtered[-1] - vals_filtered[0]
+                    dval_dy[this_lon] = dvals / (y_filtered[-1] - y_filtered[0])
+                else:
+                    dval_dy[this_lon] = np.nan
             # Average these gradients (not weighted at this point, but filtering out all nan values due to e.g. division by zero!)
-            x_gradient_array[this_time, this_level] = np.mean(
-                dval_dx[~np.isnan(dval_dx)]
-            )
-            y_gradient_array[this_time, this_level] = np.mean(
-                dval_dy[~np.isnan(dval_dy)]
-            )
+            if len(~np.isnan(dval_dx)) > 0:
+                x_gradient_array[this_time, this_level] = np.mean(
+                    dval_dx[~np.isnan(dval_dx)]
+                )
+            else:
+                x_gradient_array[this_time, this_level] = np.nan
+            if len(~np.isnan(dval_dy)) > 0:
+                y_gradient_array[this_time, this_level] = np.mean(
+                    dval_dy[~np.isnan(dval_dy)]
+                )
+            else:
+                y_gradient_array[this_time, this_level] = np.nan
     return x_gradient_array, y_gradient_array
 
 
@@ -65,19 +77,27 @@ def _regression_gradients(x_array, y_array, val_array):
             data_flat_filter = np.expand_dims(data_flat[~np.isnan(data_flat)], axis=1)
             x_flat_filter = np.expand_dims(x_flat[~np.isnan(data_flat)], axis=1)
             y_flat_filter = np.expand_dims(y_flat[~np.isnan(data_flat)], axis=1)
-            ones_flat_filter = np.expand_dims(ones_flat[~np.isnan(data_flat)], axis=1)
-            oxy_mat = np.hstack((ones_flat_filter, x_flat_filter, y_flat_filter))
-            # Use the normal method to find the best fit of a plane through the data
-            # At each individual model level
-            theta = np.dot(
-                np.dot(
-                    np.linalg.pinv(np.dot(oxy_mat.transpose(), oxy_mat)),
-                    oxy_mat.transpose(),
-                ),
-                data_flat_filter,
-            )
-            x_gradient_array[this_time, this_level] = theta[1][0]
-            y_gradient_array[this_time, this_level] = theta[2][0]
+            if (nanmin(x_flat_filter) < nanmax(x_flat_filter)) and (
+                nanmin(y_flat_filter) < nanmax(y_flat_filter)
+            ):
+                x_gradient_array[this_time, this_level] = np.nan
+                y_gradient_array[this_time, this_level] = np.nan
+            else:
+                ones_flat_filter = np.expand_dims(
+                    ones_flat[~np.isnan(data_flat)], axis=1
+                )
+                oxy_mat = np.hstack((ones_flat_filter, x_flat_filter, y_flat_filter))
+                # Use the normal method to find the best fit of a plane through the data
+                # At each individual model level
+                theta = np.dot(
+                    np.dot(
+                        np.linalg.pinv(np.dot(oxy_mat.transpose(), oxy_mat)),
+                        oxy_mat.transpose(),
+                    ),
+                    data_flat_filter,
+                )
+                x_gradient_array[this_time, this_level] = theta[1][0]
+                y_gradient_array[this_time, this_level] = theta[2][0]
     return x_gradient_array, y_gradient_array
 
 

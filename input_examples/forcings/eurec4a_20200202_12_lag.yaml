@@ -1,4 +1,5 @@
 trajectory      : eurec4a_20200202_12_lag
+version         : 1.0.0
 domain          : eurec4a_circle_eul
 gradient_method : regression
 averaging_width : 2.0

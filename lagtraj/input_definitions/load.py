@@ -2,11 +2,15 @@ import yaml
 import sys
 from pathlib import Path
 import difflib
-import tempfile
 import shutil
 
 
-from . import validate_input, build_input_definition_path, examples as input_examples
+from . import (
+    validate_input,
+    build_input_definition_path,
+    examples as input_examples,
+    InvalidInputDefinition,
+)
 from .. import DATA_TYPE_PLURAL
 from .examples import get_available as get_available_input_examples
 
@@ -71,7 +75,7 @@ def load_definition(input_name, input_type, root_data_path, required_fields):
                 lagtraj_input_examples = list(
                     get_available_input_examples(input_types=[input_type])
                 )
-                s = ", ".join(lagtraj_input_examples[:3])  #  show the first three only
+                s = ", ".join(lagtraj_input_examples[:3])  # show the first three only
                 raise Exception(
                     "The yaml input-file you provided does not"
                     " exist in the correct direction structure."
@@ -105,8 +109,17 @@ def load_definition(input_name, input_type, root_data_path, required_fields):
     with open(input_path) as fh:
         params = yaml.load(fh, Loader=yaml.FullLoader)
 
-    validate_input(input_params=params, required_fields=required_fields)
+    try:
+        validate_input(input_params=params, required_fields=required_fields)
+    except InvalidInputDefinition as ex:
+        raise Exception(
+            "There was a problem parsing the input-definition "
+            f"stored in `{input_path}`: {ex}"
+        )
     params["name"] = input_name
+
+    if "version" not in params:
+        params["version"] = "unversioned"
 
     if requesting_lagtraj_bundled_input:
         # when the user requests a lagtraj-bundled input definition we copy it

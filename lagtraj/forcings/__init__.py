@@ -8,6 +8,7 @@ INPUT_REQUIRED_FIELDS = dict(
     trajectory=str,
     domain=str,
     gradient_method=str,
+    advection_velocity_sampling_method=str,
     averaging_width=float,
     levels_method=str,
     levels_number=int,

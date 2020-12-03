@@ -444,7 +444,7 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     ds_dephy["wpqtp"] = forcing_field_dephy(wpqtp, "wpqtp")
     # Ratio of fluxes (mixing ratio vs. specific humidity) is same for all fluxes
     moisture_ratio = (
-        ds_era5["r_t_local"].sel(level=0.0) / ds_era5["q_t_local"].sel(level=0.0)
+        ds_era5["r_t_mean"].sel(level=0.0) / ds_era5["q_t_mean"].sel(level=0.0)
     ).values
     wprvp = wpqvp * moisture_ratio
     ds_dephy["wprvp"] = forcing_field_dephy(wprvp, "wprvp")

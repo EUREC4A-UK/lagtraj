@@ -166,21 +166,27 @@ def main():
             raise Exception(f"A file already exists at the path `{output_file_path}`. "
                             "Please delete this file and run the forcing creation again")
         else:
-            different_attrs = {}
-            for (k, v) in create_attributes_dictionary(attr_dict).items():
-                if ds_forcing.attrs[k] != v:
-                    different_attrs[k] = (ds_forcing.attrs[k], v)
-            if len(different_attrs) > 0:
-                import ipdb
-                ipdb.set_trace()
+            with optional_debugging(args.debug):
+                different_attrs = {}
+                missing_attrs = {}
+                for (k, v) in create_attributes_dictionary(attr_dict).items():
+                    if k not in ds_forcing.attrs:
+                        missing_attrs[k] = (None, v)
+                    elif ds_forcing.attrs[k] != v:
+                        different_attrs[k] = (ds_forcing.attrs[k], v)
+            if len(different_attrs) > 0 or len(missing_attrs) > 0:
                 diff_str = "\n".join([
                     (f"{k}:\n\tfound: {different_attrs[k][0]}\n\texpected: {different_attrs[k][1]})")
                     for k in different_attrs.keys()
                 ])
+                missing_str = "\n".join([
+                    (f"{k}: missing\n\texpected: {missing_attrs[k][1]})")
+                    for k in missing_attrs.keys()
+                ])
                 raise Exception(f"A forcing file already exists at the path `{output_file_path}`. "
                                 f"Applying the `{args.target_model}` conversion was halted "
                                 "because the following attributes of the file were different than "
-                                f"expected: {diff_str}")
+                                f"expected:\n{diff_str}\n{missing_str}")
             else:
                 warnings.warn(f"Using existing forcing file `{output_file_path}` to convert to "
                               f"`{args.target_model}` format.")

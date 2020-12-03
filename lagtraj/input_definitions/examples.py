@@ -15,7 +15,7 @@ class LagtrajExampleDoesNotExist(Exception):
     pass
 
 
-def get_path(input_name, input_type, parse_yaml=True):
+def get_path(input_name, input_type):
     input_type = DATA_TYPE_PLURAL.get(input_type, input_type)
 
     file_path = P_ROOT / input_type / (input_name + ".yaml")
@@ -23,6 +23,13 @@ def get_path(input_name, input_type, parse_yaml=True):
         raise LagtrajExampleDoesNotExist
 
     return file_path
+
+
+def attempt_read(input_name, input_type):
+    file_path = get_path(input_name=input_name, input_type=input_type)
+    with open(file_path) as fh:
+        params = yaml.load(fh, Loader=yaml.FullLoader)
+    return params
 
 
 def get_available(input_types="all"):

@@ -1,4 +1,8 @@
 import xarray as xr
+import isodate
+import datetime
+
+
 from ..domain.sources.era5.load import ERA5DataSet
 
 
@@ -12,8 +16,12 @@ def create_attributes_dictionary(*args, **kwargs):
     def _serialize_item(item, prefix=""):
         if type(item) == str:
             yield (prefix, item)
-        elif type(item) in [float, int]:
+        elif isinstance(item, float) or isinstance(item, int):
             yield (prefix, str(item))
+        elif isinstance(item, datetime.timedelta):
+            yield (prefix, isodate.duration_isoformat(item))
+        elif isinstance(item, datetime.datetime):
+            yield (prefix, item.isoformat())
         else:
             sub_items = []
             if type(item) == dict:
@@ -27,9 +35,13 @@ def create_attributes_dictionary(*args, **kwargs):
             elif isinstance(item, list):
                 sub_items = zip(range(len(item)), item)
             else:
-                sub_items = filter(
-                    lambda item: not item[0].startswith("_"), vars(item).items()
-                )
+                # collections.named_tuple has a `_asdict` method to turn it into a dictionary
+                if hasattr(item, '_asdict'):
+                    sub_items = item._asdict().items()
+                else:
+                    sub_items = filter(
+                        lambda item: not item[0].startswith("_"), vars(item).items()
+                    )
 
             for (k, v) in sub_items:
                 if prefix != "":

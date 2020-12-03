@@ -378,7 +378,7 @@ def dephy_from_era5(ds_era5, da_levels, parameters, metadata):
     ds_dephy["wpqtp"] = forcing_field_dephy(wpqtp, "wpqtp")
     # Ratio of fluxes (mixing ratio vs. specific humidity) is same for all fluxes
     moisture_ratio = (
-        ds_era5["r_t_local"].sel(level=0.0) / ds_era5["q_t_local"].sel(level=0.0)
+        ds_era5["r_t_mean"].sel(level=0.0) / ds_era5["q_t_mean"].sel(level=0.0)
     ).values
     wprvp = wpqvp * moisture_ratio
     ds_dephy["wprvp"] = forcing_field_dephy(wprvp, "wprvp")
@@ -518,8 +518,8 @@ def export(file_path, ds_conversion, nc_format=None):
 # kpt variable : era5 variable
 # (we loop over kpt variables here)
 kpt_from_era5_variables = {
-    "zf": "height_h_local",
-    "zh": "height_h_local",
+    "zf": "height_h_mean",
+    "zh": "height_h_mean",
     "ps": "sp_mean",
     "pres": "p_h_mean",
     "presh": "p_h_mean",
@@ -609,7 +609,7 @@ era5_to_dephy_units = {
 dephy_from_era5_initial_variables = {
     "lat0_traj": "lat",
     "lon0_traj": "lon",
-    "height": "height_h_local",
+    "height": "height_h_mean",
     "pressure": "p_h_mean",
     "u": "u_mean",
     "v": "v_mean",

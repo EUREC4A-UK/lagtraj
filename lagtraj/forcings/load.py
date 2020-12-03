@@ -27,6 +27,9 @@ def load_definition(root_data_path, forcing_name):
 
     sampling_definition = ForcingSamplingDefinition(
         gradient_method=forcing_params["gradient_method"],
+        advection_velocity_sampling_method=forcing_params[
+            "advection_velocity_sampling_method"
+        ],
         averaging_width=forcing_params["averaging_width"],
         time_sampling_method=forcing_params.get("time_sampling_method", "domain_data"),
         mask=forcing_params.get("sampling_mask", "ocean_only"),

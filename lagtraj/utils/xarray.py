@@ -36,7 +36,7 @@ def create_attributes_dictionary(*args, **kwargs):
                 sub_items = zip(range(len(item)), item)
             else:
                 # collections.named_tuple has a `_asdict` method to turn it into a dictionary
-                if hasattr(item, '_asdict'):
+                if hasattr(item, "_asdict"):
                     sub_items = item._asdict().items()
                 else:
                     sub_items = filter(

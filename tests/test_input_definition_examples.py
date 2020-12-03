@@ -71,7 +71,7 @@ def test_load_example(input_example):
     # referring to another input-definition, so we should check here that it
     # exists
     for k, v in params.items():
-        if v.startswith("lagtraj://"):
+        if isinstance(v, str) and v.startswith("lagtraj://"):
             lagtraj.input_definitions.examples.attempt_read(input_name=v, input_type=k)
 
     if input_defn["version"] == "unversioned":

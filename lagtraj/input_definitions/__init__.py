@@ -16,6 +16,15 @@ class InvalidInputDefinition(Exception):
 
 
 def validate_input(input_params, required_fields):
+    """
+    Checks all entries in `input_params` against the definition in
+    `required_fields`. The requirements may either be single value or function
+    which validates the value provided and returns a deserialized version. To
+    make conditional requirements the functions should accept the arguments
+    `param_name` and `input_params` (the latter can the be queried to check the
+    parameters the user has set).
+    """
+
     def _check_field(f_name, f_option):
         # allows for an optional parameter by putting `None` in the list of
         # options
@@ -32,9 +41,7 @@ def validate_input(input_params, required_fields):
                 fn_parameters = None
 
             if fn_parameters is not None and "input_params" in fn_parameters:
-                val = f_option(param_name=f_name, input_params=input_params)
-                if val is not None:
-                    return val
+                return f_option(param_name=f_name, input_params=input_params)
             else:
                 return f_option(input_params[f_name])
         elif f_name not in input_params:
@@ -96,6 +103,10 @@ def validate_input(input_params, required_fields):
             new_val = _check_field(f_name, f_option)
             if new_val is not None:
                 input_params[f_name] = new_val
+            else:
+                if f_name not in input_params:
+                    # we need to set the default value `None` for any fields that are missing
+                    input_params[f_name] = new_val
             checked_valid_fields.append(f_name)
 
     if "version" in input_params:

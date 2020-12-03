@@ -153,9 +153,13 @@ def load_definition(input_name, input_type, root_data_path, required_fields, inp
             if len(param_diff) != 0:
                 print("\n".join(param_diff))
                 print()
+                if Path(".").absolute() in input_local_path.parents:
+                    p = input_local_path.relative_to(Path(".").absolute())
+                else:
+                    p = input_local_path
                 raise Exception(
                     f"Your local of the `{input_name}` {input_type} "
-                    f"input-definition in `{input_local_path}` "
+                    f"input-definition in `{p}` "
                     "is different to what is included with "
                     "lagtraj (see the differences above). Either you can "
                     "use your local copy directly (by removing the `lagtraj://` "

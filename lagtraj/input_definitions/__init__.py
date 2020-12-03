@@ -1,4 +1,5 @@
 import semver
+import inspect
 
 
 from .. import build_data_path
@@ -22,6 +23,20 @@ def validate_input(input_params, required_fields):
 
         if missing_allowed and f_name not in input_params:
             pass
+        elif callable(f_option):
+            # check if the function is expecting the `input_params` argument which
+            # should contain the arguments the user has provided
+            try:
+                fn_parameters = inspect.signature(f_option).parameters
+            except ValueError:
+                fn_parameters = None
+
+            if fn_parameters is not None and "input_params" in fn_parameters:
+                val = f_option(param_name=f_name, input_params=input_params)
+                if val is not None:
+                    return val
+            else:
+                return f_option(input_params[f_name])
         elif f_name not in input_params:
             raise InvalidInputDefinition("Missing `{}` field".format(f_name))
         elif type(f_option) == type and type(input_params[f_name]) != f_option:
@@ -30,8 +45,6 @@ def validate_input(input_params, required_fields):
                     f_name, f_option, type(input_params[f_name])
                 )
             )
-        elif callable(f_option):
-            return f_option(input_params[f_name])
         elif (
             type(f_option) == str
             or type(f_option) == int

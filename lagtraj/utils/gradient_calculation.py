@@ -77,12 +77,9 @@ def _regression_gradients(x_array, y_array, val_array):
             data_flat_filter = np.expand_dims(data_flat[~np.isnan(data_flat)], axis=1)
             x_flat_filter = np.expand_dims(x_flat[~np.isnan(data_flat)], axis=1)
             y_flat_filter = np.expand_dims(y_flat[~np.isnan(data_flat)], axis=1)
-            if (nanmin(x_flat_filter) < nanmax(x_flat_filter)) and (
-                nanmin(y_flat_filter) < nanmax(y_flat_filter)
+            if (np.nanmin(x_flat_filter) < np.nanmax(x_flat_filter)) and (
+                np.nanmin(y_flat_filter) < np.nanmax(y_flat_filter)
             ):
-                x_gradient_array[this_time, this_level] = np.nan
-                y_gradient_array[this_time, this_level] = np.nan
-            else:
                 ones_flat_filter = np.expand_dims(
                     ones_flat[~np.isnan(data_flat)], axis=1
                 )
@@ -98,6 +95,9 @@ def _regression_gradients(x_array, y_array, val_array):
                 )
                 x_gradient_array[this_time, this_level] = theta[1][0]
                 y_gradient_array[this_time, this_level] = theta[2][0]
+            else:
+                x_gradient_array[this_time, this_level] = np.nan
+                y_gradient_array[this_time, this_level] = np.nan
     return x_gradient_array, y_gradient_array
 
 

@@ -73,12 +73,16 @@ def test_load_example(input_example):
     for k, v in params.items():
         if isinstance(v, str) and v.startswith("lagtraj://"):
             try:
-                lagtraj.input_definitions.examples.attempt_read(input_name=v, input_type=k)
+                lagtraj.input_definitions.examples.attempt_read(
+                    input_name=v, input_type=k
+                )
             except lagtraj.input_definitions.examples.LagtrajExampleDoesNotExist:
                 raise
-                raise Exception(f"The input-definition `lagtraj://{input_name}` "
-                                f"refers to the `{v}` {k} input definition "
-                                "which doesn't exist!")
+                raise Exception(
+                    f"The input-definition `lagtraj://{input_name}` "
+                    f"refers to the `{v}` {k} input definition "
+                    "which doesn't exist!"
+                )
 
     if input_defn["version"] == "unversioned":
         raise Exception(

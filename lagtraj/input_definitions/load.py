@@ -14,7 +14,7 @@ from . import (
 from .. import DATA_TYPE_PLURAL
 from .examples import (
     get_available as get_available_input_examples,
-    LAGTRAJ_EXAMPLES_PATH_PREFIX
+    LAGTRAJ_EXAMPLES_PATH_PREFIX,
 )
 
 FOLDER_STRUCTURE_EXAMPLE = """
@@ -37,7 +37,9 @@ data
 def load_definition(input_name, input_type, root_data_path, required_fields):
     params = None
     input_path = None
-    requesting_lagtraj_bundled_input = input_name.startswith(LAGTRAJ_EXAMPLES_PATH_PREFIX)
+    requesting_lagtraj_bundled_input = input_name.startswith(
+        LAGTRAJ_EXAMPLES_PATH_PREFIX
+    )
 
     if requesting_lagtraj_bundled_input:
         try:

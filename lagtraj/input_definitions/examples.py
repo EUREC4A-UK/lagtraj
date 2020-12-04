@@ -18,8 +18,10 @@ class LagtrajExampleDoesNotExist(Exception):
 
 def get_path(input_name, input_type):
     if not input_name.startswith(LAGTRAJ_EXAMPLES_PATH_PREFIX):
-        raise Exception("All lagtraj example inputs should start with "
-                        f"`{LAGTRAJ_EXAMPLES_PATH_PREFIX}`")
+        raise Exception(
+            "All lagtraj example inputs should start with "
+            f"`{LAGTRAJ_EXAMPLES_PATH_PREFIX}`"
+        )
 
     input_name = input_name.replace(LAGTRAJ_EXAMPLES_PATH_PREFIX, "")
     input_type = DATA_TYPE_PLURAL.get(input_type, input_type)

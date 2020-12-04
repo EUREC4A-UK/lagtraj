@@ -1,4 +1,5 @@
 import semver
+import inspect
 
 
 from .. import build_data_path
@@ -19,6 +20,15 @@ class InvalidInputDefinition(Exception):
 
 
 def validate_input(input_params, required_fields):
+    """
+    Checks all entries in `input_params` against the definition in
+    `required_fields`. The requirements may either be single value or function
+    which validates the value provided and returns a deserialized version. To
+    make conditional requirements the functions should accept the arguments
+    `param_name` and `input_params` (the latter can the be queried to check the
+    parameters the user has set).
+    """
+
     def _check_field(f_name, f_option):
         # allows for an optional parameter by putting `None` in the list of
         # options
@@ -26,6 +36,18 @@ def validate_input(input_params, required_fields):
 
         if missing_allowed and f_name not in input_params:
             pass
+        elif callable(f_option):
+            # check if the function is expecting the `input_params` argument which
+            # should contain the arguments the user has provided
+            try:
+                fn_parameters = inspect.signature(f_option).parameters
+            except ValueError:
+                fn_parameters = None
+
+            if fn_parameters is not None and "input_params" in fn_parameters:
+                return f_option(param_name=f_name, input_params=input_params)
+            else:
+                return f_option(input_params[f_name])
         elif f_name not in input_params:
             raise InvalidInputDefinition("Missing `{}` field".format(f_name))
         elif type(f_option) == type and type(input_params[f_name]) != f_option:
@@ -34,8 +56,6 @@ def validate_input(input_params, required_fields):
                     f_name, f_option, type(input_params[f_name])
                 )
             )
-        elif callable(f_option):
-            return f_option(input_params[f_name])
         elif (
             type(f_option) == str
             or type(f_option) == int
@@ -87,6 +107,10 @@ def validate_input(input_params, required_fields):
             new_val = _check_field(f_name, f_option)
             if new_val is not None:
                 input_params[f_name] = new_val
+            else:
+                if f_name not in input_params:
+                    # we need to set the default value `None` for any fields that are missing
+                    input_params[f_name] = new_val
             checked_valid_fields.append(f_name)
 
     if "version" in input_params:

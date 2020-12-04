@@ -12,7 +12,10 @@ from . import (
     InvalidInputDefinition,
 )
 from .. import DATA_TYPE_PLURAL
-from .examples import get_available as get_available_input_examples
+from .examples import (
+    get_available as get_available_input_examples,
+    LAGTRAJ_EXAMPLES_PATH_PREFIX,
+)
 
 FOLDER_STRUCTURE_EXAMPLE = """
 data
@@ -34,11 +37,12 @@ data
 def load_definition(input_name, input_type, root_data_path, required_fields, input_subtype=None):
     params = None
     input_path = None
-    requesting_lagtraj_bundled_input = input_name.startswith("lagtraj://")
+    requesting_lagtraj_bundled_input = input_name.startswith(
+        LAGTRAJ_EXAMPLES_PATH_PREFIX
+    )
 
     if requesting_lagtraj_bundled_input:
         try:
-            input_name = input_name.replace("lagtraj://", "")
             input_path = input_examples.get_path(
                 input_name=input_name, input_type=input_type
             )

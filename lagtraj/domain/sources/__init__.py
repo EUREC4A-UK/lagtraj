@@ -5,6 +5,10 @@ correct functions depending on the data source a given dataset originated from.
 import xarray as xr
 
 
+class MissingDomainData(Exception):
+    pass
+
+
 from .era5.interpolation import interpolate_to_height_levels as era5_hl_interp
 from .era5.interpolation import interpolate_to_pressure_levels as era5_pl_interp
 from .era5.aux_variables import calc_variable as era5_calc

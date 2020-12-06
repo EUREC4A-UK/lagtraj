@@ -3,6 +3,7 @@ from collections import namedtuple
 
 from .. import build_data_path as build_data_path_global
 from ..input_definitions import InvalidInputDefinition
+from ..input_definitions.examples import LAGTRAJ_EXAMPLES_PATH_PREFIX
 
 
 TrajectoryOrigin = namedtuple("TrajectoryOrigin", ["lat", "lon", "datetime"])
@@ -102,6 +103,11 @@ INPUT_REQUIRED_FIELDS = {
 
 
 def build_data_path(root_data_path, trajectory_name):
+    # we need to strip the `lagtraj://` prefix before we construct the path
+    # since the data is stored locally
+    if trajectory_name.startswith(LAGTRAJ_EXAMPLES_PATH_PREFIX):
+        trajectory_name = trajectory_name[len(LAGTRAJ_EXAMPLES_PATH_PREFIX) :]
+
     data_path = build_data_path_global(
         root_data_path=root_data_path, data_type="trajectory"
     )

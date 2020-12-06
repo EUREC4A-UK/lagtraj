@@ -7,6 +7,7 @@ import warnings
 
 from . import FILENAME_FORMAT, VERSION_FILENAME
 from .utils import add_era5_global_attributes
+from .. import MissingDomainData
 
 MODEL_RUN_TYPES = ["an", "fc"]  # analysis and forecast runs
 LEVEL_TYPES = ["model", "single"]  # need model and surface data
@@ -41,7 +42,13 @@ def _find_datasets(data_path):
                 model_run_type=model_run_type, level_type=level_type, date="*"
             )
 
-            files = data_path.glob(filename_format)
+            files = list(data_path.glob(filename_format))
+
+            if len(files) == 0:
+                raise MissingDomainData(
+                    f"No files for {model_run_type} model run {level_type} "
+                    f"level were found in {data_path}."
+                )
 
             ds_ = xr.open_mfdataset(files, combine="by_coords")
             # z needs to be dropped to prevent duplicity, lnsp is simply
@@ -285,7 +292,7 @@ def load_data(data_path, use_lazy_loading=False):
 
     version_filename = Path(data_path) / VERSION_FILENAME
     if version_filename.exists():
-        version = open(version_filename).read()
+        version = open(version_filename).read().strip()
     else:
         version = "unversioned"
     ds.attrs["version"] = version

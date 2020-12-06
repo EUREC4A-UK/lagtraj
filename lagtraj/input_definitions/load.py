@@ -131,6 +131,11 @@ def load_definition(input_name, input_type, root_data_path, required_fields, inp
         # to their local `data/` directory, but we need to check if there's
         # already a file there and whether that has any modifications
 
+        # we need to strip the `lagtraj://` prefix before we construct the path
+        # since the data is stored locally
+        if input_name.startswith(LAGTRAJ_EXAMPLES_PATH_PREFIX):
+            input_name = input_name[len(LAGTRAJ_EXAMPLES_PATH_PREFIX) :]
+
         input_local_path = build_input_definition_path(
             root_data_path=root_data_path, input_name=input_name, input_type=input_type,
         )

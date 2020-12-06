@@ -8,27 +8,42 @@ from asciitree import drawing
 from .. import DATA_TYPE_PLURAL
 
 
-P_ROOT = Path(__file__).parent.parent.parent / "input_examples"
+EXAMPLES_ROOT_PATH = Path(__file__).parent.parent.parent / "input_examples"
+LAGTRAJ_EXAMPLES_PATH_PREFIX = "lagtraj://"
 
 
 class LagtrajExampleDoesNotExist(Exception):
     pass
 
 
-def get_path(input_name, input_type, parse_yaml=True):
+def get_path(input_name, input_type):
+    if not input_name.startswith(LAGTRAJ_EXAMPLES_PATH_PREFIX):
+        raise Exception(
+            "All lagtraj example inputs should start with "
+            f"`{LAGTRAJ_EXAMPLES_PATH_PREFIX}`"
+        )
+
+    input_name = input_name.replace(LAGTRAJ_EXAMPLES_PATH_PREFIX, "")
     input_type = DATA_TYPE_PLURAL.get(input_type, input_type)
 
-    file_path = P_ROOT / input_type / (input_name + ".yaml")
+    file_path = EXAMPLES_ROOT_PATH / input_type / (input_name + ".yaml")
     if not file_path.exists():
         raise LagtrajExampleDoesNotExist
 
     return file_path
 
 
+def attempt_read(input_name, input_type):
+    file_path = get_path(input_name=input_name, input_type=input_type)
+    with open(file_path) as fh:
+        params = yaml.load(fh, Loader=yaml.FullLoader)
+    return params
+
+
 def get_available(input_types="all"):
     def _visit_path(p_current):
         subpaths = p_current.glob("*")
-        if p_current == P_ROOT and input_types != "all":
+        if p_current == EXAMPLES_ROOT_PATH and input_types != "all":
             subpaths = filter(lambda p_: p_.name in input_types, subpaths)
 
         valid_paths = []
@@ -41,7 +56,7 @@ def get_available(input_types="all"):
 
         return OD(valid_paths)
 
-    return _visit_path(P_ROOT)
+    return _visit_path(EXAMPLES_ROOT_PATH)
 
 
 def print_available(input_types="all"):

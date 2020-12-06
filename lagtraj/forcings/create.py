@@ -131,9 +131,10 @@ def main():
         root_data_path=args.data_path, forcing_name=args.forcing
     )
 
-    ds_domain = load_domain_data(
-        root_data_path=args.data_path, name=forcing_defn.domain
-    )
+    with optional_debugging(args.debug):
+        ds_domain = load_domain_data(
+            root_data_path=args.data_path, name=forcing_defn.domain
+        )
     try:
         ds_trajectory = load_trajectory_data(
             root_data_path=args.data_path, name=forcing_defn.trajectory

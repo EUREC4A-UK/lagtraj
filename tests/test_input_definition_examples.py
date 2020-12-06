@@ -77,12 +77,14 @@ def test_load_example(input_example):
     for k, v in params.items():
         if isinstance(v, str) and k in INPUT_TYPES.keys():
             if not v.startswith("lagtraj://"):
-                raise Exception("All input definitions which are included with "
-                                "lagtraj should only refer to other inputs "
-                                "included with lagtraj (i.e. should have the "
-                                f"`lagtraj://` prefix). The `{input_name}` "
-                                f"{input_type} input definition returns to the "
-                                f"`{v}` {k}")
+                raise Exception(
+                    "All input definitions which are included with "
+                    "lagtraj should only refer to other inputs "
+                    "included with lagtraj (i.e. should have the "
+                    f"`lagtraj://` prefix). The `{input_name}` "
+                    f"{input_type} input definition returns to the "
+                    f"`{v}` {k}"
+                )
             else:
                 try:
                     lagtraj.input_definitions.examples.attempt_read(

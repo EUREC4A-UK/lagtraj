@@ -5,6 +5,38 @@ from .. import build_data_path as build_data_path_global
 from ..input_definitions import InvalidInputDefinition
 from ..input_definitions.examples import LAGTRAJ_EXAMPLES_PATH_PREFIX
 
+deps = dict(
+    u_vel=dict(
+        requires=dict(trajectory_type="eulerian",),
+        choices=float,
+    ),
+    v_vel=dict(
+        requires=dict(trajectory_type="eulerian",),
+        choices=float,
+    ),
+    velocity_method=dict(
+        requires=dict(trajectory_type="lagrangian"),
+        choices=["lower_troposphere_humidity_weighted",
+            "single_height_level",
+            "single_pressure_level",
+        ]
+    ),
+    velocity_method_height=dict(
+        requires=dict(
+            trajectory_type="lagrangian",
+            velocity_method="single_height_level",
+        ),
+        choices=float
+    )
+    velocity_method_pressure=dict(
+        requires=dict(
+            trajectory_type="lagrangian",
+            velocity_method="single_pressure_level",
+        ),
+        choices=float
+    )
+)
+
 
 TrajectoryOrigin = namedtuple("TrajectoryOrigin", ["lat", "lon", "datetime"])
 
@@ -22,6 +54,14 @@ TrajectoryDefinition = namedtuple(
         "extra_kwargs",
         "version",
     ],
+)
+
+velocity_method_kwargs = dict(
+    height=500.0,
+    # or
+    pressure=900.0,
+    # or
+    U=[1.0, 1.0]
 )
 
 
@@ -93,9 +133,6 @@ INPUT_REQUIRED_FIELDS = {
     "v_vel": _validate_velocity_param,
     "velocity_method": [
         None,
-        "lower_troposphere_humidity_weighted",
-        "single_height_level",
-        "single_pressure_level",
     ],
     "velocity_method_height": [None, float],
     "velocity_method_pressure": [None, float],

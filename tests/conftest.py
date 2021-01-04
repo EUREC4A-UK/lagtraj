@@ -9,7 +9,7 @@ import pytest
 import lagtraj.domain.load
 
 TESTDATA_URL = (
-    "http://gws-access.ceda.ac.uk/public/eurec4auk/testdata/lagtraj.testdata.tar.gz"
+    "http://gws-access.jasmin.ac.uk/public/eurec4auk/testdata/lagtraj.testdata.v0.1.0.tar.gz"  # noqa
 )
 
 if os.environ.get("LAGTRAJ_TESTDATA_DIR", None):
@@ -38,7 +38,7 @@ def ds_domain_test(scope="session"):
         print("Downloading testdata...")
         download_testdata()
 
-    DOMAIN_NAME = "eurec4a_circle_eul"
+    DOMAIN_NAME = "eurec4a_circle"
     ds = lagtraj.domain.load.load_data(root_data_path=testdata_dir, name=DOMAIN_NAME)
     return ds
 

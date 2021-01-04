@@ -27,7 +27,7 @@ deps = dict(
             velocity_method="single_height_level",
         ),
         choices=float
-    )
+    ),
     velocity_method_pressure=dict(
         requires=dict(
             trajectory_type="lagrangian",

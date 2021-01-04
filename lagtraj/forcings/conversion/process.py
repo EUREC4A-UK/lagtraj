@@ -2,7 +2,6 @@
 """
 
 from pathlib import Path
-import xarray as xr
 
 from ...utils import validation
 from ...utils.interpolation.levels import make_levels
@@ -31,7 +30,7 @@ def export(ds_forcing, output_filepath, conversion_defn):
         )
 
     conversion_module = available_targets[conversion_defn.export_format]
-    conversion_func = getattr(conversion_module, "from_era5ss")
+    conversion_func = getattr(conversion_module, "from_era5")
     if conversion_func is None:
         raise Exception(
             "The module describing conversion to the "
@@ -57,8 +56,17 @@ def export(ds_forcing, output_filepath, conversion_defn):
 
 
 def export_for_target(ds_forcing, target_name, root_data_path=DEFAULT_ROOT_DATA_PATH):
+    """
+    Export the forcing `ds_forcing` into `root_data_path` by applying
+    conversion identified by `target_name`
+    """
+    if "name" not in ds_forcing.attrs:
+        raise Exception("To be able to export a forcing to file its `name` attribute"
+                        " must be set.")
+
     conversion_defn = load_conversion_defn(
-        root_data_path=root_data_path, conversion_name=target_name
+        root_data_path=root_data_path, forcing_name=ds_forcing.name,
+        target_name=target_name
     )
     output_filepath = build_forcing_data_path(
         root_data_path=root_data_path,

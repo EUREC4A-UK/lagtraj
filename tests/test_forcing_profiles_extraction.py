@@ -15,14 +15,16 @@ from lagtraj.utils import validation
         ("regression", "local"),
     ],
 )
+@pytest.mark.parametrize("target_name", [None, "lagtraj://kpt", "lagtraj://dephy"])
 def test_create_forcing_linear_trajectory(
     ds_domain_test,
     ds_trajectory_linear,
     gradient_method,
     advection_velocity_sampling_method,
+    target_name,
 ):
     # just use five timesteps to make the tests execute faster
-    ds_traj = ds_trajectory_linear.isel(time=slice(0, 5))
+    ds_traj = ds_trajectory_linear.isel(time=slice(0, 2))
     ds_domain = ds_domain_test
 
     levels_definition = ForcingLevelsDefinition(
@@ -44,3 +46,12 @@ def test_create_forcing_linear_trajectory(
 
     validation.validate_forcing_profiles(ds_forcing)
     validation.check_for_ncview_warnings(ds=ds_forcing)
+
+    # to enable export to file of a forcing we much give it a name
+    ds_forcing.attrs['name'] = "test_forcing"
+    if target_name is not None:
+        lagtraj.forcings.conversion.process.export_for_target(
+            ds_forcing=ds_forcing, target_name=target_name,
+        )
+    else:
+        raise NotImplementedError

@@ -1,0 +1,11 @@
+trajectory_type : lagrangian
+version         : 1.0.0
+velocity_method : single_pressure_level
+velocity_method_pressure: 95000.
+domain          : lagtraj://eurec4a_circle
+lat_origin      : 13.3
+lon_origin      : -57.717
+datetime_origin : "2020-02-02T12:00"
+backward_duration : PT3H
+forward_duration : PT1H
+timestep        : domain_data  # or for example PT1H

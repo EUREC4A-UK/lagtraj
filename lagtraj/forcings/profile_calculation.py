@@ -54,7 +54,13 @@ FINAL_VARS = ["u_g", "v_g"]
 
 ForcingSamplingDefinition = namedtuple(
     "ForcingSamplingDefinition",
-    ["gradient_method", "averaging_width", "time_sampling_method", "mask"],
+    [
+        "gradient_method",
+        "advection_velocity_sampling_method",
+        "averaging_width",
+        "time_sampling_method",
+        "mask",
+    ],
 )
 
 
@@ -79,7 +85,9 @@ def _build_domain_profile(da_field, method="single_point", **kwargs):
         raise NotImplementedError(method)
 
 
-def compute_adv_profile(ds_profile, da_domain, gradient_method):
+def compute_adv_profile(
+    ds_profile, da_domain, gradient_method, advection_velocity_sampling_method
+):
     """
     Compute the horizontal advective tendency profile and reference profile for
     a field `da_domain` (named `phi` here) for a point on trajectory (defined
@@ -102,9 +110,16 @@ def compute_adv_profile(ds_profile, da_domain, gradient_method):
     # compute the relative velocities (`_local` being the velocities
     # interpolated to the trajectory (lat, lon) and `_traj` being the velocity
     # of the trajectory itself)
-    da_u_rel = ds_profile.u_local - ds_profile.u_traj
-    da_v_rel = ds_profile.v_local - ds_profile.v_traj
-
+    if advection_velocity_sampling_method == "domain_mean":
+        da_u_rel = ds_profile.u_mean - ds_profile.u_traj
+        da_v_rel = ds_profile.v_mean - ds_profile.v_traj
+    elif advection_velocity_sampling_method == "local":
+        da_u_rel = ds_profile.u_local - ds_profile.u_traj
+        da_v_rel = ds_profile.v_local - ds_profile.v_traj
+    else:
+        raise NotImplementedError(
+            f"Velocity advection method `{advection_velocity_sampling_method}` not implemented"
+        )
     # dphi/dt = - dphi/dx * u - dphi/dy * v
     da_dphidt = -da_dphidx * da_u_rel - da_dphidy * da_v_rel
 
@@ -156,8 +171,6 @@ def _construct_subdomain(
     ds_subdomain["mask"] = da_mask
     # units will be requested whe calculating mean and local values
     ds_subdomain["mask"].attrs["units"] = "(0 - 1)"
-    ds_subdomain = ds_subdomain.where(ds_subdomain.mask, other=np.nan)
-    ds_subdomain.attrs["data_source"] = ds_domain.attrs.get("data_source")
 
     # TODO: this interpolates all domain variables to height levels, but we
     # should only interpolate the variables necessary to produce the requested
@@ -226,6 +239,27 @@ def calculate_timestep(ds_profile_posn, ds_domain, sampling_method):
     # required when calculating the representative vertical profile and
     # horizontal gradients
     ds_ref_pt = ds_profile_posn[["lat", "lon", "time"]]
+
+    # sjboeing: I am not quite sure why a mask is needed here
+    # There are 2 loops below, the first is for 'local' variables
+    # where no filtering of data is applied (so when a trajectory
+    # crosses an island and the mask is set to 'ocean only' you
+    # will still get data. The second loop is for domain averaged data.
+    # where a mask is applied if specified.
+
+    ds_subdomain = ds_subdomain.where(True, other=np.nan)
+
+    for v in ds_subdomain.data_vars:
+        da_field = ds_subdomain[v]
+        da_v__local = da_field.squeeze().interp(ds_ref_pt)
+        da_v__local.attrs["long_name"] = f"trajectory-centered {da_field.long_name}"
+        da_v__local.attrs["units"] = da_field.units
+        ds_profile[f"{v}_local"] = da_v__local
+
+    # Second loop, with masking
+
+    ds_subdomain = ds_subdomain.where(ds_subdomain.mask, other=np.nan)
+
     for v in ds_subdomain.data_vars:
         da_field = ds_subdomain[v]
         # have to provide `dtype` kwarg otherwise `bottleneck` might use
@@ -236,17 +270,13 @@ def calculate_timestep(ds_profile_posn, ds_domain, sampling_method):
         da_v__mean.attrs["long_name"] = f"sampling-domain mean {da_field.long_name}"
         ds_profile[f"{v}_mean"] = da_v__mean
 
-        da_v__local = da_field.squeeze().interp(ds_ref_pt)
-        da_v__local.attrs["long_name"] = f"trajectory-centered {da_field.long_name}"
-        da_v__local.attrs["units"] = da_field.units
-        ds_profile[f"{v}_local"] = da_v__local
-
     for v in FORCING_VARS:
         da_subdomain = ds_subdomain[v]
         da_adv_profile, da_dvdx, da_dvdy = compute_adv_profile(
             da_domain=da_subdomain,
             ds_profile=ds_profile,
             gradient_method=sampling_method.gradient_method,
+            advection_velocity_sampling_method=sampling_method.advection_velocity_sampling_method,
         )
         ds_profile[f"d{v}dt_adv"] = da_adv_profile
         ds_profile[f"d{v}dx"] = da_dvdx

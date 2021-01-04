@@ -7,10 +7,11 @@ from pathlib import Path
 
 import netCDF4
 import yaml
+import requests
 
 from .... import utils
 from .cdsapi_request import RequestFetchCDSClient
-from . import FILENAME_FORMAT
+from . import FILENAME_FORMAT, VERSION_FILENAME
 
 DATA_REQUESTS_FILENAME = "data_requests.yaml"
 DATE_FORMAT = "%Y-%m-%d"
@@ -19,11 +20,13 @@ REPOSITORY_NAME = "reanalysis-era5-complete"
 
 
 def download_data(
-    path, t_start, t_end, bbox, latlon_sampling, overwrite_existing=False
+    path, t_start, t_end, bbox, latlon_sampling, version, overwrite_existing=False
 ):
 
-    dl_queries = _build_queries(
-        t_start=t_start, t_end=t_end, bbox=bbox, latlon_sampling=latlon_sampling
+    dl_queries = list(
+        _build_queries(
+            t_start=t_start, t_end=t_end, bbox=bbox, latlon_sampling=latlon_sampling
+        )
     )
 
     c = RequestFetchCDSClient()
@@ -52,7 +55,13 @@ def download_data(
                 file_path.unlink()
 
         if download_id in download_requests:
-            if download_requests[download_id]["query_hash"] == query_hash:
+            download_request = download_requests[download_id]
+            has_valid_args = download_request["query_hash"] == query_hash
+            request_id = download_request["request_id"]
+
+            if has_valid_args and _request_exists(request_id=request_id, c=c):
+                # TODO: unqueue invalid requests here so that the server isn't
+                # working on unecessary requests
                 should_make_request = False
             else:
                 del download_requests[download_id]
@@ -73,7 +82,7 @@ def download_data(
         with open(path / DATA_REQUESTS_FILENAME, "w") as fh:
             fh.write(yaml.dump(download_requests))
 
-    files_to_download = _get_files_to_download(path=path, c=c, debug=True)
+    files_to_download = _get_files(path=path, c=c, debug=True, with_status="completed")
 
     if len(files_to_download) > 0:
         print("Downloading files which are ready...")
@@ -83,11 +92,28 @@ def download_data(
             query_hash = request_details["query_hash"]
 
             Path(file_path).parent.mkdir(exist_ok=True, parents=True)
-            c.download_data_by_request(request_id=request_id, target=file_path)
-            _fingerprint_downloaded_file(query_hash=query_hash, file_path=file_path)
-
+            try:
+                c.download_data_by_request(request_id=request_id, target=file_path)
+                _fingerprint_downloaded_file(query_hash=query_hash, file_path=file_path)
+            except requests.exceptions.HTTPError as ex:
+                if ex.response.status_code == 404:
+                    print(
+                        f"Request {request_details['request_id']} wasn't found"
+                        " on the CDS backend, it has probably expired."
+                        " Re-requesting..."
+                    )
+                    # delete the stored request and re-request the data
+                    query_kwargs = dict(dl_queries)[Path(file_path).name]
+                    request_id = c.queue_data_request(
+                        repository_name=REPOSITORY_NAME, query_kwargs=query_kwargs
+                    )
+                    assert request_id is not None
+                    download_requests[download_id] = dict(
+                        request_id=request_id, query_hash=query_hash
+                    )
+                else:
+                    raise
             del download_requests[file_path]
-
     # save download requets again now we've downloaded the files that were
     # ready
     if len(download_requests) > 0:
@@ -97,15 +123,28 @@ def download_data(
         data_requests_file = Path(path / DATA_REQUESTS_FILENAME)
         if data_requests_file.exists():
             data_requests_file.unlink()
+
+            version_filename = Path(path) / VERSION_FILENAME
+            with open(version_filename, "w") as fh:
+                fh.write(version)
+
         print("All files downloaded!")
 
 
 def all_data_is_downloaded(path):
     c = RequestFetchCDSClient()
-    return len(_get_files_to_download(path=path, c=c)) == 0
+    return len(_get_files(path=path, c=c, with_status=["queued", "running"])) == 0
 
 
-def _get_files_to_download(path, c, debug=False):
+def _request_exists(request_id, c):
+    try:
+        c.get_request_status(request_id)
+        return True
+    except c.RequestNotFoundException:
+        return False
+
+
+def _get_files(path, c, debug=False, with_status=None):
     meta_filename = path / DATA_REQUESTS_FILENAME
     if not meta_filename.exists():
         return []
@@ -113,7 +152,7 @@ def _get_files_to_download(path, c, debug=False):
     with open(meta_filename, "r") as fh:
         download_requests = yaml.load(fh, Loader=yaml.FullLoader)
 
-    files_to_download = []
+    files = []
     if len(download_requests) > 0:
         if debug:
             print("Status on current data requests:")
@@ -123,9 +162,12 @@ def _get_files_to_download(path, c, debug=False):
             if debug:
                 print(" {}:\n\t{} ({})".format(file_path, status, request_id))
 
-            if status == "completed":
-                files_to_download.append(file_path)
-    return files_to_download
+            if with_status is not None:
+                if status == with_status or status in with_status:
+                    files.append(file_path)
+            else:
+                files.append(file_path)
+    return files
 
 
 def _data_valid(file_path, query_hash):
@@ -212,10 +254,6 @@ def _build_query(model_run_type, level_type, date, bbox, latlon_sampling):
         )
     else:
         raise NotImplementedError(model_run_type, level_type)
-
-
-def _get_query_status(request_id):
-    return "TOFIX"
 
 
 def _fingerprint_downloaded_file(query_hash, file_path):

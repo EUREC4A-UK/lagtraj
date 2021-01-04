@@ -1,12 +1,12 @@
 import numpy as np
 
-from .. import interpolation
-from ...domain import interpolate_to_height_levels
+from ...utils.interpolation import methods as interpolation_methods
+from ...domain import interpolate_to_height_levels, interpolate_to_pressure_levels
 
 
 def weighted_velocity(ds_column, pres_cutoff_start, pres_cutoff_end):
     """Weighted velocity: needs more work"""
-    height_factor = interpolation.cos_transition(
+    height_factor = interpolation_methods.cos_transition(
         ds_column["p_f"][:, 1:, :, :].values, pres_cutoff_start, pres_cutoff_end
     )
     weights = (
@@ -27,6 +27,13 @@ def velocity_at_height(ds_column, height):
     return np.mean(ds_on_height_level["u"]), np.mean(ds_on_height_level["v"])
 
 
+def velocity_at_pressure(ds_column, pressure):
+    """Velocit at one height: needs more work"""
+    ds_on_pressure_level = interpolate_to_pressure_levels(ds_column, pressure)
+    # For a single colum, data dimensions are all 1
+    return np.mean(ds_on_pressure_level["u"]), np.mean(ds_on_pressure_level["v"])
+
+
 def estimate_horizontal_velocities(ds_column, method, **kwargs):
     """Estimate the zonal and meridonal winds using a specific method"""
     if method == "lower_troposphere_humidity_weighted":
@@ -45,9 +52,13 @@ def estimate_horizontal_velocities(ds_column, method, **kwargs):
                 " `height` kwarg is required"
             )
         u_traj, v_traj = velocity_at_height(ds_column, **kwargs)
-    elif method == "column_mean":
-        u_traj = np.float64(ds_column.u.mean())
-        v_traj = np.float64(ds_column.v.mean())
+    elif method == "single_pressure_level":
+        if "pressure" not in kwargs:
+            raise Exception(
+                f"To use the `{method}` velocity method the"
+                " `pressure` kwarg is required"
+            )
+        u_traj, v_traj = velocity_at_pressure(ds_column, **kwargs)
     else:
         raise NotImplementedError(
             f"`{method}` trajectory velocity method" " not implemented"

@@ -5,6 +5,7 @@
 lagtraj/utils/*.html
 __pycache__/
 
-data/
+# `data` instead of `data/` so that we can ignore symlinks too
+data
 lagtraj.testdata.tar.gz
 .DS_Store

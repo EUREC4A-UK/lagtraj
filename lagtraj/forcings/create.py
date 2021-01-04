@@ -1,10 +1,10 @@
-import xarray as xr
-from tqdm import tqdm
 from pathlib import Path
+from tqdm import tqdm
+import xarray as xr
 
 from .. import DEFAULT_ROOT_DATA_PATH
 from . import profile_calculation, load, build_forcing_data_path
-from .utils.levels import make_levels
+from ..utils.interpolation.levels import make_levels
 from ..utils import optional_debugging, validation
 from ..domain.load import load_data as load_domain_data
 from ..trajectory.load import load_data as load_trajectory_data
@@ -96,7 +96,7 @@ def make_forcing(ds_trajectory, ds_domain, levels_definition, sampling_method):
 def export(file_path, ds_forcing, format):
     if format != "dummy_netcdf":
         raise NotImplementedError(format)
-    # TODO: add hightune format export here
+    # TODO: add dephy format export here
 
     Path(file_path).parent.mkdir(parents=True, exist_ok=True)
     validation.validate_forcing_profiles(ds_forcing_profiles=ds_forcing)
@@ -120,9 +120,10 @@ def main():
         root_data_path=args.data_path, forcing_name=args.forcing
     )
 
-    ds_domain = load_domain_data(
-        root_data_path=args.data_path, name=forcing_defn.domain
-    )
+    with optional_debugging(args.debug):
+        ds_domain = load_domain_data(
+            root_data_path=args.data_path, name=forcing_defn.domain
+        )
     try:
         ds_trajectory = load_trajectory_data(
             root_data_path=args.data_path, name=forcing_defn.trajectory
@@ -143,15 +144,16 @@ def main():
             sampling_method=forcing_defn.sampling,
         )
 
-    ds_forcing.attrs.update(ds_domain.attrs)
-    attr_dict = dict(
-        levels_definition=forcing_defn.levels,
-        ds_domain=ds_domain,
-        ds_trajectory=ds_trajectory,
-        sampling_method=forcing_defn.sampling,
-        trajectory_name=forcing_defn.trajectory,
+    ds_forcing["origin_lon"] = ds_trajectory["origin_lon"]
+    ds_forcing["origin_lat"] = ds_trajectory["origin_lat"]
+    ds_forcing["origin_datetime"] = ds_trajectory["origin_datetime"]
+
+    # create the serialised attributes from the domai, trajectory and forcing
+    # input definition
+    forcing_attrs = create_attributes_dictionary(
+        forcing_defn, domain=ds_domain, trajectory=ds_trajectory,
     )
-    ds_forcing.attrs.update(create_attributes_dictionary(attr_dict))
+    ds_forcing.attrs.update(forcing_attrs)
     fix_units(ds_forcing)
     output_file_path = build_forcing_data_path(
         root_data_path=args.data_path, forcing_name=forcing_defn.name

@@ -3,6 +3,9 @@ from cdsapi.api import Result
 
 
 class RequestFetchCDSClient(cdsapi.Client):
+    class RequestNotFoundException(Exception):
+        pass
+
     """
     Wraps CDS api so that we can submit a request, get the request id and then
     later query the status or download data based on a request ID.
@@ -42,4 +45,10 @@ class RequestFetchCDSClient(cdsapi.Client):
 
     def get_request_status(self, request_id):
         reply = self._get_request_status(request_id=request_id)
-        return reply["state"]
+        if not "state" in reply:
+            if reply["message"] == "Not found":
+                raise self.RequestNotFoundException
+            else:
+                raise NotImplementedError(reply)
+        else:
+            return reply["state"]

@@ -1,11 +1,13 @@
 import xarray as xr
 import numpy as np
 
+from pathlib import Path
 import functools
 import warnings
 
-from . import FILENAME_FORMAT
+from . import FILENAME_FORMAT, VERSION_FILENAME
 from .utils import add_era5_global_attributes
+from .. import MissingDomainData
 
 MODEL_RUN_TYPES = ["an", "fc"]  # analysis and forecast runs
 LEVEL_TYPES = ["model", "single"]  # need model and surface data
@@ -40,7 +42,13 @@ def _find_datasets(data_path):
                 model_run_type=model_run_type, level_type=level_type, date="*"
             )
 
-            files = data_path.glob(filename_format)
+            files = list(data_path.glob(filename_format))
+
+            if len(files) == 0:
+                raise MissingDomainData(
+                    f"No files for {model_run_type} model run {level_type} "
+                    f"level were found in {data_path}."
+                )
 
             ds_ = xr.open_mfdataset(files, combine="by_coords")
             # z needs to be dropped to prevent duplicity, lnsp is simply
@@ -185,7 +193,9 @@ class ERA5DataSet(object):
                     }
             datasets_slices.append(ds_v_slice)
 
-        return xr.merge(datasets_slices, compat="override").load()
+        ds_ = xr.merge(datasets_slices, compat="override").load()
+        ds_.attrs["data_source"] = "era5"
+        return ds_
 
     def interp(self, kwargs, method="linear", **interp_to):
         """
@@ -257,7 +267,9 @@ class ERA5DataSet(object):
         extra_dims = list(set(interp_to.keys()).difference(ds_slice.dims))
         for d in extra_dims:
             del interp_to[d]
-        return ds_slice.interp(**interp_to, kwargs=kwargs, method=method).load()
+        ds_ = ds_slice.interp(**interp_to, kwargs=kwargs, method=method).load()
+        ds_.attrs["data_source"] = "era5"
+        return ds_
 
 
 def _load_naive(data_path):
@@ -277,4 +289,12 @@ def load_data(data_path, use_lazy_loading=False):
     else:
         ds = ERA5DataSet(data_path)
     add_era5_global_attributes(ds)
+
+    version_filename = Path(data_path) / VERSION_FILENAME
+    if version_filename.exists():
+        version = open(version_filename).read().strip()
+    else:
+        version = "unversioned"
+    ds.attrs["version"] = version
+
     return ds

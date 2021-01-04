@@ -54,8 +54,14 @@ def create_trajectory(origin, trajectory_type, da_times, **kwargs):
         )
     else:
         raise NotImplementedError(f"`{trajectory_type}` trajectory type not available")
-    ds_traj.attrs["trajectory_type"] = trajectory_type
-    ds_traj.attrs.update(create_attributes_dictionary(kwargs))
+
+    # before we make the attributes rename domain so that it isn't called
+    # `ds_domain` in the attributes
+    if "ds_domain" in kwargs:
+        kwargs["domain"] = kwargs.pop("ds_domain")
+    ds_traj.attrs.update(
+        create_attributes_dictionary(trajectory_type=trajectory_type, **kwargs)
+    )
     return ds_traj
 
 
@@ -107,17 +113,15 @@ def cli(data_path, trajectory_name):
         ds_domain = None
 
     ds_trajectory = create_trajectory(**kwargs)
-    if ds_domain is not None:
-        ds_trajectory.attrs.update(ds_domain.attrs)
 
-    ds_trajectory.attrs["name"] = trajectory_name
-    ds_trajectory.attrs["domain_name"] = traj_definition.domain
-    for k, v in traj_definition.extra_kwargs.items():
-        if type(v) == dict:
-            for k_, v_ in v.items():
-                ds_trajectory.attrs[f"{k}_{k_}"] = v_
-        else:
-            ds_trajectory.attrs[k] = str(v)
+    # store all the parameters of how this trajectory was created into the
+    # attributes of the dataset
+    configuration = dict(name=trajectory_name)
+    if ds_domain is not None:
+        configuration["domain"] = ds_domain.attrs
+    ds_trajectory.attrs.update(
+        create_attributes_dictionary(traj_definition, **configuration)
+    )
 
     trajectory_data_path = build_data_path(
         root_data_path=data_path, trajectory_name=traj_definition.name
@@ -278,7 +282,7 @@ def _create_extrapolated_trajectory(origin, da_times, extrapolation_func):
         else:
             raise Exception
 
-        for t in tqdm.tqdm(da_integrate_times):
+        for t in tqdm.tqdm(da_integrate_times, desc=dir):
             ds_prev_posn = points[-1]
             dt = _calculate_seconds(t - ds_prev_posn.time)
             if int(dt) == 0:

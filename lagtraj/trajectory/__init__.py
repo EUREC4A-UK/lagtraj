@@ -16,21 +16,33 @@ TrajectoryDefinition = namedtuple(
 
 INPUT_REQUIRED_FIELDS = {
     "trajectory_type": ["linear", "eulerian", "lagrangian"],
-    "domain": str,
+    # domain should only be given when creating a lagrangian trajectory
+    "domain": dict(requires=dict(trajectory_type="lagrangian"), choices=str),
     "lat_origin": float,
     "lon_origin": float,
     "datetime_origin": isodate.parse_datetime,
     "forward_duration|backward_duration": isodate.parse_duration,
     "timestep": ("domain_data", isodate.parse_duration),
-    "u_vel": [None, float],  # TODO: remove when velocity defn is improved
-    "v_vel": [None, float],  # TODO: remove when velocity defn is imporved
-    "velocity_method": [
-        None,
-        "lower_troposphere_humidity_weighted",
-        "single_height_level",
-        "column_mean",
-    ],
-    "velocity_method_height": [None, float],
+    # only linear trajectories need to have their velocity prescribed
+    "u_vel": dict(requires=dict(trajectory_type="linear"), choices=float),
+    "v_vel": dict(requires=dict(trajectory_type="linear"), choices=float),
+    # velocity method is only relevant when making a lagrangian trajectories
+    "velocity_method": dict(
+        requires=dict(trajectory_type="lagrangian"),
+        choices=[
+            "single_height_level",
+            "single_pressure_level",
+            "lower_troposphere_humidity_weighted"
+        ],
+    ),
+    "velocity_method_height": dict(
+        requires=dict(velocity_method="single_height_level"),
+        choices=float,
+    ),
+    "velocity_method_pressure": dict(
+        requires=dict(velocity_method="single_pressure_level"),
+        choices=float,
+    ),
 }
 
 

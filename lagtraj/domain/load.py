@@ -1,6 +1,7 @@
 from ..input_definitions import load
 from . import INPUT_REQUIRED_FIELDS, build_domain_data_path
 from .sources import era5
+from ..input_definitions.examples import LAGTRAJ_EXAMPLES_PATH_PREFIX
 
 
 def load_definition(domain_name, data_path):
@@ -38,9 +39,13 @@ def load_data(root_data_path, name):
 
     if ds.version != domain_def["version"]:
         raise Exception(
-            "The domain data in `{data_path}` doesn't match the version"
-            " stored in the data definition for `{name}`. Please delete"
+            f"The domain data in `{data_path}` doesn't match the version"
+            f" stored in the data definition for `{name}` (`{ds.version}` "
+            f"!= `{domain_def['version']}`). Please delete"
             " the domain data and re-download."
         )
+
+    # need to keep track of the name of this domain dataset
+    ds.attrs["name"] = name
 
     return ds

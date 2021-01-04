@@ -31,7 +31,7 @@ def load_definition(root_data_path, name):
     )
 
     extra_kwargs = {}
-    if "u_vel" in params or "v_vel" in params:
+    if params.get("u_vel") is not None or params.get("v_vel") is not None:
         if not ("u_vel" in params and "v_vel" in params):
             raise Exception(
                 "Both `u_vel` and `v_vel` should be defined when"
@@ -39,15 +39,15 @@ def load_definition(root_data_path, name):
             )
         extra_kwargs["U"] = (params["u_vel"], params["v_vel"])
 
-    if "velocity_method" in params:
+    if params.get("velocity_method") is not None:
         extra_kwargs["velocity_method"] = params["velocity_method"]
 
-    if "velocity_method_height" in params:
+    if params.get("velocity_method_height") is not None:
         extra_kwargs["velocity_method_kwargs"] = dict(
             height=params["velocity_method_height"]
         )
 
-    if "velocity_method_pressure" in params:
+    if params.get("velocity_method_pressure") is not None:
         extra_kwargs["velocity_method_kwargs"] = dict(
             pressure=params["velocity_method_pressure"]
         )

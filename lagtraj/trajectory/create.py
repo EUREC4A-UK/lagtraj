@@ -54,6 +54,11 @@ def create_trajectory(origin, trajectory_type, da_times, **kwargs):
         )
     else:
         raise NotImplementedError(f"`{trajectory_type}` trajectory type not available")
+
+    # before we make the attributes rename domain so that it isn't called
+    # `ds_domain` in the attributes
+    if "ds_domain" in kwargs:
+        kwargs["domain"] = kwargs.pop("ds_domain")
     ds_traj.attrs.update(
         create_attributes_dictionary(trajectory_type=trajectory_type, **kwargs)
     )

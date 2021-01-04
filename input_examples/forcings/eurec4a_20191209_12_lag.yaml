@@ -1,6 +1,6 @@
-trajectory      : eurec4a_20191209_12_lag
-version         : 1.0.0
-domain          : eurec4a_circle_eul
+trajectory      : lagtraj://eurec4a_20191209_12_lag
+version         : 1.0.1
+domain          : lagtraj://eurec4a_circle
 gradient_method : regression
 advection_velocity_sampling_method : domain_mean
 averaging_width : 2.0

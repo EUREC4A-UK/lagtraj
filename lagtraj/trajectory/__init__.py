@@ -26,7 +26,7 @@ INPUT_REQUIRED_FIELDS = {
     # only linear trajectories need to have their velocity prescribed
     "u_vel": dict(requires=dict(trajectory_type="linear"), choices=float),
     "v_vel": dict(requires=dict(trajectory_type="linear"), choices=float),
-    # velocity method is only relevant when making a lagrangian trajectories
+    # velocity method is only relevant when making lagrangian trajectories
     "velocity_method": dict(
         requires=dict(trajectory_type="lagrangian"),
         choices=[

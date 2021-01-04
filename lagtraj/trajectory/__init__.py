@@ -5,6 +5,7 @@ from .. import build_data_path as build_data_path_global
 from ..input_definitions import InvalidInputDefinition
 from ..input_definitions.examples import LAGTRAJ_EXAMPLES_PATH_PREFIX
 
+
 deps = dict(
     u_vel=dict(
         requires=dict(trajectory_type="eulerian",),

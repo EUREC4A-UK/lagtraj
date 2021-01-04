@@ -27,6 +27,10 @@ ForcingDefinition = namedtuple(
 
 
 def build_forcing_data_path(root_data_path, forcing_name, target_name=None):
+    """
+    Create the output path for a forcing with name `forcing_name` in the path
+    `root_data_path`, optionally targetting a model by name `target_name`
+    """
     # we need to strip the `lagtraj://` prefix before we construct the path
     # since the data is stored locally
     if forcing_name.startswith(LAGTRAJ_EXAMPLES_PATH_PREFIX):

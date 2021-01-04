@@ -1,4 +1,9 @@
-from ...input_definitions import load
+import shutil
+
+
+from ...input_definitions import (
+    load, build_input_definition_path, examples as input_examples
+)
 from . import (
     INPUT_REQUIRED_FIELDS,
     ConversionDefinition,
@@ -9,11 +14,52 @@ from . import (
 )
 
 
-def load_definition(root_data_path, forcing_name, conversion_name):
+def load_definition(root_data_path, forcing_name, conversion_name, target_name):
+    conversion_defn_path = build_input_definition_path(
+        root_data_path=root_data_path,
+        input_name=forcing_name,
+        input_type="forcing",
+        input_subtype=target_name,
+    )
+
+    # first we look if there's a conversion defined specifically for
+    # targeting a forcing with name `forcing_name` to the model with name
+    # `target_name` (e.g. kpt or dephy).  If not we try to see if there's a
+    # default conversion-file we can make a copy of and use
+    if not conversion_defn_path.exists():
+        default_conversion_defn_path = build_input_definition_path(
+            root_data_path=root_data_path,
+            input_name=target_name,
+            input_type="forcing_conversions",
+        )
+        if not default_conversion_defn_path.exists():
+            available_default_conversions = input_examples.get_available(
+                input_types="forcing_conversions"
+            )
+            s_avail = ", ".join(available_default_conversions.keys())
+            raise Exception(
+                f"Couldn't find a forcing conversion file in `{conversion_defn_path}`"
+                f" for converting the `{forcing_name}` forcing to target the"
+                f" `{target_name}` model, and a default input-definition for"
+                f" how to target the `{target_name}` isn't included currently"
+                f" with lagtraj. Please use one of the currently bundled"
+                f" conversions included with lagtraj ({s_avail})"
+                f" by targeting one of those models."
+            )
+        else:
+            shutil.copy(default_conversion_defn_path, conversion_defn_path)
+            print(
+                f"Parameters for how to target the `{target_name}` model for the "
+                f"`{forcing_name}` forcing weren't found in `{conversion_defn_path}` "
+                f"and so default parameters for `{target_name}` were copied to "
+                f"{conversion_defn_path}. Please change these parameter as needed "
+                "and rerun the conversion."
+            )
     conversion_params = load.load_definition(
         root_data_path=root_data_path,
-        input_name=conversion_name,
-        input_type="conversion",
+        input_name=forcing_name,
+        input_type="forcing",
+        input_subtype=target_name,
         required_fields=INPUT_REQUIRED_FIELDS,
     )
 

@@ -26,7 +26,7 @@ def main():
     except FileNotFoundError:
         raise Exception(
             f"The output file for forcing `{args.forcing}`"
-            " couldn't be found. Please create the trajectory by running: \n"
+            " couldn't be found. Please create the forcing by running: \n"
             f"    python -m lagtraj.forcings.create {args.forcing}\n"
             "and then run the forcing creation again"
         )

@@ -164,8 +164,10 @@ def main():
     if output_file_path.exists():
         ds_forcing = xr.open_dataset(output_file_path)
         if args.target_model is None:
-            raise Exception(f"A file already exists at the path `{output_file_path}`. "
-                            "Please delete this file and run the forcing creation again")
+            raise Exception(
+                f"A file already exists at the path `{output_file_path}`. "
+                "Please delete this file and run the forcing creation again"
+            )
         else:
             with optional_debugging(args.debug):
                 different_attrs = {}
@@ -176,21 +178,31 @@ def main():
                     elif ds_forcing.attrs[k] != v:
                         different_attrs[k] = (ds_forcing.attrs[k], v)
             if len(different_attrs) > 0 or len(missing_attrs) > 0:
-                diff_str = "\n".join([
-                    (f"{k}:\n\tfound: {different_attrs[k][0]}\n\texpected: {different_attrs[k][1]})")
-                    for k in different_attrs.keys()
-                ])
-                missing_str = "\n".join([
-                    (f"{k}: missing\n\texpected: {missing_attrs[k][1]})")
-                    for k in missing_attrs.keys()
-                ])
-                raise Exception(f"A forcing file already exists at the path `{output_file_path}`. "
-                                f"Applying the `{args.target_model}` conversion was halted "
-                                "because the following attributes of the file were different than "
-                                f"expected:\n{diff_str}\n{missing_str}")
+                diff_str = "\n".join(
+                    [
+                        (
+                            f"{k}:\n\tfound: {different_attrs[k][0]}\n\texpected: {different_attrs[k][1]})"
+                        )
+                        for k in different_attrs.keys()
+                    ]
+                )
+                missing_str = "\n".join(
+                    [
+                        (f"{k}: missing\n\texpected: {missing_attrs[k][1]})")
+                        for k in missing_attrs.keys()
+                    ]
+                )
+                raise Exception(
+                    f"A forcing file already exists at the path `{output_file_path}`. "
+                    f"Applying the `{args.target_model}` conversion was halted "
+                    "because the following attributes of the file were different than "
+                    f"expected:\n{diff_str}\n{missing_str}"
+                )
             else:
-                warnings.warn(f"Using existing forcing file `{output_file_path}` to convert to "
-                              f"`{args.target_model}` format.")
+                warnings.warn(
+                    f"Using existing forcing file `{output_file_path}` to convert to "
+                    f"`{args.target_model}` format."
+                )
 
     else:
         with optional_debugging(args.debug):
@@ -209,9 +221,14 @@ def main():
 
     if args.target_model is not None:
         conversion.export_for_target(
-            ds_forcing=ds_forcing, target_name=args.target_model, root_data_path=args.data_path)
+            ds_forcing=ds_forcing,
+            target_name=args.target_model,
+            root_data_path=args.data_path,
+        )
     else:
-        export(ds_forcing=ds_forcing, file_path=output_file_path, format=args.output_format)
+        export(
+            ds_forcing=ds_forcing, file_path=output_file_path, format=args.output_format
+        )
         print("Wrote forcing file to `{}`".format(output_file_path))
 
 

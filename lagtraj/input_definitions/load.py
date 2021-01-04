@@ -34,7 +34,9 @@ data
 """
 
 
-def load_definition(input_name, input_type, root_data_path, required_fields, input_subtype=None):
+def load_definition(
+    input_name, input_type, root_data_path, required_fields, input_subtype=None
+):
     params = None
     input_path = None
     requesting_lagtraj_bundled_input = input_name.startswith(

@@ -1,5 +1,7 @@
 from collections import namedtuple
-from ..utils.interpolation.levels import LevelsDefinition as ForcingLevelsDefinition  # noqa
+from ..utils.interpolation.levels import (
+    LevelsDefinition as ForcingLevelsDefinition,
+)  # noqa
 from .profile_calculation import ForcingSamplingDefinition  # noqa
 from .. import build_data_path
 from ..input_definitions.examples import LAGTRAJ_EXAMPLES_PATH_PREFIX

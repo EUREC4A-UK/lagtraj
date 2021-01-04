@@ -7,35 +7,28 @@ from ..input_definitions.examples import LAGTRAJ_EXAMPLES_PATH_PREFIX
 
 
 deps = dict(
-    u_vel=dict(
-        requires=dict(trajectory_type="eulerian",),
-        choices=float,
-    ),
-    v_vel=dict(
-        requires=dict(trajectory_type="eulerian",),
-        choices=float,
-    ),
+    u_vel=dict(requires=dict(trajectory_type="eulerian",), choices=float,),
+    v_vel=dict(requires=dict(trajectory_type="eulerian",), choices=float,),
     velocity_method=dict(
         requires=dict(trajectory_type="lagrangian"),
-        choices=["lower_troposphere_humidity_weighted",
+        choices=[
+            "lower_troposphere_humidity_weighted",
             "single_height_level",
             "single_pressure_level",
-        ]
+        ],
     ),
     velocity_method_height=dict(
         requires=dict(
-            trajectory_type="lagrangian",
-            velocity_method="single_height_level",
+            trajectory_type="lagrangian", velocity_method="single_height_level",
         ),
-        choices=float
+        choices=float,
     ),
     velocity_method_pressure=dict(
         requires=dict(
-            trajectory_type="lagrangian",
-            velocity_method="single_pressure_level",
+            trajectory_type="lagrangian", velocity_method="single_pressure_level",
         ),
-        choices=float
-    )
+        choices=float,
+    ),
 )
 
 
@@ -62,7 +55,7 @@ velocity_method_kwargs = dict(
     # or
     pressure=900.0,
     # or
-    U=[1.0, 1.0]
+    U=[1.0, 1.0],
 )
 
 
@@ -132,9 +125,7 @@ INPUT_REQUIRED_FIELDS = {
     "timestep": ("domain_data", isodate.parse_duration),
     "u_vel": _validate_velocity_param,
     "v_vel": _validate_velocity_param,
-    "velocity_method": [
-        None,
-    ],
+    "velocity_method": [None,],
     "velocity_method_height": [None, float],
     "velocity_method_pressure": [None, float],
 }

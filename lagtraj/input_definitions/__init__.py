@@ -5,7 +5,9 @@ import inspect
 from .. import build_data_path
 
 
-def build_input_definition_path(root_data_path, input_name, input_type, input_subtype=None):
+def build_input_definition_path(
+    root_data_path, input_name, input_type, input_subtype=None
+):
     data_path = build_data_path(root_data_path=root_data_path, data_type=input_type)
 
     if input_subtype is None:

@@ -42,16 +42,14 @@ INPUT_REQUIRED_FIELDS = {
         choices=[
             "single_height_level",
             "single_pressure_level",
-            "lower_troposphere_humidity_weighted"
+            "lower_troposphere_humidity_weighted",
         ],
     ),
     "velocity_method_height": dict(
-        requires=dict(velocity_method="single_height_level"),
-        choices=float,
+        requires=dict(velocity_method="single_height_level"), choices=float,
     ),
     "velocity_method_pressure": dict(
-        requires=dict(velocity_method="single_pressure_level"),
-        choices=float,
+        requires=dict(velocity_method="single_pressure_level"), choices=float,
     ),
 }
 

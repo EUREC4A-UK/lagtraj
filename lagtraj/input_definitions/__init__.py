@@ -40,7 +40,7 @@ def validate_input(input_params, required_fields):
         # choices if they pass
         if type(f_option) == dict:
             if "requires" in f_option and "choices" in f_option:
-                requirements = f_option['requires']
+                requirements = f_option["requires"]
                 satisfied_requirements = {}
                 for f_name_reqd, f_option_reqd in requirements.items():
                     try:
@@ -160,7 +160,7 @@ def validate_input(input_params, required_fields):
             if new_val is not None:
                 input_params[f_name] = new_val
             elif f_name in input_params:
-                del(input_params[f_name])
+                del input_params[f_name]
             checked_valid_fields.append(f_name)
 
     if "version" in input_params:

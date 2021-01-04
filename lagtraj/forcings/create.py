@@ -120,6 +120,9 @@ def main():
         root_data_path=args.data_path, forcing_name=args.forcing
     )
 
+    ds_domain = load_domain_data(
+        root_data_path=args.data_path, name=forcing_defn.domain
+    )
     try:
         ds_trajectory = load_trajectory_data(
             root_data_path=args.data_path, name=forcing_defn.trajectory
@@ -133,20 +136,12 @@ def main():
         )
 
     with optional_debugging(args.debug):
-        ds_domain = load_domain_data(
-            root_data_path=args.data_path, name=forcing_defn.domain
-        )
-
         ds_forcing = make_forcing(
             levels_definition=forcing_defn.levels,
             ds_domain=ds_domain,
             ds_trajectory=ds_trajectory,
             sampling_method=forcing_defn.sampling,
         )
-
-    output_file_path = build_forcing_data_path(
-        root_data_path=args.data_path, forcing_name=forcing_defn.name
-    )
 
     ds_forcing.attrs.update(ds_domain.attrs)
     attr_dict = dict(

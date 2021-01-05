@@ -48,7 +48,7 @@ def test_create_forcing_linear_trajectory(
     validation.check_for_ncview_warnings(ds=ds_forcing)
 
     # to enable export to file of a forcing we much give it a name
-    ds_forcing.attrs['name'] = "test_forcing"
+    ds_forcing.attrs["name"] = "test_forcing"
     if target_name is not None:
         lagtraj.forcings.conversion.process.export_for_target(
             ds_forcing=ds_forcing, target_name=target_name,

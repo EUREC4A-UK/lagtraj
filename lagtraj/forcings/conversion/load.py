@@ -3,7 +3,9 @@ import warnings
 
 
 from ...input_definitions import (
-    load, build_input_definition_path, examples as input_examples
+    load,
+    build_input_definition_path,
+    examples as input_examples,
 )
 from . import (
     INPUT_REQUIRED_FIELDS,
@@ -27,14 +29,14 @@ def _get_definition_parameters(root_data_path, forcing_name, target_name):
             root_data_path=root_data_path,
             input_name=forcing_name,
             input_type="forcing",
-            input_subtype=target_name
+            input_subtype=target_name,
         )
         conversion_defn = load.load_definition(
             root_data_path=root_data_path,
             input_name=target_name,
             input_type="forcing_conversion",
             required_fields=INPUT_REQUIRED_FIELDS,
-            expected_local_path=params_defn_expected_local_path
+            expected_local_path=params_defn_expected_local_path,
         )
         return conversion_defn
     else:
@@ -78,12 +80,11 @@ def _get_definition_parameters(root_data_path, forcing_name, target_name):
             )
 
 
-
 def load_definition(root_data_path, forcing_name, target_name):
     conversion_params = _get_definition_parameters(
         root_data_path=root_data_path,
         forcing_name=forcing_name,
-        target_name=target_name
+        target_name=target_name,
     )
 
     conversion_levels_definition = ConversionLevelsDefinition(

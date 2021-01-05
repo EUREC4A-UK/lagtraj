@@ -35,7 +35,11 @@ data
 
 
 def load_definition(
-    input_name, input_type, root_data_path, required_fields, input_subtype=None,
+    input_name,
+    input_type,
+    root_data_path,
+    required_fields,
+    input_subtype=None,
     expected_local_path=None,
 ):
     params = None
@@ -143,7 +147,8 @@ def load_definition(
             input_local_path = Path(expected_local_path)
         else:
             input_local_path = build_input_definition_path(
-                root_data_path=root_data_path, input_name=input_name,
+                root_data_path=root_data_path,
+                input_name=input_name,
                 input_type=input_type,
             )
 

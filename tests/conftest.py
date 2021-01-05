@@ -8,9 +8,7 @@ import pytest
 
 import lagtraj.domain.load
 
-TESTDATA_URL = (
-    "http://gws-access.jasmin.ac.uk/public/eurec4auk/testdata/lagtraj.testdata.v0.1.0.tar.gz"  # noqa
-)
+TESTDATA_URL = "http://gws-access.jasmin.ac.uk/public/eurec4auk/testdata/lagtraj.testdata.v0.1.0.tar.gz"  # noqa
 
 if os.environ.get("LAGTRAJ_TESTDATA_DIR", None):
     testdata_dir = Path(os.environ["LAGTRAJ_TESTDATA_DIR"])

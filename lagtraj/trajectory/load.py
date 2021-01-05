@@ -53,7 +53,8 @@ def load_definition(root_data_path, name):
         )
 
     return TrajectoryDefinition(
-        domain=params["domain"],
+        # domain name isn't required for all trajectory types
+        domain=params.get("domain"),
         origin=origin,
         duration=duration,
         type=params["trajectory_type"],

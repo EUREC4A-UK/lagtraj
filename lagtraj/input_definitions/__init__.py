@@ -1,5 +1,4 @@
 import semver
-import inspect
 
 
 from .. import build_data_path
@@ -26,41 +25,85 @@ def validate_input(input_params, required_fields):
     """
 
     def _check_field(f_name, f_option):
-        # allows for an optional parameter by putting `None` in the list of
-        # options
-        missing_allowed = type(f_option) in [list, tuple] and None in f_option
+        """
+        Validate an individual field with name `f_name` using the field
+        definition given by `f_option` in the `input_params` dictionary.
+        InvalidInputDefinition is raised if the value found in `input_params`
+        is invalid. The cleaned value is returned, if None is returned then the
+        value is optional and the user didn't provide a value (or they provided
+        `None`)
+        """
+        # to enable implementation of conditional fields a special dictionary
+        # with the fields `requires` and `choices` can be provided. `requires`
+        # indicate other validations that must pass and choices are the valid
+        # choices if they pass
+        if type(f_option) == dict:
+            if "requires" in f_option and "choices" in f_option:
+                requirements = f_option["requires"]
+                satisfied_requirements = {}
+                for f_name_reqd, f_option_reqd in requirements.items():
+                    try:
+                        res = _check_field(f_name=f_name_reqd, f_option=f_option_reqd)
+                        satisfied_requirements[f_name_reqd] = res
+                    except InvalidInputDefinition:
+                        break
 
-        if missing_allowed and f_name not in input_params:
-            pass
-        elif callable(f_option):
-            # check if the function is expecting the `input_params` argument which
-            # should contain the arguments the user has provided
-            try:
-                fn_parameters = inspect.signature(f_option).parameters
-            except ValueError:
-                fn_parameters = None
-
-            if fn_parameters is not None and "input_params" in fn_parameters:
-                return f_option(param_name=f_name, input_params=input_params)
+                if len(satisfied_requirements) == len(requirements):
+                    # all requirements satisfied, check the value provided
+                    return _check_field(f_name=f_name, f_option=f_option["choices"])
+                else:
+                    # the requirements for this conditional parameter haven't
+                    # been met and so the parameter shouldn't be set
+                    if input_params.get(f_name) is not None:
+                        raise InvalidInputDefinition(
+                            f"`{f_name}` shouldn't be set unless the following "
+                            f"requirements have been satisfied: `{requirements}`"
+                        )
+                    else:
+                        return None
             else:
-                return f_option(input_params[f_name])
-        elif f_name not in input_params:
+                raise NotImplementedError(
+                    "A parameter validation provided as a dictionary must contain "
+                    "the keys `requires` and `choices` to indicate the required "
+                    "values of other fields and the valid choices when that "
+                    "requirement is satisfied"
+                )
+
+        # Check for optional parameters (were a default value will
+        # otherwise be used). This accomplished by providing `None` in the list
+        # of options
+        missing_allowed = type(f_option) in [list, tuple] and None in f_option
+        if missing_allowed and f_name not in input_params:
+            return None
+
+        if f_name not in input_params:
             raise InvalidInputDefinition("Missing `{}` field".format(f_name))
-        elif type(f_option) == type and type(input_params[f_name]) != f_option:
+
+        if callable(f_option):
+            # the callable will provide the correct conversion and also ensure
+            # that the provided value has the correct type (otherwise we expect
+            # the callable to raise an error)
+            return f_option(input_params[f_name])
+
+        # here we check whether the parameter was prescribed to have a specific
+        # type and in that case whether the value provided has the correct type
+        if type(f_option) == type and type(input_params[f_name]) != f_option:
             raise InvalidInputDefinition(
                 "Field `{}` should have type {}, but has type `{}`".format(
                     f_name, f_option, type(input_params[f_name])
                 )
             )
-        elif (
-            type(f_option) == str
-            or type(f_option) == int
-            or type(f_option) == float
-            and input_params[f_name] == f_option
-        ):
-            # allows setting an option to be just a string
-            pass
-        elif type(f_option) == list or type(f_option) == tuple:
+
+        # Check if the value provided is exactly the same as given by
+        # `f_option`
+        same_type = isinstance(input_params[f_name], type(f_option))
+        same_value = input_params[f_name] == f_option
+        if same_type and same_value:
+            return f_option
+
+        # choices a given as a list or tuple, so we call `_check_field`
+        # recursively to see if one of the options fit
+        if type(f_option) == list or type(f_option) == tuple:
             f_options = f_option
             exceptions = []
             new_val = None
@@ -74,8 +117,8 @@ def validate_input(input_params, required_fields):
             else:
                 if new_val is not None:
                     return new_val
-        else:
-            raise NotImplementedError(f_name, f_option)
+
+        raise InvalidInputDefinition(f_name, f_option)
 
     checked_valid_fields = []
     for f_name, f_option in required_fields.items():
@@ -103,10 +146,8 @@ def validate_input(input_params, required_fields):
             new_val = _check_field(f_name, f_option)
             if new_val is not None:
                 input_params[f_name] = new_val
-            else:
-                if f_name not in input_params:
-                    # we need to set the default value `None` for any fields that are missing
-                    input_params[f_name] = new_val
+            elif f_name in input_params:
+                del input_params[f_name]
             checked_valid_fields.append(f_name)
 
     if "version" in input_params:

@@ -57,10 +57,12 @@ def export(ds_forcing, output_filepath, conversion_defn):
     return output_filepath
 
 
-def export_for_target(ds_forcing, target_name, root_data_path=DEFAULT_ROOT_DATA_PATH):
+def export_for_target(
+    ds_forcing, conversion_name, root_data_path=DEFAULT_ROOT_DATA_PATH
+):
     """
     Export the forcing `ds_forcing` into `root_data_path` by applying
-    conversion identified by `target_name`
+    conversion identified by `conversion_name`
     """
     if "name" not in ds_forcing.attrs:
         raise Exception(
@@ -71,12 +73,12 @@ def export_for_target(ds_forcing, target_name, root_data_path=DEFAULT_ROOT_DATA_
     conversion_defn = load_conversion_defn(
         root_data_path=root_data_path,
         forcing_name=ds_forcing.name,
-        target_name=target_name,
+        conversion_name=conversion_name,
     )
     output_filepath = build_forcing_data_path(
         root_data_path=root_data_path,
         forcing_name=ds_forcing.name,
-        target_name=target_name,
+        conversion_name=conversion_name,
     )
     return export(
         ds_forcing=ds_forcing,

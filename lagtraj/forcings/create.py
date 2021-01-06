@@ -202,7 +202,9 @@ def main(data_path, forcing_defn, target_model=None):
 
     if target_model is not None:
         converted_output_file_path = conversion.export_for_target(
-            ds_forcing=ds_forcing, target_name=target_model, root_data_path=data_path,
+            ds_forcing=ds_forcing,
+            conversion_name=target_model,
+            root_data_path=data_path,
         )
         print("Wrote converted forcing file to `{}`".format(converted_output_file_path))
 

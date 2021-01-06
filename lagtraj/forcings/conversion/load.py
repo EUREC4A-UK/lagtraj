@@ -1,11 +1,6 @@
-import shutil
-import warnings
-
-
 from ...input_definitions import (
     load,
     build_input_definition_path,
-    examples as input_examples,
 )
 from ...input_definitions.examples import LAGTRAJ_EXAMPLES_PATH_PREFIX
 from . import (
@@ -18,23 +13,23 @@ from . import (
 )
 
 
-def _get_definition_parameters(root_data_path, forcing_name, target_name):
+def _get_definition_parameters(root_data_path, forcing_name, conversion_name):
     # if the user has requested a conversion target with the `lagtraj://`
     # prefix then they are asking for the default parameters for targeting
-    # the `target_name` model. We will try to load that and then if
+    # the `conversion_name` model. We will try to load that and then if
     # successful copy this input definition (for the conversion
     # specifically) to their local path (in the folder with the forcing
     # input definition)
-    if target_name.startswith(LAGTRAJ_EXAMPLES_PATH_PREFIX):
+    if conversion_name.startswith(LAGTRAJ_EXAMPLES_PATH_PREFIX):
         params_defn_expected_local_path = build_input_definition_path(
             root_data_path=root_data_path,
             input_name=forcing_name,
             input_type="forcing",
-            input_subtype=target_name.replace(LAGTRAJ_EXAMPLES_PATH_PREFIX, ""),
+            input_subtype=conversion_name.replace(LAGTRAJ_EXAMPLES_PATH_PREFIX, ""),
         )
         conversion_defn = load.load_definition(
             root_data_path=root_data_path,
-            input_name=target_name,
+            input_name=conversion_name,
             input_type="forcing_conversion",
             required_fields=INPUT_REQUIRED_FIELDS,
             expected_local_path=params_defn_expected_local_path,
@@ -45,47 +40,16 @@ def _get_definition_parameters(root_data_path, forcing_name, target_name):
             root_data_path=root_data_path,
             input_name=forcing_name,
             input_type="forcing",
-            input_subtype=target_name,
+            input_subtype=conversion_name,
             required_fields=INPUT_REQUIRED_FIELDS,
         )
 
-    # first we look if there's a conversion defined specifically for
-    # targeting a forcing with name `forcing_name` to the model with name
-    # `target_name` (e.g. kpt or dephy).  If not we try to see if there's a
-    # default conversion-file we can make a copy of and use
-    if not conversion_defn_path.exists():
-        if not default_conversion_defn_path.exists():
-            available_default_conversions = input_examples.get_available(
-                input_types="forcing_conversions"
-            )
-            s_avail = ", ".join(available_default_conversions.keys())
-            raise Exception(
-                f"Couldn't find a forcing conversion file in"
-                f" `{conversion_defn_path}`"
-                f" for converting the `{forcing_name}` forcing to target the"
-                f" `{target_name}` model, and a default input-definition for"
-                f" how to target the `{target_name}` isn't included currently"
-                f" with lagtraj. Please use one of the currently bundled"
-                f" conversions included with lagtraj ({s_avail})"
-                f" by targeting one of those models."
-            )
-        else:
-            shutil.copy(default_conversion_defn_path, conversion_defn_path)
-            print(
-                f"Parameters for how to target the `{target_name}` model for the "
-                f"`{forcing_name}` forcing weren't found in "
-                f"`{conversion_defn_path}` "
-                f"and so default parameters for `{target_name}` were copied to "
-                f"{conversion_defn_path}. Please change these parameter as needed "
-                "and rerun the conversion."
-            )
 
-
-def load_definition(root_data_path, forcing_name, target_name):
+def load_definition(root_data_path, forcing_name, conversion_name):
     conversion_params = _get_definition_parameters(
         root_data_path=root_data_path,
         forcing_name=forcing_name,
-        target_name=target_name,
+        conversion_name=conversion_name,
     )
 
     conversion_levels_definition = ConversionLevelsDefinition(

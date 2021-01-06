@@ -1,5 +1,6 @@
 import datetime
 from pathlib import Path
+import warnings
 
 import xarray as xr
 import numpy as np
@@ -136,7 +137,7 @@ def _get_times_from_domain(trajectory_definition, root_data_path):
     if not download_complete(
         root_data_path=root_data_path, domain_name=trajectory_definition.domain
     ):
-        raise Exception(
+        warnings.warn(
             "Some of the data for the selected domain"
             f" ({trajectory_definition.domain}) hasn't been"
             " downloaded yet"

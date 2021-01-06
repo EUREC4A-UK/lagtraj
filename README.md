@@ -14,9 +14,8 @@ big for Lagrangian)
 
 2. Produce trajectory
 
-3. Extract forcing profiles along the trajectory
-
-4. Convert forcing to desired output format
+3. Extract forcing profiles along the trajectory (with optional conversion to
+   target a specific LES/GCM model)
 
 ## 0. Getting started
 
@@ -112,22 +111,74 @@ $> python -m lagtraj.trajectory.create lagtraj://eurec4a_20191209_12_lag
 
 ## 3. Producing forcing profiles
 
-```bash
-$> python -m lagtraj.forcing.create <forcing_name>
-```
-
-## 4. Convert forcing to desired output format
+To produce forcings you need to create a forcing definition in
+`data/forcings/<forcing_name>.yaml` and run
 
 ```bash
-$> python -m lagtraj.forcing.create <forcing_name> <conversion_specification>
+$> python -m lagtraj.forcing.create <forcing_name> [--convert <conversion_name>]
 ```
 
-e.g.
+Or use one of the forcing definitions included with `lagtraj` (e.g.
+`eurec4a_20200202_12_lag`)
 
 ```bash
-$>  python -m lagtraj.conversion.era5 eurec4a_20200202_12_lag lagtraj://eurec4a_dephy
-$>  python -m lagtraj.conversion.era5 eurec4a_20200202_12_lag lagtraj://eurec4a_kpt
+$> python -m lagtraj.forcing.create lagtraj://eurec4a_20200202_12_lag [--convert <conversion_name>]
 ```
+
+### Forcing profiles conversion (targeting a specific GCM/LES)
+
+When creating forcings it might be desirable to target a specific LES
+(Large-Eddy Simulation) model or GCM (Global Circulation Model) by
+converting the forcings to a specific format and setting parameters specific to
+the model being targeted. This can be achieved by using the `--output-format`
+flag and providing a `conversion_name`. `lagtraj` currently comes bundled with
+functionality to target the
+[KPT](https://www.lmd.jussieu.fr/~mpllmd/dephy2_forcages_communs/KPT_documentation.pdf)
+LES and
+[dephy](https://docs.google.com/document/d/118xP04jB9HO7Y2LqWk3HZpZ9n3CFujgzimLI7Ug8vO4)
+LES format.
+
+Conversion parameters are defined in a yaml-files similarly to how domain,
+trajectory and forcings definitions are stored, with one important difference:
+conversion definition files are associated with a specific forcing definition
+file. To set the parameters for a conversion identifed by the name `kpt` for
+converting a forcing with name `forcing_name` you should create a file in
+`data/forcings/<forcing_name>.<conversion_name>.yaml`. Running a conversion
+will the convert `data/forcings/<forcing_name>,nc` and save to
+`data/forcings/<forcing_name>.<conversion_name>.nc`.
+
+```bash
+$> python -m lagtraj.forcing.create <forcing_name> [--convert <conversion_name>]
+```
+
+Instead of creating a conversion definition starting from an empty file you can
+bootstrap the process by using the default parameters for a given target model
+included with lagtraj. This is achieved by using the `lagtraj://`-prefix when
+choosing the conversion name. E.g. to create the `eurec4a_20200202_12_lag`
+bundled with `lagtraj` and have it converted to the `dephy` format with the
+default parameters you would run
+
+```bash
+$> python -m lagtraj.forcing.create lagtraj://eurec4a_20200202_12_lag --convert lagtraj://dephy
+```
+
+This will create the un-converted forcing in
+`data/forcings/eurec4a_20200202_12_lag.nc`, the converted on in
+`data/forcings/eurec4a_20200202_12_lag.dephy.nc` and the conversion definition
+will be copied to `data/forcings/eurec4a_20200202_12_lag.dephy.yaml`. You can
+then modify the forcing parameters (for example change the number of levels) by
+editing `data/forcings/eurec4a_20200202_12_lag.dephy.yaml` and rerunning the
+forcing creation with your local copy of the conversion definition (note the
+absence of the `lagtraj://` prefix):
+
+```bash
+$> python -m lagtraj.forcing.create lagtraj://eurec4a_20200202_12_lag --convert dephy
+```
+
+You are of course welcome to rename the conversion however you like if for
+example you'd like to have multiple different converted version of the same
+forcings file.
+
 
 # Implementation details
 

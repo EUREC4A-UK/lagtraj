@@ -50,9 +50,11 @@ def export(ds_forcing, output_filepath, conversion_defn):
     # coordinates etc) and check if the target model has some specific
     # requirements for how the netCDF file is written too
     export_kwargs = dict(encoding=validation.build_valid_encoding(ds=ds_converted))
-    export_kwargs.update(conversion_module.getattr("EXPORT_KWARGS", {}))
+    export_kwargs.update(getattr(conversion_module, "EXPORT_KWARGS", {}))
 
     ds_converted.to_netcdf(output_filepath, **export_kwargs)
+
+    return output_filepath
 
 
 def export_for_target(ds_forcing, target_name, root_data_path=DEFAULT_ROOT_DATA_PATH):
@@ -76,7 +78,7 @@ def export_for_target(ds_forcing, target_name, root_data_path=DEFAULT_ROOT_DATA_
         forcing_name=ds_forcing.name,
         target_name=target_name,
     )
-    export(
+    return export(
         ds_forcing=ds_forcing,
         output_filepath=output_filepath,
         conversion_defn=conversion_defn,

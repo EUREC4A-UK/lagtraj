@@ -503,8 +503,9 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         "source": "ERA5",
         "source_domain": "NEEDS ADDING",
         "source_grid": "grid0.1x0.1",
-        "source_latsamp": ds_era5.sampling_method[1],
-        "source_lonsamp": ds_era5.sampling_method[1],
+        # TODO: (Leif) these need adding, where should they come from?
+        # "source_latsamp": ds_era5.sampling_method[1],
+        # "source_lonsamp": ds_era5.sampling_method[1],
         "creator": f"{metadata.author} with https://github.com/EUREC4A-UK/lagtraj",
         "created": datetime.datetime.now().isoformat(),
         "wilting_point": 0.1715,

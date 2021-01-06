@@ -7,6 +7,7 @@ from ...input_definitions import (
     build_input_definition_path,
     examples as input_examples,
 )
+from ...input_definitions.examples import LAGTRAJ_EXAMPLES_PATH_PREFIX
 from . import (
     INPUT_REQUIRED_FIELDS,
     ConversionDefinition,
@@ -24,12 +25,12 @@ def _get_definition_parameters(root_data_path, forcing_name, target_name):
     # successful copy this input definition (for the conversion
     # specifically) to their local path (in the folder with the forcing
     # input definition)
-    if target_name.startswith("lagtraj://"):
+    if target_name.startswith(LAGTRAJ_EXAMPLES_PATH_PREFIX):
         params_defn_expected_local_path = build_input_definition_path(
             root_data_path=root_data_path,
             input_name=forcing_name,
             input_type="forcing",
-            input_subtype=target_name,
+            input_subtype=target_name.replace(LAGTRAJ_EXAMPLES_PATH_PREFIX, ""),
         )
         conversion_defn = load.load_definition(
             root_data_path=root_data_path,

@@ -9,6 +9,7 @@ import datetime
 from . import FILENAME_FORMAT, VERSION_FILENAME
 from .utils import add_era5_global_attributes
 from .. import MissingDomainData
+from ....utils.units import round_time
 
 MODEL_RUN_TYPES = ["an", "fc"]  # analysis and forecast runs
 LEVEL_TYPES = ["model", "single"]  # need model and surface data
@@ -82,7 +83,10 @@ def _calc_creation_timestamp(data_path):
 
             creation_times += [fn.stat().st_ctime for fn in files]
 
-    return datetime.datetime.fromtimestamp(min(creation_times))
+    t = datetime.datetime.fromtimestamp(min(creation_times))
+
+    # round to nearest second
+    return round_time(t, num_seconds=1)
 
 
 class ERA5DataSet(object):

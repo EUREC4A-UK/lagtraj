@@ -4,6 +4,7 @@ import numpy as np
 from pathlib import Path
 import functools
 import warnings
+import datetime
 
 from . import FILENAME_FORMAT, VERSION_FILENAME
 from .utils import add_era5_global_attributes
@@ -61,6 +62,27 @@ def _find_datasets(data_path):
             dataset_identifier = f"{model_run_type}__{level_type}"
             datasets[dataset_identifier] = ds_
     return datasets
+
+
+def _calc_creation_timestamp(data_path):
+    """
+    ERA5 datasets consist of multiple files and so working out a single
+    creation time is not obvious. We need a datetime that is fixed once a
+    dataset has been downloaded however. To ensure that the time doesn't change
+    as the individual files are downloading we use the creation time of the
+    file that was created first.
+    """
+    creation_times = []
+    for model_run_type in MODEL_RUN_TYPES:
+        for level_type in LEVEL_TYPES:
+            filename_format = FILENAME_FORMAT.format(
+                model_run_type=model_run_type, level_type=level_type, date="*"
+            )
+            files = data_path.glob(filename_format)
+
+            creation_times += [fn.stat().st_ctime for fn in files]
+
+    return datetime.datetime.fromtimestamp(min(creation_times))
 
 
 class ERA5DataSet(object):
@@ -288,7 +310,8 @@ def load_data(data_path, use_lazy_loading=False):
         ds = _load_naive(data_path)
     else:
         ds = ERA5DataSet(data_path)
-    add_era5_global_attributes(ds)
+    creation_datetime = _calc_creation_timestamp(data_path)
+    add_era5_global_attributes(ds, creation_datetime=creation_datetime)
 
     version_filename = Path(data_path) / VERSION_FILENAME
     if version_filename.exists():

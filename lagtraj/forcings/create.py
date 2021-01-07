@@ -93,6 +93,11 @@ def make_forcing(ds_trajectory, ds_domain, levels_definition, sampling_method):
 
     ds_forcing = xr.concat(forcing_profiles, dim="time")
     fix_units(ds_forcing)
+
+    ds_forcing["origin_lon"] = ds_trajectory["origin_lon"]
+    ds_forcing["origin_lat"] = ds_trajectory["origin_lat"]
+    ds_forcing["origin_datetime"] = ds_trajectory["origin_datetime"]
+
     return ds_forcing
 
 
@@ -188,10 +193,6 @@ def main(data_path, forcing_defn, conversion_name=None):
             ds_trajectory=ds_trajectory,
             sampling_method=forcing_defn.sampling,
         )
-
-        ds_forcing["origin_lon"] = ds_trajectory["origin_lon"]
-        ds_forcing["origin_lat"] = ds_trajectory["origin_lat"]
-        ds_forcing["origin_datetime"] = ds_trajectory["origin_datetime"]
         ds_forcing.attrs.update(create_attributes_dictionary(attr_dict))
 
     if not output_file_path.exists():

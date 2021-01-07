@@ -131,7 +131,7 @@ def _validate_existing_forcing(ds_forcing, attr_dict):
         raise Exception(f"expected:\n{diff_str}\n{missing_str}")
 
 
-def main(data_path, forcing_defn, target_model=None):
+def main(data_path, forcing_defn, conversion_name=None):
     ds_domain = load_domain_data(root_data_path=data_path, name=forcing_defn.domain)
 
     try:
@@ -162,7 +162,7 @@ def main(data_path, forcing_defn, target_model=None):
 
     if output_file_path.exists():
         ds_forcing = xr.open_dataset(output_file_path)
-        if target_model is None:
+        if conversion_name is None:
             raise Exception(
                 f"A file already exists at the path `{output_file_path}`. "
                 "Please delete this file and run the forcing creation again"
@@ -172,12 +172,12 @@ def main(data_path, forcing_defn, target_model=None):
                 _validate_existing_forcing(ds_forcing=ds_forcing, attr_dict=attr_dict)
                 warnings.warn(
                     f"Using existing forcing file `{output_file_path}` to convert to "
-                    f"`{target_model}` format."
+                    f"`{conversion_name}` format."
                 )
             except Exception as e:
                 raise Exception(
                     f"A forcing file already exists at the path `{output_file_path}`. "
-                    f"Applying the `{target_model}` conversion was halted "
+                    f"Applying the `{conversion_name}` conversion was halted "
                     "because the following attributes of the file were different than "
                     f"expected:\n{e}"
                 )
@@ -200,10 +200,10 @@ def main(data_path, forcing_defn, target_model=None):
         )
         print("Wrote forcing file to `{}`".format(output_file_path))
 
-    if target_model is not None:
+    if conversion_name is not None:
         converted_output_file_path = conversion.export_for_target(
             ds_forcing=ds_forcing,
-            conversion_name=target_model,
+            conversion_name=conversion_name,
             root_data_path=data_path,
         )
         print("Wrote converted forcing file to `{}`".format(converted_output_file_path))
@@ -236,5 +236,5 @@ if __name__ == "__main__":
         main(
             data_path=args.data_path,
             forcing_defn=forcing_defn,
-            target_model=args.target_model,
+            conversion_name=args.conversion_name,
         )

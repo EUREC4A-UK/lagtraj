@@ -12,10 +12,10 @@ from lagtraj.forcings.conversion import (
 )
 
 INPUT_TYPES = {
-    # "forcing": FORCING_REQUIRED_FIELDS,
+    "forcing": FORCING_REQUIRED_FIELDS,
     "domain": DOMAIN_REQUIRED_FIELDS,
     "trajectory": TRAJECTORY_REQUIRED_FIELDS,
-    #    "conversion": CONVERSION_REQUIRED_FIELDS,
+    "forcing_conversion": CONVERSION_REQUIRED_FIELDS,
 }
 
 
@@ -52,10 +52,6 @@ def test_load_example(input_example):
     i = input_example.index("/")
     input_type_plural = input_example[:i]
     input_name = f"lagtraj://{input_example[i + 1 :]}"
-
-    if input_type_plural == "forcings_conversion":
-        # TODO: implement tests for the forcing conversions bundled with lagtraj
-        return
 
     input_type = None
     for k, v in DATA_TYPE_PLURAL.items():

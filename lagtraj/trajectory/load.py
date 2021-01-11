@@ -82,7 +82,7 @@ def load_data(root_data_path, name):
             f"`{trajectory_definition['version']}`"
         )
 
-    if ds.version != trajectory_definition["version"]:
+    if ds.version != trajectory_definition.version:
         raise Exception(
             f"The version of the trajectory stored in `{trajectory_data_path}` "
             "doesn't match the version in the input definition yaml file "

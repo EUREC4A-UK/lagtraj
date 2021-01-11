@@ -34,7 +34,14 @@ data
 """
 
 
-def load_definition(input_name, input_type, root_data_path, required_fields):
+def load_definition(
+    input_name,
+    input_type,
+    root_data_path,
+    required_fields,
+    input_subtype=None,
+    expected_local_path=None,
+):
     params = None
     input_path = None
     requesting_lagtraj_bundled_input = input_name.startswith(
@@ -57,7 +64,7 @@ def load_definition(input_name, input_type, root_data_path, required_fields):
             )
             print()
             input_examples.print_available(input_types=[input_type_plural])
-            sys.exit(1)
+            raise
     else:
         if input_name.endswith(".yaml") or input_name.endswith(".yml"):
             # assume we've been passed a full path
@@ -98,6 +105,7 @@ def load_definition(input_name, input_type, root_data_path, required_fields):
                 root_data_path=root_data_path,
                 input_name=input_name,
                 input_type=input_type,
+                input_subtype=input_subtype,
             )
             if not input_path.exists():
                 input_type_plural = DATA_TYPE_PLURAL[input_type]
@@ -135,9 +143,14 @@ def load_definition(input_name, input_type, root_data_path, required_fields):
         if input_name.startswith(LAGTRAJ_EXAMPLES_PATH_PREFIX):
             input_name = input_name[len(LAGTRAJ_EXAMPLES_PATH_PREFIX) :]
 
-        input_local_path = build_input_definition_path(
-            root_data_path=root_data_path, input_name=input_name, input_type=input_type,
-        )
+        if expected_local_path is not None:
+            input_local_path = Path(expected_local_path)
+        else:
+            input_local_path = build_input_definition_path(
+                root_data_path=root_data_path,
+                input_name=input_name,
+                input_type=input_type,
+            )
 
         if not input_local_path.exists():
             # if it doesn't exist we can just copy across no problem
@@ -161,9 +174,13 @@ def load_definition(input_name, input_type, root_data_path, required_fields):
             if len(param_diff) != 0:
                 print("\n".join(param_diff))
                 print()
+                if Path(".").absolute() in input_local_path.parents:
+                    p = input_local_path.relative_to(Path(".").absolute())
+                else:
+                    p = input_local_path
                 raise Exception(
                     f"Your local of the `{input_name}` {input_type} "
-                    f"input-definition in `{input_local_path}` "
+                    f"input-definition in `{p}` "
                     "is different to what is included with "
                     "lagtraj (see the differences above). Either you can "
                     "use your local copy directly (by removing the `lagtraj://` "

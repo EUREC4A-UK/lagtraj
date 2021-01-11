@@ -32,7 +32,9 @@ def create_attributes_dictionary(*args, **kwargs):
                 or isinstance(item, ERA5DataSet)
             ):
                 sub_items = item.attrs.items()
-            elif isinstance(item, list):
+            # can use isinstance because namedtuple is a kind of tuple and we
+            # want to save the tuple keys in that case
+            elif isinstance(item, list) or type(item) == tuple:
                 sub_items = zip(range(len(item)), item)
             else:
                 # collections.named_tuple has a `_asdict` method to turn it into a dictionary
@@ -44,6 +46,10 @@ def create_attributes_dictionary(*args, **kwargs):
                     )
 
             for (k, v) in sub_items:
+                # skip None values
+                if v is None:
+                    continue
+
                 if prefix != "":
                     label = f"{prefix}_{k}"
                 else:

@@ -1,4 +1,8 @@
-from ..input_definitions import load
+from ...input_definitions import (
+    load,
+    build_input_definition_path,
+)
+from ...input_definitions.examples import LAGTRAJ_EXAMPLES_PATH_PREFIX
 from . import (
     INPUT_REQUIRED_FIELDS,
     ConversionDefinition,
@@ -9,12 +13,43 @@ from . import (
 )
 
 
-def load_definition(root_data_path, conversion_name):
-    conversion_params = load.load_definition(
+def _get_definition_parameters(root_data_path, forcing_name, conversion_name):
+    # if the user has requested a conversion target with the `lagtraj://`
+    # prefix then they are asking for the default parameters for targeting
+    # the `conversion_name` model. We will try to load that and then if
+    # successful copy this input definition (for the conversion
+    # specifically) to their local path (in the folder with the forcing
+    # input definition)
+    if conversion_name.startswith(LAGTRAJ_EXAMPLES_PATH_PREFIX):
+        params_defn_expected_local_path = build_input_definition_path(
+            root_data_path=root_data_path,
+            input_name=forcing_name,
+            input_type="forcing",
+            input_subtype=conversion_name.replace(LAGTRAJ_EXAMPLES_PATH_PREFIX, ""),
+        )
+        conversion_defn = load.load_definition(
+            root_data_path=root_data_path,
+            input_name=conversion_name,
+            input_type="forcing_conversion",
+            required_fields=INPUT_REQUIRED_FIELDS,
+            expected_local_path=params_defn_expected_local_path,
+        )
+        return conversion_defn
+    else:
+        return load.load_definition(
+            root_data_path=root_data_path,
+            input_name=forcing_name,
+            input_type="forcing",
+            input_subtype=conversion_name,
+            required_fields=INPUT_REQUIRED_FIELDS,
+        )
+
+
+def load_definition(root_data_path, forcing_name, conversion_name):
+    conversion_params = _get_definition_parameters(
         root_data_path=root_data_path,
-        input_name=conversion_name,
-        input_type="conversion",
-        required_fields=INPUT_REQUIRED_FIELDS,
+        forcing_name=forcing_name,
+        conversion_name=conversion_name,
     )
 
     conversion_levels_definition = ConversionLevelsDefinition(

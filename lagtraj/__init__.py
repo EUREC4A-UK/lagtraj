@@ -23,7 +23,7 @@ DATA_TYPE_PLURAL = dict(
     trajectory="trajectories",
     domain="domains",
     forcing="forcings",
-    conversion="conversions",
+    forcing_conversion="forcings_conversion",
 )
 
 

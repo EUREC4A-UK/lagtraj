@@ -67,7 +67,7 @@ def load_data(root_data_path, forcing_name):
             f"`{forcing_definition['version']}`"
         )
 
-    if ds.version != forcing_definition["version"]:
+    if ds.version != forcing_definition.version:
         raise Exception(
             f"The version of the forcing stored in `{forcing_data_path}` "
             "doesn't match the version in the input definition yaml file "

@@ -1,10 +1,11 @@
+import warnings
 from pathlib import Path
 from tqdm import tqdm
 import xarray as xr
 
 from .. import DEFAULT_ROOT_DATA_PATH
-from . import profile_calculation, load, build_forcing_data_path
-from .utils.levels import make_levels
+from . import profile_calculation, load, build_forcing_data_path, conversion
+from ..utils.interpolation.levels import make_levels
 from ..utils import optional_debugging, validation
 from ..domain.load import load_data as load_domain_data
 from ..trajectory.load import load_data as load_trajectory_data
@@ -90,42 +91,57 @@ def make_forcing(ds_trajectory, ds_domain, levels_definition, sampling_method):
         )
         forcing_profiles.append(ds_forcing_profile)
 
-    return xr.concat(forcing_profiles, dim="time")
+    ds_forcing = xr.concat(forcing_profiles, dim="time")
+    fix_units(ds_forcing)
+
+    ds_forcing["origin_lon"] = ds_trajectory["origin_lon"]
+    ds_forcing["origin_lat"] = ds_trajectory["origin_lat"]
+    ds_forcing["origin_datetime"] = ds_trajectory["origin_datetime"]
+
+    return ds_forcing
 
 
-def export(file_path, ds_forcing, format):
-    if format != "dummy_netcdf":
-        raise NotImplementedError(format)
-    # TODO: add dephy format export here
-
+def export(file_path, ds_forcing):
     Path(file_path).parent.mkdir(parents=True, exist_ok=True)
     validation.validate_forcing_profiles(ds_forcing_profiles=ds_forcing)
     encoding = validation.build_valid_encoding(ds=ds_forcing)
     ds_forcing.to_netcdf(file_path, encoding=encoding)
 
 
-def main():
-    import argparse
+def _validate_existing_forcing(ds_forcing, attr_dict):
+    different_attrs = {}
+    missing_attrs = {}
+    for (k, v) in create_attributes_dictionary(attr_dict).items():
+        if k not in ds_forcing.attrs:
+            missing_attrs[k] = (None, v)
+        elif ds_forcing.attrs[k] != v:
+            different_attrs[k] = (ds_forcing.attrs[k], v)
 
-    argparser = argparse.ArgumentParser()
-    argparser.add_argument("forcing")
-    argparser.add_argument(
-        "-d", "--data-path", default=DEFAULT_ROOT_DATA_PATH, type=Path
-    )
-    argparser.add_argument("-f", "--output-format", default="dummy_netcdf", type=str)
-    argparser.add_argument("--debug", default=False, action="store_true")
-    args = argparser.parse_args()
+    if len(different_attrs) > 0 or len(missing_attrs) > 0:
+        diff_str = "\n".join(
+            [
+                (
+                    f"{k}:\n\tfound: {different_attrs[k][0]}"
+                    f"\n\texpected: {different_attrs[k][1]})"
+                )
+                for k in different_attrs.keys()
+            ]
+        )
+        missing_str = "\n".join(
+            [
+                (f"{k}: missing\n\texpected: {missing_attrs[k][1]}")
+                for k in missing_attrs.keys()
+            ]
+        )
+        raise Exception(f"expected:\n{diff_str}\n{missing_str}")
 
-    forcing_defn = load.load_definition(
-        root_data_path=args.data_path, forcing_name=args.forcing
-    )
 
-    ds_domain = load_domain_data(
-        root_data_path=args.data_path, name=forcing_defn.domain
-    )
+def main(data_path, forcing_defn, conversion_name=None):
+    ds_domain = load_domain_data(root_data_path=data_path, name=forcing_defn.domain)
+
     try:
         ds_trajectory = load_trajectory_data(
-            root_data_path=args.data_path, name=forcing_defn.trajectory
+            root_data_path=data_path, name=forcing_defn.trajectory
         )
     except FileNotFoundError:
         raise Exception(
@@ -135,35 +151,91 @@ def main():
             "and then run the forcing creation again"
         )
 
-    with optional_debugging(args.debug):
+    output_file_path = build_forcing_data_path(
+        root_data_path=data_path, forcing_name=forcing_defn.name
+    )
+
+    # collect variables which are used for creating attributes of the forcing
+    # output file
+    attr_dict = dict(
+        levels_definition=forcing_defn.levels,
+        domain=ds_domain,
+        trajectory=ds_trajectory,
+        sampling_method=forcing_defn.sampling,
+        trajectory_name=forcing_defn.trajectory,
+    )
+
+    if output_file_path.exists():
+        ds_forcing = xr.open_dataset(output_file_path)
+        if conversion_name is None:
+            raise Exception(
+                f"A file already exists at the path `{output_file_path}`. "
+                "Please delete this file and run the forcing creation again"
+            )
+        else:
+            try:
+                _validate_existing_forcing(ds_forcing=ds_forcing, attr_dict=attr_dict)
+                warnings.warn(
+                    f"Using existing forcing file `{output_file_path}` to convert to "
+                    f"`{conversion_name}` format."
+                )
+            except Exception as e:
+                raise Exception(
+                    f"A forcing file already exists at the path `{output_file_path}`. "
+                    f"Applying the `{conversion_name}` conversion was halted "
+                    "because the following attributes of the file were different than "
+                    f"expected:\n{e}"
+                )
+    else:
         ds_forcing = make_forcing(
             levels_definition=forcing_defn.levels,
             ds_domain=ds_domain,
             ds_trajectory=ds_trajectory,
             sampling_method=forcing_defn.sampling,
         )
+        ds_forcing.attrs.update(create_attributes_dictionary(attr_dict))
 
-    ds_forcing["origin_lon"] = ds_trajectory["origin_lon"]
-    ds_forcing["origin_lat"] = ds_trajectory["origin_lat"]
-    ds_forcing["origin_datetime"] = ds_trajectory["origin_datetime"]
-    ds_forcing.attrs.update(ds_domain.attrs)
-    attr_dict = dict(
-        levels_definition=forcing_defn.levels,
-        ds_domain=ds_domain,
-        ds_trajectory=ds_trajectory,
-        sampling_method=forcing_defn.sampling,
-        trajectory_name=forcing_defn.trajectory,
-    )
-    ds_forcing.attrs.update(create_attributes_dictionary(attr_dict))
-    fix_units(ds_forcing)
-    output_file_path = build_forcing_data_path(
-        root_data_path=args.data_path, forcing_name=forcing_defn.name
-    )
+    if not output_file_path.exists():
+        export(
+            ds_forcing=ds_forcing, file_path=output_file_path,
+        )
+        print("Wrote forcing file to `{}`".format(output_file_path))
 
-    export(ds_forcing=ds_forcing, file_path=output_file_path, format=args.output_format)
-
-    print("Wrote forcing file to `{}`".format(output_file_path))
+    if conversion_name is not None:
+        converted_output_file_path = conversion.export_for_target(
+            ds_forcing=ds_forcing,
+            conversion_name=conversion_name,
+            root_data_path=data_path,
+        )
+        print("Wrote converted forcing file to `{}`".format(converted_output_file_path))
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument("forcing")
+    argparser.add_argument(
+        "-d", "--data-path", default=DEFAULT_ROOT_DATA_PATH, type=Path
+    )
+    available_conversion_targets = conversion.targets.available.keys()
+    argparser.add_argument(
+        "-t",
+        "--target-model",
+        help="name of the model to target, available targets: "
+        f"{', '.join(available_conversion_targets)}",
+        default=None,
+    )
+    argparser.add_argument("--debug", default=False, action="store_true")
+    args = argparser.parse_args()
+
+    forcing_defn = load.load_definition(
+        root_data_path=args.data_path, forcing_name=args.forcing
+    )
+
+    with optional_debugging(args.debug):
+        main(
+            data_path=args.data_path,
+            forcing_defn=forcing_defn,
+            conversion_name=args.conversion_name,
+        )

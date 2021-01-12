@@ -1,3 +1,6 @@
+import datetime
+
+
 def fix_units(ds):
     """Changes units of data to make them compatible with the cf-checker"""
     units_dict = {
@@ -12,3 +15,17 @@ def fix_units(ds):
             these_units = ds[variable].units
             if these_units in units_dict:
                 ds[variable].attrs["units"] = units_dict[these_units]
+
+
+def round_time(dt=None, num_seconds=60):
+    """Round a datetime object to any time lapse in seconds
+    dt : datetime.datetime object, default now.
+    num_seconds : Closest number of seconds to round to, default 1 minute.
+
+    based off https://stackoverflow.com/a/10854034
+    """
+    if dt is None:
+        dt = datetime.datetime.now()
+    seconds = (dt.replace(tzinfo=None) - dt.min).seconds
+    rounding = (seconds + num_seconds / 2) // num_seconds * num_seconds
+    return dt + datetime.timedelta(0, rounding - seconds, -dt.microsecond)

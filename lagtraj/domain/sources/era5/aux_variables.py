@@ -18,7 +18,7 @@ def calc_variable(ds, var, **kwargs):
     if var == "theta":
         # Compute the potential temperature
         return xr.DataArray(
-            ds.t * (ds.p_f * p_ref_inv) ** rd_over_cp,
+            ds.t * (ds.p_f * p_ref_inv) ** -rd_over_cp,
             attrs={"units": "K", "long_name": "potential temperature"},
         )
     elif var == "rho":

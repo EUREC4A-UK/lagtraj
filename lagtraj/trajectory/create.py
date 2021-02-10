@@ -341,4 +341,4 @@ if __name__ == "__main__":
     args = argparser.parse_args()
 
     with optional_debugging(args.debug):
-        main(data_path=args.data_path, trajectory_name=args.trajectory)
+        cli(data_path=args.data_path, trajectory_name=args.trajectory)

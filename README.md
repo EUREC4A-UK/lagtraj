@@ -115,24 +115,24 @@ To produce forcings you need to create a forcing definition in
 `data/forcings/<forcing_name>.yaml` and run
 
 ```bash
-$> python -m lagtraj.forcing.create <forcing_name> [--convert <conversion_name>]
+$> python -m lagtraj.forcing.create <forcing_name> [--conversion <conversion_name>]
 ```
 
 Or use one of the forcing definitions included with `lagtraj` (e.g.
 `eurec4a_20200202_12_lag`)
 
 ```bash
-$> python -m lagtraj.forcing.create lagtraj://eurec4a_20200202_12_lag [--convert <conversion_name>]
+$> python -m lagtraj.forcing.create lagtraj://eurec4a_20200202_12_lag [--conversion <conversion_name>]
 ```
 
 ### Forcing profiles conversion (targeting a specific GCM/LES)
 
 When creating forcings it might be desirable to target a specific LES
 (Large-Eddy Simulation) model or GCM (Global Circulation Model) by
-converting the forcings to a specific format and setting parameters specific to
-the model being targeted. This can be achieved by using the `--output-format`
-flag and providing a `conversion_name`. `lagtraj` currently comes bundled with
-functionality to target the
+converting the forcings to a specific format and setting parameters
+specific to the model being targeted. This can be achieved by using the
+`--conversion` flag and providing a `conversion_name`. `lagtraj` currently
+comes bundled with functionality to target the
 [KPT](https://www.lmd.jussieu.fr/~mpllmd/dephy2_forcages_communs/KPT_documentation.pdf)
 LES and
 [dephy](https://docs.google.com/document/d/118xP04jB9HO7Y2LqWk3HZpZ9n3CFujgzimLI7Ug8vO4)
@@ -148,7 +148,7 @@ will the convert `data/forcings/<forcing_name>,nc` and save to
 `data/forcings/<forcing_name>.<conversion_name>.nc`.
 
 ```bash
-$> python -m lagtraj.forcing.create <forcing_name> [--convert <conversion_name>]
+$> python -m lagtraj.forcing.create <forcing_name> [--conversion <conversion_name>]
 ```
 
 Instead of creating a conversion definition starting from an empty file you can
@@ -159,7 +159,7 @@ bundled with `lagtraj` and have it converted to the `dephy` format with the
 default parameters you would run
 
 ```bash
-$> python -m lagtraj.forcing.create lagtraj://eurec4a_20200202_12_lag --convert lagtraj://dephy
+$> python -m lagtraj.forcing.create lagtraj://eurec4a_20200202_12_lag --conversion lagtraj://dephy
 ```
 
 This will create the un-converted forcing in
@@ -172,7 +172,7 @@ forcing creation with your local copy of the conversion definition (note the
 absence of the `lagtraj://` prefix):
 
 ```bash
-$> python -m lagtraj.forcing.create lagtraj://eurec4a_20200202_12_lag --convert dephy
+$> python -m lagtraj.forcing.create lagtraj://eurec4a_20200202_12_lag --conversion dephy
 ```
 
 You are of course welcome to rename the conversion however you like if for

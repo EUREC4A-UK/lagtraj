@@ -225,9 +225,9 @@ def cli(args=None):
     )
     available_conversion_targets = conversion.targets.available.keys()
     argparser.add_argument(
-        "-t",
-        "--target-model",
-        help="name of the model to target, available targets: "
+        "-c",
+        "--conversion",
+        help="name of output conversion to use, available conversions: "
         f"{', '.join(available_conversion_targets)}",
         default=None,
     )
@@ -241,7 +241,7 @@ def cli(args=None):
         main(
             data_path=args.data_path,
             forcing_defn=forcing_defn,
-            conversion_name=args.conversion_name,
+            conversion_name=args.conversion,
         )
 
 

@@ -7,6 +7,8 @@ import requests
 import pytest
 
 import lagtraj.domain.load
+from make_test_data import TEST_FORCING_NAME, trajectory_load, forcing_load
+
 
 TESTDATA_URL = "http://gws-access.jasmin.ac.uk/public/eurec4auk/testdata/lagtraj.testdata.v0.1.0.tar.gz"  # noqa
 
@@ -56,3 +58,24 @@ def ds_trajectory_linear(ds_domain_test):
     )
 
     return ds_traj
+
+
+@pytest.fixture
+def testdata_info():
+    """
+    These are used for the CLI tests. We might want to add input definitions to
+    the testdata (see `make_test_data.py`) and test more CLI calls in future.
+    """
+    p_root = Path(testdata_dir)
+    forcing_name = TEST_FORCING_NAME
+    forcing_defn = forcing_load.load_definition(p_root, forcing_name=forcing_name)
+    trajectory_name = forcing_defn.name
+    trajectory_defn = trajectory_load.load_definition(p_root, name=trajectory_name)
+    domain_name = trajectory_defn.domain
+
+    return dict(
+        testdata_path=p_root,
+        forcing_name=forcing_name,
+        trajectory_name=trajectory_name,
+        domain_name=domain_name,
+    )

@@ -136,7 +136,11 @@ def _validate_existing_forcing(ds_forcing, attr_dict):
         raise Exception(f"expected:\n{diff_str}\n{missing_str}")
 
 
-def main(data_path, forcing_defn, conversion_name=None):
+def cli(data_path, forcing_defn, conversion_name=None):
+    """
+    Function called with arguments passed from the command line when making
+    trajectories through the CLI
+    """
     ds_domain = load_domain_data(root_data_path=data_path, name=forcing_defn.domain)
 
     try:
@@ -234,7 +238,7 @@ if __name__ == "__main__":
     )
 
     with optional_debugging(args.debug):
-        main(
+        cli(
             data_path=args.data_path,
             forcing_defn=forcing_defn,
             conversion_name=args.conversion_name,

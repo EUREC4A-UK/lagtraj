@@ -1,4 +1,5 @@
 from unittest.mock import patch
+import importlib
 
 import lagtraj.forcings.create
 import lagtraj.trajectory.create
@@ -9,7 +10,9 @@ from test_forcing_profiles_extraction import AVAILABLE_CONVERSIONS
 @patch("lagtraj.domain.download.download_complete")
 def test_cli(download_complete_mocked, testdata_info):
     # during CI we won't have access to an ERA5 token so we need to pretend
-    # that all data has been downloaded
+    # that all data has been downloaded. We have to reload the module so we
+    # ensure the mocked function is called
+    importlib.reload(lagtraj.trajectory.create)
     download_complete_mocked.return_value = True
 
     args = [

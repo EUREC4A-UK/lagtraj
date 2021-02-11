@@ -19,7 +19,7 @@ else:
     testdata_dir = Path(tempdir.name)
 
 
-def download_testdata():
+def _download_testdata():
     fhtar = tempfile.NamedTemporaryFile(delete=False, suffix=".tar.gz")
 
     r = requests.get(TESTDATA_URL)
@@ -29,15 +29,18 @@ def download_testdata():
     tarfile.open(fhtar.name, "r:gz").extractall(testdata_dir)
 
 
-@pytest.fixture
-def ds_domain_test(scope="session"):
+def _ensure_testdata_available():
     if not testdata_dir.exists():
         raise Exception(f"Couldn't find test-data directory {testdata_dir}")
     # Download testdata if it is not there yet
     if len(list(testdata_dir.glob("**/*.nc"))) == 0:
         print("Downloading testdata...")
-        download_testdata()
+        _download_testdata()
 
+
+@pytest.fixture
+def ds_domain_test(scope="session"):
+    _ensure_testdata_available()
     DOMAIN_NAME = "eurec4a_circle"
     ds = lagtraj.domain.load.load_data(root_data_path=testdata_dir, name=DOMAIN_NAME)
     return ds
@@ -66,6 +69,7 @@ def testdata_info():
     These are used for the CLI tests. We might want to add input definitions to
     the testdata (see `make_test_data.py`) and test more CLI calls in future.
     """
+    _ensure_testdata_available()
     p_root = Path(testdata_dir)
     forcing_name = TEST_FORCING_NAME
     forcing_defn = forcing_load.load_definition(p_root, forcing_name=forcing_name)

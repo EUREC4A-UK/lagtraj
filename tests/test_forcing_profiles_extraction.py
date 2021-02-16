@@ -6,6 +6,9 @@ from lagtraj.forcings import ForcingLevelsDefinition, ForcingSamplingDefinition
 from lagtraj.utils import validation
 
 
+AVAILABLE_CONVERSIONS = [None, "lagtraj://kpt", "lagtraj://dephy"]
+
+
 @pytest.mark.parametrize(
     "gradient_method, advection_velocity_sampling_method",
     [
@@ -15,7 +18,7 @@ from lagtraj.utils import validation
         ("regression", "local"),
     ],
 )
-@pytest.mark.parametrize("conversion_name", [None, "lagtraj://kpt", "lagtraj://dephy"])
+@pytest.mark.parametrize("conversion_name", AVAILABLE_CONVERSIONS)
 def test_create_forcing_linear_trajectory(
     ds_domain_test,
     ds_trajectory_linear,

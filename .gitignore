@@ -3,6 +3,11 @@
 *.nc
 *.so
 lagtraj/utils/*.html
+docs/*.aux
+docs/*.bbl
+docs/*.blg
+docs/*.log
+docs/*.pdf
 __pycache__/
 
 # `data` instead of `data/` so that we can ignore symlinks too

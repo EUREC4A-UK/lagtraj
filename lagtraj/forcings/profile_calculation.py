@@ -56,7 +56,7 @@ ForcingSamplingDefinition = namedtuple(
     "ForcingSamplingDefinition",
     [
         "gradient_method",
-        "advection_velocity_method",
+        "advection_velocity_sampling_method",
         "averaging_width",
         "time_sampling_method",
         "mask",
@@ -86,7 +86,7 @@ def _build_domain_profile(da_field, method="single_point", **kwargs):
 
 
 def compute_adv_profile(
-    ds_profile, da_domain, gradient_method, advection_velocity_method
+    ds_profile, da_domain, gradient_method, advection_velocity_sampling_method
 ):
     """
     Compute the horizontal advective tendency profile and reference profile for
@@ -110,15 +110,15 @@ def compute_adv_profile(
     # compute the relative velocities (`_local` being the velocities
     # interpolated to the trajectory (lat, lon) and `_traj` being the velocity
     # of the trajectory itself)
-    if advection_velocity_method == "mean":
+    if advection_velocity_sampling_method == "domain_mean":
         da_u_rel = ds_profile.u_mean - ds_profile.u_traj
         da_v_rel = ds_profile.v_mean - ds_profile.v_traj
-    elif advection_velocity_method == "local":
+    elif advection_velocity_sampling_method == "local":
         da_u_rel = ds_profile.u_local - ds_profile.u_traj
         da_v_rel = ds_profile.v_local - ds_profile.v_traj
     else:
         raise NotImplementedError(
-            f"Velocity advection method `{advection_velocity_method}` not implemented"
+            f"Velocity advection method `{advection_velocity_sampling_method}` not implemented"
         )
     # dphi/dt = - dphi/dx * u - dphi/dy * v
     da_dphidt = -da_dphidx * da_u_rel - da_dphidy * da_v_rel
@@ -240,6 +240,13 @@ def calculate_timestep(ds_profile_posn, ds_domain, sampling_method):
     # horizontal gradients
     ds_ref_pt = ds_profile_posn[["lat", "lon", "time"]]
 
+    # sjboeing: I am not quite sure why a mask is needed here
+    # There are 2 loops below, the first is for 'local' variables
+    # where no filtering of data is applied (so when a trajectory
+    # crosses an island and the mask is set to 'ocean only' you
+    # will still get data. The second loop is for domain averaged data.
+    # where a mask is applied if specified.
+
     ds_subdomain = ds_subdomain.where(True, other=np.nan)
 
     for v in ds_subdomain.data_vars:
@@ -248,6 +255,8 @@ def calculate_timestep(ds_profile_posn, ds_domain, sampling_method):
         da_v__local.attrs["long_name"] = f"trajectory-centered {da_field.long_name}"
         da_v__local.attrs["units"] = da_field.units
         ds_profile[f"{v}_local"] = da_v__local
+
+    # Second loop, with masking
 
     ds_subdomain = ds_subdomain.where(ds_subdomain.mask, other=np.nan)
 
@@ -267,7 +276,7 @@ def calculate_timestep(ds_profile_posn, ds_domain, sampling_method):
             da_domain=da_subdomain,
             ds_profile=ds_profile,
             gradient_method=sampling_method.gradient_method,
-            advection_velocity_method=sampling_method.advection_velocity_method,
+            advection_velocity_sampling_method=sampling_method.advection_velocity_sampling_method,
         )
         ds_profile[f"d{v}dt_adv"] = da_adv_profile
         ds_profile[f"d{v}dx"] = da_dvdx

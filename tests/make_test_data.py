@@ -3,10 +3,11 @@ import tarfile
 from lagtraj.domain import load, download as domain_download
 from lagtraj.trajectory import load as trajectory_load
 from lagtraj import DEFAULT_ROOT_DATA_PATH
+from lagtraj.utils import optional_debugging
 
 
 def main(
-    trajectory_name="lagtraj://eurec4a_20191209_12_lin",
+    trajectory_name="lagtraj://eurec4a_20191209_12_lag",
     output_filename="lagtraj.testdata.tar.gz",
 ):
     p_root = DEFAULT_ROOT_DATA_PATH
@@ -43,4 +44,5 @@ def main(
 
 
 if __name__ == "__main__":
-    main()
+    with optional_debugging(True):
+        main()

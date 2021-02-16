@@ -1,7 +1,5 @@
 import numpy as np
 from collections import namedtuple
-from .utils.levels import ConversionLevelsDefinition
-from .. import build_data_path
 
 
 INPUT_REQUIRED_FIELDS = dict(
@@ -109,8 +107,8 @@ ConversionMetadataDefinition = namedtuple(
     ],
 )
 
-
-def build_conversion_data_path(root_data_path, forcing_name, conversion_name):
-    return build_data_path(root_data_path=root_data_path, data_type="conversion") / (
-        forcing_name + "_" + conversion_name + ".nc"
-    )
+from . import targets  # noqa
+from ...utils.interpolation.levels import (
+    LevelsDefinition as ConversionLevelsDefinition,
+)  # noqa
+from .process import export_for_target

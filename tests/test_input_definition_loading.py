@@ -4,7 +4,7 @@ from pathlib import Path
 
 from lagtraj.input_definitions import build_input_definition_path
 from lagtraj.trajectory import load as traj_load
-from lagtraj.input_definitions.examples import P_ROOT as p_examples_root
+from lagtraj.input_definitions.examples import EXAMPLES_ROOT_PATH as p_examples_root
 
 
 def test_loading_local_file_by_name():

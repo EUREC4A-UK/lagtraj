@@ -1,6 +1,7 @@
 import dateutil.parser
 from pathlib import Path
 from time import sleep
+import datetime
 
 from .sources import era5
 from .. import DEFAULT_ROOT_DATA_PATH
@@ -10,11 +11,19 @@ from ..trajectory.load import load_definition as load_traj_definition
 
 
 def download(
-    data_path, source, t_start, t_end, bbox, latlon_sampling, overwrite_existing=False
+    data_path,
+    source,
+    t_start,
+    t_end,
+    bbox,
+    latlon_sampling,
+    version,
+    overwrite_existing=False,
 ):
     """
     Download all data from a given `source` (fx `era5`) to `data_path` over time
-    range `t_start` to `t_end`, in `bbox` with `latlon_sampling`
+    range `t_start` to `t_end`, in `bbox` with `latlon_sampling` and store it
+    with `version` as the version of this domain.
     """
 
     if source.lower() == "era5":
@@ -25,6 +34,7 @@ def download(
             bbox=bbox,
             latlon_sampling=latlon_sampling,
             overwrite_existing=overwrite_existing,
+            version=version,
         )
     else:
         raise NotImplementedError(
@@ -60,6 +70,7 @@ def download_named_domain(
         bbox=bbox,
         latlon_sampling=latlon_sampling,
         overwrite_existing=overwrite_existing,
+        version=domain_params["version"],
     )
 
 
@@ -135,7 +146,9 @@ def _run_cli(timedomain_lookup="by_arguments"):
             if download_complete(args.data_path, domain_name=domain):
                 break
             else:
-                print(f"Sleeping {args.retry_rate}min...")
+                t_now = datetime.datetime.now()
+                t_now_s = t_now.strftime("%Y%m%dT%H%M")
+                print(f"{t_now_s}: Sleeping {args.retry_rate}min...")
                 sleep(args.retry_rate * 60.0)
                 print("Retrying download")
     else:

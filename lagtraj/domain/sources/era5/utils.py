@@ -125,15 +125,15 @@ def calculate_heights_and_pressures(ds):
     return xr.concat(datasets, dim="time").squeeze()
 
 
-def add_era5_global_attributes(ds):
+def add_era5_global_attributes(ds, creation_datetime):
     """Adds global attributes to datasets"""
     global_attrs = {
-        r"Conventions": r"CF-1.7",
-        r"Contact": r"l.c.denby[at]leeds[dot]ac[dot again]uk s.boeing[at]leeds[dot]ac[dot again]uk",
-        r"ERA5 reference": r"Hersbach, H., Bell, B., Berrisford, P., Hirahara, S., Horányi, A., Muñoz‐Sabater, J., ... & Simmons, A. (2020). The ERA5 global reanalysis. Quarterly Journal of the Royal Meteorological Society.",
-        r"Created": datetime.datetime.now().isoformat(),
-        r"Created with": r"https://github.com/EUREC4A-UK/lagtraj",
-        r"Note": "Contains modified Copernicus Service information ",
+        r"conventions": r"CF-1.7",
+        r"contact": r"l.c.denby[at]leeds[dot]ac[dot again]uk s.boeing[at]leeds[dot]ac[dot again]uk",
+        r"era5_reference": r"Hersbach, H., Bell, B., Berrisford, P., Hirahara, S., Horányi, A., Muñoz‐Sabater, J., ... & Simmons, A. (2020). The ERA5 global reanalysis. Quarterly Journal of the Royal Meteorological Society.",
+        r"created": creation_datetime.isoformat(),
+        r"created_with": r"https://github.com/EUREC4A-UK/lagtraj",
+        r"note": "Contains modified Copernicus Service information ",
     }
     for attribute in global_attrs:
         ds.attrs[attribute] = global_attrs[attribute]

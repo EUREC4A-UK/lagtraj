@@ -7,10 +7,11 @@ from pathlib import Path
 
 import netCDF4
 import yaml
+import requests
 
 from .... import utils
 from .cdsapi_request import RequestFetchCDSClient
-from . import FILENAME_FORMAT
+from . import FILENAME_FORMAT, VERSION_FILENAME
 
 DATA_REQUESTS_FILENAME = "data_requests.yaml"
 DATE_FORMAT = "%Y-%m-%d"
@@ -19,11 +20,13 @@ REPOSITORY_NAME = "reanalysis-era5-complete"
 
 
 def download_data(
-    path, t_start, t_end, bbox, latlon_sampling, overwrite_existing=False
+    path, t_start, t_end, bbox, latlon_sampling, version, overwrite_existing=False
 ):
 
-    dl_queries = _build_queries(
-        t_start=t_start, t_end=t_end, bbox=bbox, latlon_sampling=latlon_sampling
+    dl_queries = list(
+        _build_queries(
+            t_start=t_start, t_end=t_end, bbox=bbox, latlon_sampling=latlon_sampling
+        )
     )
 
     c = RequestFetchCDSClient()
@@ -89,11 +92,28 @@ def download_data(
             query_hash = request_details["query_hash"]
 
             Path(file_path).parent.mkdir(exist_ok=True, parents=True)
-            c.download_data_by_request(request_id=request_id, target=file_path)
-            _fingerprint_downloaded_file(query_hash=query_hash, file_path=file_path)
-
+            try:
+                c.download_data_by_request(request_id=request_id, target=file_path)
+                _fingerprint_downloaded_file(query_hash=query_hash, file_path=file_path)
+            except requests.exceptions.HTTPError as ex:
+                if ex.response.status_code == 404:
+                    print(
+                        f"Request {request_details['request_id']} wasn't found"
+                        " on the CDS backend, it has probably expired."
+                        " Re-requesting..."
+                    )
+                    # delete the stored request and re-request the data
+                    query_kwargs = dict(dl_queries)[Path(file_path).name]
+                    request_id = c.queue_data_request(
+                        repository_name=REPOSITORY_NAME, query_kwargs=query_kwargs
+                    )
+                    assert request_id is not None
+                    download_requests[download_id] = dict(
+                        request_id=request_id, query_hash=query_hash
+                    )
+                else:
+                    raise
             del download_requests[file_path]
-
     # save download requets again now we've downloaded the files that were
     # ready
     if len(download_requests) > 0:
@@ -103,6 +123,11 @@ def download_data(
         data_requests_file = Path(path / DATA_REQUESTS_FILENAME)
         if data_requests_file.exists():
             data_requests_file.unlink()
+
+            version_filename = Path(path) / VERSION_FILENAME
+            with open(version_filename, "w") as fh:
+                fh.write(version)
+
         print("All files downloaded!")
 
 

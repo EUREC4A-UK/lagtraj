@@ -10,8 +10,8 @@ from scipy.optimize import ridder
 import xarray as xr
 
 
-ForcingLevelsDefinition = namedtuple(
-    "ForcingLevelsDefinition", ["method", "n_levels", "z_top", "dz_min"]
+LevelsDefinition = namedtuple(
+    "LevelsDefinition", ["method", "n_levels", "z_top", "dz_min"]
 )
 
 

@@ -2,15 +2,21 @@ import tarfile
 
 from lagtraj.domain import load, download as domain_download
 from lagtraj.trajectory import load as trajectory_load
+from lagtraj.forcings import load as forcing_load
 from lagtraj import DEFAULT_ROOT_DATA_PATH
 from lagtraj.utils import optional_debugging
 
 
+TEST_FORCING_NAME = "lagtraj://eurec4a_20191209_12_lag"
+
+
 def main(
-    trajectory_name="lagtraj://eurec4a_20191209_12_lag",
-    output_filename="lagtraj.testdata.tar.gz",
+    forcing_name=TEST_FORCING_NAME, output_filename="lagtraj.testdata.tar.gz",
 ):
     p_root = DEFAULT_ROOT_DATA_PATH
+
+    forcing_defn = forcing_load.load_definition(p_root, name=forcing_name)
+    trajectory_name = forcing_defn.name
 
     trajectory_defn = trajectory_load.load_definition(p_root, name=trajectory_name)
     t_min = trajectory_defn.origin.datetime - trajectory_defn.duration.backward

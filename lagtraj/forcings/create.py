@@ -210,7 +210,12 @@ def main(data_path, forcing_defn, conversion_name=None):
         print("Wrote converted forcing file to `{}`".format(converted_output_file_path))
 
 
-if __name__ == "__main__":
+def cli(args=None):
+    """
+    Function called with arguments passed from the command line when making
+    trajectories through the CLI. When `args==None` they will be taken from
+    `sys.argv`
+    """
     import argparse
 
     argparser = argparse.ArgumentParser()
@@ -220,22 +225,25 @@ if __name__ == "__main__":
     )
     available_conversion_targets = conversion.targets.available.keys()
     argparser.add_argument(
-        "-t",
-        "--target-model",
-        help="name of the model to target, available targets: "
+        "-c",
+        "--conversion",
+        help="name of output conversion to use, available conversions: "
         f"{', '.join(available_conversion_targets)}",
         default=None,
     )
     argparser.add_argument("--debug", default=False, action="store_true")
-    args = argparser.parse_args()
+    args = argparser.parse_args(args=args)
 
     forcing_defn = load.load_definition(
         root_data_path=args.data_path, forcing_name=args.forcing
     )
-
     with optional_debugging(args.debug):
         main(
             data_path=args.data_path,
             forcing_defn=forcing_defn,
-            conversion_name=args.conversion_name,
+            conversion_name=args.conversion,
         )
+
+
+if __name__ == "__main__":
+    cli()

@@ -21,9 +21,7 @@ def validate_trajectory(ds_traj):
             " fields: {}".format(", ".join(missing_fields))
         )
 
-    required_attrs = ["name", "trajectory_type"]
-    if ds_traj.attrs.get("trajectory_type") != "linear":
-        required_attrs += ["domain_name"]
+    required_attrs = ["name", "trajectory_type", "domain"]
     missing_attrs = list(filter(lambda f: f not in ds_traj.attrs, required_attrs))
 
     if len(missing_attrs) > 0:

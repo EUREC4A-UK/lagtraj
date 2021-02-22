@@ -27,7 +27,7 @@ TrajectoryDefinition = namedtuple(
 INPUT_REQUIRED_FIELDS = {
     "trajectory_type": ["linear", "eulerian", "lagrangian"],
     # domain should only be given when creating a lagrangian trajectory
-    "domain": str,
+    "domain": dict(requires=dict(trajectory_type="lagrangian"), choices=str),
     "lat_origin": float,
     "lon_origin": float,
     "datetime_origin": isodate.parse_datetime,

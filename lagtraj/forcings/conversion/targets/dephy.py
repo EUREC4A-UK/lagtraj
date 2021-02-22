@@ -3,6 +3,7 @@
     2. the mapping between the internal lagtraj variables (era5) and dephy
     3. and a function to process the conversion
 """
+# TODO: correct surface height
 
 import numpy as np
 import xarray as xr

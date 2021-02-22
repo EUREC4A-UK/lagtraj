@@ -3,6 +3,8 @@
     2. the mapping between the internal lagtraj variables (era5) and KPT
     3. and a function to process the conversion
 """
+# TODO: correct surface height
+
 import xarray as xr
 import numpy as np
 import datetime

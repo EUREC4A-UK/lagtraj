@@ -25,9 +25,9 @@ def validate_trajectory(ds_traj):
 
     trajectory_type = ds_traj.attrs.get("trajectory_type")
     if trajectory_type == "lagrangian":
-        required_attrs += ["domain"]
+        required_attrs += ["domain_name"]
     if trajectory_type == "eulerian" and ds_traj.attrs.get("timestep") == "domain_data":
-        required_attrs += ["domain"]
+        required_attrs += ["domain_name"]
 
     missing_attrs = list(filter(lambda f: f not in ds_traj.attrs, required_attrs))
 

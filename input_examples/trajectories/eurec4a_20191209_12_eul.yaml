@@ -1,8 +1,8 @@
 trajectory_type    : eulerian
-version            : 1.0.1
+version            : 1.0.2
 lat_origin         : 13.3
 lon_origin         : -57.717
 datetime_origin    : 2020-01-01T12:00
 forward_duration   : PT24H
 backward_duration  : PT24H
-timestep           : domain_data  # or for example PT1H
+timestep           : PT1H

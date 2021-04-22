@@ -48,7 +48,7 @@ INPUT_DEFN_EXAMPLES = _get_examples()
 
 
 @pytest.mark.parametrize("input_example", INPUT_DEFN_EXAMPLES)
-def test_load_example(input_example):
+def test_load_example(input_example, testdata_info):
     i = input_example.index("/")
     input_type_plural = input_example[:i]
     input_name = f"lagtraj://{input_example[i + 1 :]}"
@@ -61,7 +61,7 @@ def test_load_example(input_example):
     input_defn = lagtraj.input_definitions.load.load_definition(
         input_name=input_name,
         input_type=input_type,
-        root_data_path=DEFAULT_ROOT_DATA_PATH,
+        root_data_path=testdata_info["testdata_path"],
         required_fields=INPUT_TYPES[input_type],
     )
 

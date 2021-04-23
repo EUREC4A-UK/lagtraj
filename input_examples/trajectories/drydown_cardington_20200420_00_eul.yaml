@@ -1,0 +1,8 @@
+backward_duration: PT0H
+datetime_origin: 2020-04-20T00:00
+forward_duration: PT24H
+lat_origin: 52.1
+lon_origin: -0.42
+timestep: domain_data
+trajectory_type: eulerian
+version: 1.0.0

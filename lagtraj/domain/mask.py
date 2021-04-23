@@ -25,10 +25,10 @@ def _compute_all_mask(ds):
 def _compute_land_only_mask(ds, lsm_min=0.8):
     """Computes a mask for cells that are considered to be over the
     land. The lsm fraction is above lsm_min"""
-    da_mask = (ds.lsm > lsm_min)
-    da_mask.attrs["long_name"] = (
-        "Land only (land-sea mask > {lsm_min} [{ds.lsm.units}])"
-    )
+    da_mask = ds.lsm > lsm_min
+    da_mask.attrs[
+        "long_name"
+    ] = "Land only (land-sea mask > {lsm_min} [{ds.lsm.units}])"
     return da_mask
 
 

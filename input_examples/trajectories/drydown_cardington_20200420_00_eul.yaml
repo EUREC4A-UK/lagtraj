@@ -5,4 +5,5 @@ lat_origin: 52.1
 lon_origin: -0.42
 timestep: domain_data
 trajectory_type: eulerian
+domain: lagtraj://drydown_cardington_local
 version: 1.0.0

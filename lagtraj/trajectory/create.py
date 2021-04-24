@@ -95,6 +95,13 @@ def main(data_path, trajectory_name):
             root_data_path=data_path, name=traj_definition.domain
         )
         kwargs["ds_domain"] = ds_domain
+    elif (
+        traj_definition.type == "eulerian" or traj_definition.type == "linear"
+    ) and traj_definition.timestep == "domain_data":
+        ds_domain = load_domain_data(
+            root_data_path=data_path, name=traj_definition.domain
+        )
+        kwargs["ds_domain"] = ds_domain
     else:
         ds_domain = None
 
@@ -167,7 +174,6 @@ def _build_times_dataarray(origin, duration, dt):
 
 def create_eulerian_trajectory(origin, da_times):
     ds = xr.Dataset(coords=dict(time=da_times))
-
     lat0 = origin.lat
     lon0 = origin.lon
     ds["origin_datetime"] = origin.datetime

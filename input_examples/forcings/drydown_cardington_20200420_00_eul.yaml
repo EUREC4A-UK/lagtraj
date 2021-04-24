@@ -1,7 +1,6 @@
-trajectory      : drydown_cardington_20200420_00_eul
-domain          : drydown_cardington
+trajectory      : lagtraj://drydown_cardington_20200420_00_eul
+domain          : lagtraj://drydown_cardington_local
 gradient_method : boundary
-sampling_mask   : all
 advection_velocity_sampling_method: domain_mean
 sampling_mask   : land_only
 averaging_width : 1.0

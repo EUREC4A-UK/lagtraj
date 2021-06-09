@@ -2,27 +2,16 @@ from unittest.mock import patch
 import importlib
 from pathlib import Path
 import pytest
-import subprocess
 import re
+import os
 
 import lagtraj.forcings.create
 from lagtraj.forcings import build_forcing_data_path
 import lagtraj.trajectory.create
 from lagtraj.trajectory import build_data_path as build_trajectory_data_path
+from conftest import TESTDATA_DIR, ensure_testdata_available
 
 from test_forcing_profiles_extraction import AVAILABLE_CONVERSIONS
-
-
-def _execute(cmd):
-    # https://stackoverflow.com/a/4417735
-    popen = subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True)
-    for stdout_line in iter(popen.stdout.readline, ""):
-        yield stdout_line
-    popen.stdout.close()
-    return_code = popen.wait()
-
-    if return_code:
-        raise subprocess.CalledProcessError(return_code, cmd)
 
 
 @patch("lagtraj.domain.download.download_complete")
@@ -99,25 +88,68 @@ def _parse_readme_cli_commands():
 
     lines = [line.replace("$>", "").strip() for line in lines]
 
-    cli_commands = list(filter(lambda l: "python -m" in l, lines))
-
-    # skip any commands with contain `[]` or `<>` pairs
-    def has_optional_param(cmd):
-        return len(re.findall(r"<.*>", cmd) + re.findall(r"\[.*\]", cmd)) > 0
-
-    cli_commands = list(filter(lambda cmd: not has_optional_param(cmd), cli_commands))
+    cli_commands = list(filter(lambda l: "python -m lagtraj" in l, lines))
 
     return cli_commands
 
 
-@pytest.mark.parametrize("cli_command", _parse_readme_cli_commands())
-@patch("lagtraj.domain.download.download_complete")
-def test_readme_cli_commands(download_complete_mocked, cli_command):
-    # during CI we won't have access to an ERA5 token so we need to pretend
-    # that all data has been downloaded. We have to reload the module so we
-    # ensure the mocked function is called
-    importlib.reload(lagtraj.trajectory.create)
-    download_complete_mocked.return_value = True
+def _set_placeholder_args(cmd):
+    """
+    fill out placeholder args in README commands, replacing <required_arg> with
+    sensible defaults and removing [--optional-arg], turning e.g.
 
-    for output in _execute(cli_command.split()):
-        print((output.strip()))
+        python -m lagtraj.forcing.create <forcing_name> [--conversion <conversion_name>]
+
+    into
+
+        python -m lagtraj.forcing.create lagtraj://eurec4a_20191209_12_lag [--conversion <conversion_name>]
+    """
+    # for examples where we've got placeholders we should replace these
+    # placeholders with some reasonable defaults
+    default_args = [
+        ("<command>", "input_definitions.examples"),
+        ("<domain_name>", "lagtraj://eurec4a_circle"),
+        ("<trajectory_name>", "lagtraj://eurec4a_20200202_12_lag_short"),
+        ("<forcing_name>", "lagtraj://eurec4a_20200202_12_lag_short"),
+        ("<start_date>", "2020/02/01"),
+        ("<end_date>", "2020/02/02"),
+    ]
+    for k, v in default_args:
+        cmd = cmd.replace(k, v)
+
+    for optional_arg in re.findall(r"\[.*\]", cmd):
+        cmd = cmd.replace(optional_arg, "")
+
+    return cmd
+
+
+@pytest.fixture(scope="module", autouse=True)
+def fetch_testdata():
+    ensure_testdata_available()
+
+
+@pytest.mark.parametrize("cli_command", _parse_readme_cli_commands())
+def test_readme_cli_commands(cli_command):
+    cli_command = _set_placeholder_args(cli_command)
+
+    module_name, *args = cli_command.replace("python -m", "").strip().split(" ")
+
+    try:
+        module = importlib.import_module(module_name)
+        cli_fn = module.cli
+    except ImportError:
+        raise NotImplementedError(
+            f"Can't test for CLI command `{cli_command}` in README because it"
+            "isn't clear what entrypoint function this command uses"
+        )
+
+    cmds_without_datapath = ["lagtraj.input_definitions.examples"]
+    if cli_command not in cmds_without_datapath:
+        args += ["--data-path", str(TESTDATA_DIR.absolute())]
+
+    print(f"running {module.__name__}.cli with args {args}")
+    cli_fn(args)
+
+    # quick hack to remove the output since otherwise forcing creation will
+    # fail the second time it is run to create the same file
+    [p.unlink() for p in (TESTDATA_DIR / "forcings").glob("*.nc")]

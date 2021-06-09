@@ -73,7 +73,7 @@ input-defintions bundled with your copy of `lagtraj` by running the
 following command:
 
 ```bash
-$> python -m lagraj.input_definitions.examples
+$> python -m lagtraj.input_definitions.examples
 
 The following domain/forcing/trajectory definitions are currently included
 with lagtraj:
@@ -92,7 +92,7 @@ lagtraj://
 To use for example the `eurec4a_north_atlantic` domain definition
 for downloading domain data run lagtraj.domain.download as follows:
 
-    $> python -m lagtraj.domain.download lagtraj://eurec4a_circle 2020/01/01 2020/01/08
+    $> python -m lagtraj.domain.download lagtraj://eurec4a_circle 2020/02/01 2020/02/02
 ```
 
 ## 1. Making source data available
@@ -108,7 +108,7 @@ edge of the available domain is reached.
 Either create your own domain definition in `data/domains/<domain_name>.yaml` and run
 
 ```bash
-$> python -m lagtraj.domain.download <domain_name> [start date (yyyy-mm-dd)] [end date (yyyy-mm-dd)]
+$> python -m lagtraj.domain.download <domain_name> <start_date> <end_date>
 ```
 
 Or use one of the domain definitions included with `lagtraj` (e.g.
@@ -116,8 +116,9 @@ Or use one of the domain definitions included with `lagtraj` (e.g.
 
 
 ```bash
-$> python -m lagtraj.domain.download lagtraj://eurec4a_circle [start date (yyyy-mm-dd)] [end date (yyyy-mm-dd)]
+$> python -m lagtraj.domain.download lagtraj://eurec4a_circle <start_date> <end_date>
 ```
+the `<start_date>` and `<end_date>` should be formatted as `YYYY/MM/DD`, e.g. `2020/02/01` for the 2nd of February 2020.
 
 An optional flag `--retry-rate <num_minutes>` causes `lagtraj` to continue
 retrying download of submitted data requests every `num_minutes` minutes until
@@ -139,7 +140,7 @@ Or use one of the domain definitions included with `lagtraj` (e.g.
 
 
 ```bash
-$> python -m lagtraj.trajectory.create lagtraj://eurec4a_20191209_12_lag
+$> python -m lagtraj.trajectory.create lagtraj://eurec4a_20200202_12_lag_short
 ```
 
 The created trajectory will be stored in `data/trajectories/<trajectory_name>.nc`.
@@ -150,14 +151,14 @@ To produce forcings you need to create a forcing definition in
 `data/forcings/<forcing_name>.yaml` and run
 
 ```bash
-$> python -m lagtraj.forcing.create <forcing_name> [--conversion <conversion_name>]
+$> python -m lagtraj.forcings.create <forcing_name> [--conversion <conversion_name>]
 ```
 
 Or use one of the forcing definitions included with `lagtraj` (e.g.
 `eurec4a_20200202_12_lag`)
 
 ```bash
-$> python -m lagtraj.forcing.create lagtraj://eurec4a_20200202_12_lag [--conversion <conversion_name>]
+$> python -m lagtraj.forcings.create lagtraj://eurec4a_20200202_12_lag_short [--conversion <conversion_name>]
 ```
 
 ### Forcing profiles conversion (targeting a specific GCM/LES)
@@ -183,7 +184,7 @@ will the convert `data/forcings/<forcing_name>,nc` and save to
 `data/forcings/<forcing_name>.<conversion_name>.nc`.
 
 ```bash
-$> python -m lagtraj.forcing.create <forcing_name> [--conversion <conversion_name>]
+$> python -m lagtraj.forcings.create <forcing_name> [--conversion <conversion_name>]
 ```
 
 Instead of creating a conversion definition starting from an empty file you can
@@ -194,7 +195,7 @@ bundled with `lagtraj` and have it converted to the `dephy` format with the
 default parameters you would run
 
 ```bash
-$> python -m lagtraj.forcing.create lagtraj://eurec4a_20200202_12_lag --conversion lagtraj://dephy
+$> python -m lagtraj.forcings.create lagtraj://eurec4a_20200202_12_lag_short --conversion lagtraj://dephy
 ```
 
 This will create the un-converted forcing in
@@ -207,7 +208,7 @@ forcing creation with your local copy of the conversion definition (note the
 absence of the `lagtraj://` prefix):
 
 ```bash
-$> python -m lagtraj.forcing.create lagtraj://eurec4a_20200202_12_lag --conversion dephy
+$> python -m lagtraj.forcings.create lagtraj://eurec4a_20200202_12_lag_short --conversion dephy
 ```
 
 You are of course welcome to rename the conversion however you like if for

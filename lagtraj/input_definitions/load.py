@@ -50,9 +50,28 @@ def load_definition(
 
     if requesting_lagtraj_bundled_input:
         try:
-            input_path = input_examples.get_path(
-                input_name=input_name, input_type=input_type
-            )
+            if input_subtype is None:
+                input_path = input_examples.get_path(
+                    input_name=input_name, input_type=input_type
+                )
+            else:
+                if input_type == "forcing":
+                    # NB: this is a bit hacky, we're assuming that the
+                    # "subtype" will refer to a converted forcing, but that is
+                    # probably ok for now, it's unlikely that we will have other
+                    # kinds of subtypes of forcings
+                    try:
+                        input_path = input_examples.get_path(
+                            input_name=f"lagtraj://{input_subtype}",
+                            input_type="forcings_conversion",
+                        )
+                    except input_examples.LagtrajExampleDoesNotExist:
+                        raise NotImplementedError(
+                            f"The requested `{input_subtype}` forcing sub-type "
+                            "isn't currently included with lagtraj"
+                        )
+                else:
+                    raise input_examples.LagtrajExampleDoesNotExist()
         except input_examples.LagtrajExampleDoesNotExist:
             input_type_plural = DATA_TYPE_PLURAL[input_type]
             print(
@@ -150,6 +169,7 @@ def load_definition(
                 root_data_path=root_data_path,
                 input_name=input_name,
                 input_type=input_type,
+                input_subtype=input_subtype,
             )
 
         if not input_local_path.exists():

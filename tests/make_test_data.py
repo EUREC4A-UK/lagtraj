@@ -7,7 +7,7 @@ from lagtraj import DEFAULT_ROOT_DATA_PATH
 from lagtraj.utils import optional_debugging
 
 
-TEST_FORCING_NAME = "lagtraj://eurec4a_20191209_12_lag"
+TEST_FORCING_NAME = "lagtraj://eurec4a_20200202_12_lag_short"
 
 
 def main(
@@ -15,7 +15,7 @@ def main(
 ):
     p_root = DEFAULT_ROOT_DATA_PATH
 
-    forcing_defn = forcing_load.load_definition(p_root, name=forcing_name)
+    forcing_defn = forcing_load.load_definition(p_root, forcing_name=forcing_name)
     trajectory_name = forcing_defn.name
 
     trajectory_defn = trajectory_load.load_definition(p_root, name=trajectory_name)
@@ -39,6 +39,9 @@ def main(
     # attempt to load the data
     _ = load.load_data(DEFAULT_ROOT_DATA_PATH, name=domain_name)
 
+    # NB: the lines below add all domain-data files in the domain data
+    # directory to the tar-ball and so may include dates that aren't needed if
+    # more data has been downloaded manually
     domain_name_local = domain_name.replace("lagtraj://", "")
     with tarfile.open(output_filename, "w:gz") as tar:
         p = p_root / "domains" / f"{domain_name_local}.yaml"

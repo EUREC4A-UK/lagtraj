@@ -90,7 +90,7 @@ def download_complete(root_data_path, domain_name):
         )
 
 
-def _run_cli(timedomain_lookup="by_arguments"):
+def _run_cli(args=None, timedomain_lookup="by_arguments"):
     import argparse
 
     argparser = argparse.ArgumentParser()
@@ -115,7 +115,7 @@ def _run_cli(timedomain_lookup="by_arguments"):
         type=float,
         help="Retry time delay (in minutes) when some files are still processing",
     )
-    args = argparser.parse_args()
+    args = argparser.parse_args(args=args)
 
     if timedomain_lookup == "by_arguments":
         domain = args.domain
@@ -155,5 +155,9 @@ def _run_cli(timedomain_lookup="by_arguments"):
         attempt_download()
 
 
+def cli(args):
+    _run_cli(args=args, timedomain_lookup="by_arguments")
+
+
 if __name__ == "__main__":
-    _run_cli(timedomain_lookup="by_arguments")
+    cli(args=None)

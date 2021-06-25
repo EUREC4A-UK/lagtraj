@@ -22,6 +22,14 @@ def _boundary_gradients(x_array, y_array, val_array):
             dx_tot = 0.0
             dy_tot = 0.0
             # This calculates the x-gradient as a weighted average over latitude
+            # The way the averaging is done now is such that the weight of a particular
+            # latitude/longitude is proportional to the length of the segment over
+            # which a gradient is calculated at that latitude/longitude.
+            # This length varies, and may even be zero in extreme cases,
+            # due to the use of a mask (and also a bit due to the lat-lon grid,
+            # but that would mostly be notable close to the poles). This changes
+            # ensures there is no inappropriately high weighting given when a
+            # gradient is calculated over a short (or zero) distance.
             # The ~np.isnan operation is used to filter out masked values
             # The first and last filtered values are used
             for this_lat in range(len_lats):

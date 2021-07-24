@@ -8,6 +8,7 @@ from pathlib import Path
 import netCDF4
 import yaml
 import requests
+import xarray as xr
 
 from .... import utils
 from .cdsapi_request import RequestFetchCDSClient
@@ -257,9 +258,9 @@ def _build_query(model_run_type, level_type, date, bbox, latlon_sampling):
 
 
 def _fingerprint_downloaded_file(query_hash, file_path):
-    ds = netCDF4.Dataset(file_path, "a")
-    ds.setncattr("dict_checksum", query_hash)
-    ds.close()
+    ds=xr.open_dataset(file_path)
+    ds.attrs["dict_checksum"]=query_hash
+    ds.to_netcdf(file_path)
 
 
 def _build_single_level_an_query(date, bbox, latlon_sampling):

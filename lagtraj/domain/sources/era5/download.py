@@ -258,8 +258,8 @@ def _build_query(model_run_type, level_type, date, bbox, latlon_sampling):
 
 
 def _fingerprint_downloaded_file(query_hash, file_path):
-    ds=xr.open_dataset(file_path)
-    ds.attrs["dict_checksum"]=query_hash
+    ds = xr.open_dataset(file_path)
+    ds.attrs["dict_checksum"] = query_hash
     ds.to_netcdf(file_path)
 
 
@@ -325,7 +325,12 @@ def _build_single_level_an_query(date, bbox, latlon_sampling):
             "/12:00:00/13:00:00/14:00:00/15:00:00/16:00:00/17:00:00"
             "/18:00:00/19:00:00/20:00:00/21:00:00/22:00:00/23:00:00"
         ),
-        "area": [bbox.lat_max, bbox.lon_min, bbox.lat_min, bbox.lon_max,],
+        "area": [
+            bbox.lat_max,
+            bbox.lon_min,
+            bbox.lat_min,
+            bbox.lon_max,
+        ],
         "grid": "{}/{}".format(latlon_sampling.lat, latlon_sampling.lon),
         "type": "an",
         "format": "netcdf",
@@ -463,7 +468,12 @@ def _build_model_level_fc_query(date, bbox, latlon_sampling):
         "stream": "oper",
         "time": "06:00:00/18:00:00",
         "type": "fc",
-        "area": [bbox.lat_max, bbox.lon_min, bbox.lat_min, bbox.lon_max,],
+        "area": [
+            bbox.lat_max,
+            bbox.lon_min,
+            bbox.lat_min,
+            bbox.lon_max,
+        ],
         "grid": "{}/{}".format(latlon_sampling.lat, latlon_sampling.lon),
         "step": "1/2/3/4/5/6/7/8/9/10/11/12",
         "format": "netcdf",

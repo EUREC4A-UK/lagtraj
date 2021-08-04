@@ -44,15 +44,7 @@ def download_data(
         download_id = str(file_path)
         should_make_request = True
         if not overwrite_existing and file_path.exists():
-            if _data_valid(file_path=file_path, query_hash=query_hash):
-                should_make_request = False
-            else:
-                warnings.warn(
-                    "Invalid data found for ({})"
-                    ", deleting and queuing for re-download"
-                    "".format(output_filename)
-                )
-                file_path.unlink()
+            should_make_request = False
 
         if download_id in download_requests:
             download_request = download_requests[download_id]
@@ -94,7 +86,6 @@ def download_data(
             Path(file_path).parent.mkdir(exist_ok=True, parents=True)
             try:
                 c.download_data_by_request(request_id=request_id, target=file_path)
-                _fingerprint_downloaded_file(query_hash=query_hash, file_path=file_path)
             except requests.exceptions.HTTPError as ex:
                 if ex.response.status_code == 404:
                     print(
@@ -170,20 +161,6 @@ def _get_files(path, c, debug=False, with_status=None):
     return files
 
 
-def _data_valid(file_path, query_hash):
-    """
-    Create hash on `query_kwargs` and ensure it matches that stored in file
-    on disk
-    """
-    ds = netCDF4.Dataset(file_path)
-    try:
-        hash_unchanged = ds.getncattr("dict_checksum") == query_hash
-    except AttributeError:
-        # if hash checking fails, just download
-        return False
-    return hash_unchanged
-
-
 def _build_query_times(model_run_type, t_start, t_end):
     """
     We currently download era5 data by date, build the query dates as datetime
@@ -254,12 +231,6 @@ def _build_query(model_run_type, level_type, date, bbox, latlon_sampling):
         )
     else:
         raise NotImplementedError(model_run_type, level_type)
-
-
-def _fingerprint_downloaded_file(query_hash, file_path):
-    ds = netCDF4.Dataset(file_path, "a")
-    ds.setncattr("dict_checksum", query_hash)
-    ds.close()
 
 
 def _build_single_level_an_query(date, bbox, latlon_sampling):

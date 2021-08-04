@@ -19,6 +19,27 @@ big for Lagrangian)
 
 ## 0. Getting started
 
+### Installing lagtraj
+
+`lagtraj` (and all its dependencies) can be installed with pip directly
+from github:
+
+```bash
+$> python -m pip install git+https://github.com/EUREC4A-UK/lagtraj
+```
+
+`lagtraj` requires Python 3 and is tested with `python3.6` but later
+versions should work too.
+
+Once installed all `lagtraj`'s commands are available from any directory
+and the follow the pattern
+
+```bash
+$> python -m lagtraj.<command>
+```
+
+### lagtraj input and output
+
 `lagtraj` stores everything (source data, definitions for how domains,
 trajectories and forcings are set up) in a *data directory* (by default this
 will be `data/` relative to where `lagtraj` is invoked). The directory
@@ -27,8 +48,8 @@ structure is as follows:
 ```bash
 data
 ├── domains
-│   ├── eurec4a_circle_eul.yaml
-│   └── eurec4a_circle_eul_data
+│   ├── eurec4a_circle.yaml
+│   └── eurec4a_circle_data
 │       ├── an_model_2020-01-01.nc
 │       :
 │       └── fc_single_2020-01-03.nc
@@ -40,9 +61,16 @@ data
     └── eure4a_20191209_12_eul.nc
 ```
 
-You can either make your own domain/forcing/trajectory definition (these are
-stored in yaml-files) by creating a `meta.yaml` file in the relevant directory
-or use the ones that `lagtraj` comes with by running the following command:
+The `name` of each domain/trajectory/forcing inside `lagtraj` will be the
+full filename without the `.yaml`-extension. E.g. the domain definition in
+`domains/eurec4a_circle.yaml` will have the name `eurec4a_circle` inside
+`lagtraj`.
+
+You can either make your own domain/forcing/trajectory definition (these
+are stored in yaml-files) by creating a yaml-file in the relevant
+directory or use one that `lagtraj` comes with. You can list the
+input-defintions bundled with your copy of `lagtraj` by running the
+following command:
 
 ```bash
 $> python -m lagraj.input_definitions.examples
@@ -64,18 +92,18 @@ lagtraj://
 To use for example the `eurec4a_north_atlantic` domain definition
 for downloading domain data run lagtraj.domain.download as follows:
 
-    $> python -m lagtraj.domain.download lagtraj://eurec4a_20191209_12_eul 2020/01/01 2020/01/08
+    $> python -m lagtraj.domain.download lagtraj://eurec4a_circle 2020/01/01 2020/01/08
 ```
 
 ## 1. Making source data available
 
 `lagtraj` is based around making all data required for interpolation,
-integration and forcing calculation being available before trajectories are
-integrated. This was done to reduce the number of data requests required to the
-data storage backends (e.g. ECMWF), but does mean that *the expected extent
-that a trajectory will reach must been known before performining a trajectory
-integration*, otherwise `lagtraj` will issue a warning when the edge of the
-available domain is reached.
+integration and forcing calculation available before trajectories and forcings
+are calculated. This was done to reduce the number of data requests required
+to the data storage backends (e.g. ECMWF), but does mean that *the expected
+extent that a trajectory will reach must been known before performining
+a trajectory integration*, otherwise `lagtraj` will issue a warning when the
+edge of the available domain is reached.
 
 Either create your own domain definition in `data/domains/<domain_name>.yaml` and run
 
@@ -88,8 +116,13 @@ Or use one of the domain definitions included with `lagtraj` (e.g.
 
 
 ```bash
-$> python -m lagtraj.domain.download lagtraj://eurec4a_north_atlantic [start date (yyyy-mm-dd)] [end date (yyyy-mm-dd)]
+$> python -m lagtraj.domain.download lagtraj://eurec4a_circle [start date (yyyy-mm-dd)] [end date (yyyy-mm-dd)]
 ```
+
+An optional flag `--retry-rate <num_minutes>` causes `lagtraj` to continue
+retrying download of submitted data requests every `num_minutes` minutes until
+all data has been downloaded. Every time this command is run it will attempt to
+download only data not yet downloaded.
 
 
 ## 2. Producing a trajectory
@@ -109,30 +142,32 @@ Or use one of the domain definitions included with `lagtraj` (e.g.
 $> python -m lagtraj.trajectory.create lagtraj://eurec4a_20191209_12_lag
 ```
 
+The created trajectory will be stored in `data/trajectories/<trajectory_name>.nc`.
+
 ## 3. Producing forcing profiles
 
 To produce forcings you need to create a forcing definition in
 `data/forcings/<forcing_name>.yaml` and run
 
 ```bash
-$> python -m lagtraj.forcing.create <forcing_name> [--convert <conversion_name>]
+$> python -m lagtraj.forcing.create <forcing_name> [--conversion <conversion_name>]
 ```
 
 Or use one of the forcing definitions included with `lagtraj` (e.g.
 `eurec4a_20200202_12_lag`)
 
 ```bash
-$> python -m lagtraj.forcing.create lagtraj://eurec4a_20200202_12_lag [--convert <conversion_name>]
+$> python -m lagtraj.forcing.create lagtraj://eurec4a_20200202_12_lag [--conversion <conversion_name>]
 ```
 
 ### Forcing profiles conversion (targeting a specific GCM/LES)
 
 When creating forcings it might be desirable to target a specific LES
 (Large-Eddy Simulation) model or GCM (Global Circulation Model) by
-converting the forcings to a specific format and setting parameters specific to
-the model being targeted. This can be achieved by using the `--output-format`
-flag and providing a `conversion_name`. `lagtraj` currently comes bundled with
-functionality to target the
+converting the forcings to a specific format and setting parameters
+specific to the model being targeted. This can be achieved by using the
+`--conversion` flag and providing a `conversion_name`. `lagtraj` currently
+comes bundled with functionality to target the
 [KPT](https://www.lmd.jussieu.fr/~mpllmd/dephy2_forcages_communs/KPT_documentation.pdf)
 LES and
 [dephy](https://docs.google.com/document/d/118xP04jB9HO7Y2LqWk3HZpZ9n3CFujgzimLI7Ug8vO4)
@@ -148,7 +183,7 @@ will the convert `data/forcings/<forcing_name>,nc` and save to
 `data/forcings/<forcing_name>.<conversion_name>.nc`.
 
 ```bash
-$> python -m lagtraj.forcing.create <forcing_name> [--convert <conversion_name>]
+$> python -m lagtraj.forcing.create <forcing_name> [--conversion <conversion_name>]
 ```
 
 Instead of creating a conversion definition starting from an empty file you can
@@ -159,7 +194,7 @@ bundled with `lagtraj` and have it converted to the `dephy` format with the
 default parameters you would run
 
 ```bash
-$> python -m lagtraj.forcing.create lagtraj://eurec4a_20200202_12_lag --convert lagtraj://dephy
+$> python -m lagtraj.forcing.create lagtraj://eurec4a_20200202_12_lag --conversion lagtraj://dephy
 ```
 
 This will create the un-converted forcing in
@@ -172,7 +207,7 @@ forcing creation with your local copy of the conversion definition (note the
 absence of the `lagtraj://` prefix):
 
 ```bash
-$> python -m lagtraj.forcing.create lagtraj://eurec4a_20200202_12_lag --convert dephy
+$> python -m lagtraj.forcing.create lagtraj://eurec4a_20200202_12_lag --conversion dephy
 ```
 
 You are of course welcome to rename the conversion however you like if for
@@ -212,5 +247,8 @@ Considerations:
 
 - may need whole domain for plotting
 
-- how many download requests can we make with ECMWF's data server? One big
-  request seems better than many small ones
+# Contributing and comments
+
+Please feel free to [open an
+issue](https://github.com/EUREC4A-UK/lagtraj/issues/new) if you have any
+comments/questions/issues about `lagtraj`. Thank you!

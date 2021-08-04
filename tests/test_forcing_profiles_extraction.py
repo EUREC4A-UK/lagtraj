@@ -4,6 +4,10 @@ import pytest
 import lagtraj.forcings.create
 from lagtraj.forcings import ForcingLevelsDefinition, ForcingSamplingDefinition
 from lagtraj.utils import validation
+import tempfile
+
+
+AVAILABLE_CONVERSIONS = [None, "lagtraj://kpt", "lagtraj://dephy"]
 
 
 @pytest.mark.parametrize(
@@ -15,7 +19,7 @@ from lagtraj.utils import validation
         ("regression", "local"),
     ],
 )
-@pytest.mark.parametrize("conversion_name", [None, "lagtraj://kpt", "lagtraj://dephy"])
+@pytest.mark.parametrize("conversion_name", AVAILABLE_CONVERSIONS)
 def test_create_forcing_linear_trajectory(
     ds_domain_test,
     ds_trajectory_linear,
@@ -50,6 +54,11 @@ def test_create_forcing_linear_trajectory(
     # to enable export to file of a forcing we much give it a name
     ds_forcing.attrs["name"] = "test_forcing"
     if conversion_name is not None:
+        # we export to a temporary directory so that we don't clobber local
+        # files or have parallel tests clobber each other
+        tmpdir = tempfile.TemporaryDirectory()
         lagtraj.forcings.conversion.process.export_for_target(
-            ds_forcing=ds_forcing, conversion_name=conversion_name,
+            ds_forcing=ds_forcing,
+            conversion_name=conversion_name,
+            root_data_path=tmpdir.name,
         )

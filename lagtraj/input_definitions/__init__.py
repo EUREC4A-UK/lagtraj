@@ -48,6 +48,20 @@ def validate_input(input_params, required_fields):
                 requirements = f_option["requires"]
                 satisfied_requirements = {}
                 for f_name_reqd, f_option_reqd in requirements.items():
+                    # special flag for making a requirement that another
+                    # parameter is set
+                    if f_option_reqd == "__is_set__":
+                        f_reqd_value = input_params.get(f_name_reqd)
+                        f_value = input_params.get(f_name)
+                        if f_reqd_value is not None:
+                            satisfied_requirements[f_name_reqd] = f_value
+                            continue
+                        else:
+                            raise InvalidInputDefinition(
+                                f"For `{f_name}` == `{f_value}` the `{f_name_reqd}`"
+                                " must be set"
+                            )
+
                     try:
                         res = _check_field(f_name=f_name_reqd, f_option=f_option_reqd)
                         satisfied_requirements[f_name_reqd] = res

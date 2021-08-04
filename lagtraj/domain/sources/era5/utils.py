@@ -23,6 +23,7 @@ def _load_ecmwf_level_coefficients():
     ds_levels_coeffs["b"] = xr.DataArray(levels_table["b"].values, dims=("level",))
     return ds_levels_coeffs
 
+
 ds_levels_coeffs = _load_ecmwf_level_coefficients()
 
 
@@ -96,8 +97,9 @@ def calculate_heights_and_pressures(ds):
 
     levels = ds.level
     if levels.values[0] > levels.values[-1]:
-        raise Exception("Height and pressure calculation assumes top-down "
-                        "ordering of the levels")
+        raise Exception(
+            "Height and pressure calculation assumes top-down " "ordering of the levels"
+        )
 
     a_coeffs = ds_levels_coeffs.sel(level=ds.level).a.values
     b_coeffs = ds_levels_coeffs.sel(level=ds.level).b.values
@@ -112,18 +114,29 @@ def calculate_heights_and_pressures(ds):
 
         height_dims = ds_time.t.dims
         height_h, height_f, p_h, p_f = _calculate_heights_and_pressures(
-            p_surf, height_surf, a_coeffs, b_coeffs, t_field, q_field,
+            p_surf,
+            height_surf,
+            a_coeffs,
+            b_coeffs,
+            t_field,
+            q_field,
         )
         ds_extra = xr.Dataset(coords=ds_time.coords)
         ds_extra["height_h"] = xr.DataArray(
             height_h,
             dims=height_dims,
-            attrs={"long_name": "height above sea level at half level", "units": "m",},
+            attrs={
+                "long_name": "height above sea level at half level",
+                "units": "m",
+            },
         )
         ds_extra["height_f"] = xr.DataArray(
             height_f,
             dims=height_dims,
-            attrs={"long_name": "height above sea level at full level", "units": "m",},
+            attrs={
+                "long_name": "height above sea level at full level",
+                "units": "m",
+            },
         )
         ds_extra["p_h"] = xr.DataArray(
             p_h,

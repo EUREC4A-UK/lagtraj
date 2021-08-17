@@ -8,7 +8,7 @@ from asciitree import drawing
 from .. import DATA_TYPE_PLURAL
 
 
-EXAMPLES_ROOT_PATH = Path(__file__).parent.parent.parent / "input_examples"
+EXAMPLES_ROOT_PATH = Path(__file__).parent / "examples_files"
 LAGTRAJ_EXAMPLES_PATH_PREFIX = "lagtraj://"
 
 

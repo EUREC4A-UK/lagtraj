@@ -5,8 +5,10 @@ import lagtraj.forcings.create
 from lagtraj.forcings import ForcingLevelsDefinition, ForcingSamplingDefinition
 from lagtraj.utils import validation
 import tempfile
+from sys import platform
 
 
+ON_LINUX = platform == "linux" or platform == "linux2"
 AVAILABLE_CONVERSIONS = [None, "lagtraj://kpt", "lagtraj://dephy"]
 
 
@@ -49,7 +51,9 @@ def test_create_forcing_linear_trajectory(
     )
 
     validation.validate_forcing_profiles(ds_forcing)
-    validation.check_for_ncview_warnings(ds=ds_forcing)
+    # we currently only install ncview when doing CI on linux
+    if ON_LINUX:
+        validation.check_for_ncview_warnings(ds=ds_forcing)
 
     # to enable export to file of a forcing we much give it a name
     ds_forcing.attrs["name"] = "test_forcing"

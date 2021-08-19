@@ -66,22 +66,7 @@ def create_trajectory(origin, trajectory_type, da_times, **kwargs):
     return ds_traj
 
 
-def main():
-    import argparse
-
-    argparser = argparse.ArgumentParser()
-    argparser.add_argument("trajectory")
-    argparser.add_argument(
-        "-d", "--data-path", default=DEFAULT_ROOT_DATA_PATH, type=Path
-    )
-    argparser.add_argument("--debug", default=False, action="store_true")
-    args = argparser.parse_args()
-
-    with optional_debugging(args.debug):
-        cli(data_path=args.data_path, trajectory_name=args.trajectory)
-
-
-def cli(data_path, trajectory_name):
+def main(data_path, trajectory_name):
     traj_definition = load_definition(root_data_path=data_path, name=trajectory_name)
 
     if traj_definition.timestep == "domain_data":
@@ -340,5 +325,25 @@ def _create_extrapolated_trajectory(origin, da_times, extrapolation_func):
     return ds_traj
 
 
+def cli(args=None):
+    """
+    Function called with arguments passed from the command line when making
+    trajectories through the CLI. When `args==None` they will be taken from
+    `sys.argv`
+    """
+    import argparse
+
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument("trajectory")
+    argparser.add_argument(
+        "-d", "--data-path", default=DEFAULT_ROOT_DATA_PATH, type=Path
+    )
+    argparser.add_argument("--debug", default=False, action="store_true")
+    args = argparser.parse_args(args=args)
+
+    with optional_debugging(args.debug):
+        main(data_path=args.data_path, trajectory_name=args.trajectory)
+
+
 if __name__ == "__main__":
-    main()
+    cli()

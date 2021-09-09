@@ -29,7 +29,16 @@ def download_data(
         )
     )
 
-    c = RequestFetchCDSClient()
+    try:
+        c = RequestFetchCDSClient()
+    except Exception as ex:
+        if str(ex).startswith("Missing/incomplete configuration file"):
+            raise Exception(
+                "To download ERA5 data you will first need to set up the"
+                " CDS API, details: https://cds.climate.copernicus.eu/api-how-to"
+            )
+        else:
+            raise
 
     try:
         with open(path / DATA_REQUESTS_FILENAME, "r") as fh:

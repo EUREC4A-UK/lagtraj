@@ -10,6 +10,9 @@ import tempfile
 AVAILABLE_CONVERSIONS = [None, "lagtraj://kpt", "lagtraj://dephy"]
 
 
+AVAILABLE_CONVERSIONS = [None, "lagtraj://kpt", "lagtraj://dephy"]
+
+
 @pytest.mark.parametrize(
     "gradient_method, advection_velocity_sampling_method",
     [

@@ -1,0 +1,11 @@
+trajectory      : lagtraj://eurec4a_20200205_second
+version         : 1.0.0
+domain          : lagtraj://eurec4a_north_atlantic
+gradient_method : regression
+advection_velocity_sampling_method : domain_mean
+sampling_mask   : ocean_only
+averaging_width : 2.0
+levels_method   : exponential
+levels_number   : 250
+levels_dzmin    : 20.0
+levels_ztop     : 72000.0

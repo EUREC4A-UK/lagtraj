@@ -82,7 +82,7 @@ def main():
         " follows:\n"
         "\n"
         "    $> python -m lagtraj.domain.download"
-        " lagtraj://eurec4a_20191209_12_eul"
+        " lagtraj://eurec4a_20200202_first"
     )
 
 

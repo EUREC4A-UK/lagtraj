@@ -11,12 +11,18 @@ import datetime
 from .... import njit
 from .constants import rg, rd, rv_over_rd_minus_one
 
-levels_file = Path(__file__).parent / "137levels.dat"
-levels_table = pd.read_table(levels_file, sep=r"\s+")
-# skip the first row, as it corresponds to the top of the atmosphere
-# which is not in the data
-a_coeffs_137 = levels_table["a[Pa]"].values[1:]
-b_coeffs_137 = levels_table["b"].values[1:]
+
+def _load_ecmwf_level_coefficients():
+    levels_file = Path(__file__).parent / "137levels.dat"
+    levels_table = pd.read_table(levels_file, sep=r"\s+")
+
+    ds_levels_coeffs = xr.Dataset(coords=dict(level=levels_table["n"].values),)
+    ds_levels_coeffs["a"] = xr.DataArray(levels_table["a[Pa]"].values, dims=("level",))
+    ds_levels_coeffs["b"] = xr.DataArray(levels_table["b"].values, dims=("level",))
+    return ds_levels_coeffs
+
+
+ds_levels_coeffs = _load_ecmwf_level_coefficients()
 
 
 @njit
@@ -87,6 +93,15 @@ def calculate_heights_and_pressures(ds):
     missing_dims = list(filter(lambda d: d not in ds.dims, required_dims))
     ds_ = ds_.expand_dims(missing_dims).transpose(*required_dims)
 
+    levels = ds.level
+    if levels.values[0] > levels.values[-1]:
+        raise Exception(
+            "Height and pressure calculation assumes top-down " "ordering of the levels"
+        )
+
+    a_coeffs = ds_levels_coeffs.sel(level=ds.level).a.values
+    b_coeffs = ds_levels_coeffs.sel(level=ds.level).b.values
+
     for t in ds_.time.values:
         ds_time = ds_.sel(time=t)
         p_surf = ds_time.sp.values
@@ -97,7 +112,7 @@ def calculate_heights_and_pressures(ds):
 
         height_dims = ds_time.t.dims
         height_h, height_f, p_h, p_f = _calculate_heights_and_pressures(
-            p_surf, height_surf, a_coeffs_137, b_coeffs_137, t_field, q_field,
+            p_surf, height_surf, a_coeffs, b_coeffs, t_field, q_field,
         )
         ds_extra = xr.Dataset(coords=ds_time.coords)
         ds_extra["height_h"] = xr.DataArray(

@@ -458,7 +458,7 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     ds_kpt["heat_rough"] = np.exp(ds_era5["flsr_mean"])
     ds_kpt["heat_rough"].attrs.update(**kpt_variables["heat_rough"])
     # Apply correction to t_skin (see output files)
-    ds_kpt["t_skin"] = ds_era5["stl1_mean"] + 1.0
+    ds_kpt["t_skin"] = ds_era5["skt_mean"]
     ds_kpt["t_skin"].attrs.update(**kpt_variables["t_skin"])
     # Surface fluxes: obtain from time mean in ERA data, do not change sign
     sfc_sens_flx = central_estimate(ds_era5["msshf_mean"].values)

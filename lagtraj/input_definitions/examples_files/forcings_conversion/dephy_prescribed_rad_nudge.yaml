@@ -1,7 +1,7 @@
 levels_method   : copy
 version         : 1.0.0
 export_format   : dephy
-comment         : Forcing and initial conditions for Lagrangian case, prescribed radiation
+comment         : Forcing and initial conditions for Lagrangian case
 campaign        : EUREC4A
 source_domain   : n/a
 reference       : n/a
@@ -33,3 +33,11 @@ nudging_rt      : 0
 surfaceType     : ocean
 surfaceForcing  : ts
 surfaceForcingWind               : z0_traj
+nudging_method_scalar_traj       : inversion
+nudging_time_scalar_traj         : 10800.
+nudging_height_scalar_traj       : 500.
+nudging_transition_scalar_traj   : 300.
+nudging_method_momentum_traj     : inversion
+nudging_time_momentum_traj       : 10800.
+nudging_height_momentum_traj     : 500.
+nudging_transition_momentum_traj : 300.

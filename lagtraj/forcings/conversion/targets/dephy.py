@@ -615,4 +615,15 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         "surfaceForcingWind": parameters.surfaceForcingWind,
     }
     ds_dephy.attrs.update(dephy_dictionary)
+    if(parameters.inversion_nudging is not None):
+        if(parameters.inversion_nudging in [0,1]):
+            ds_inversion={
+                "inversion_nudging": parameters.inversion_nudging,
+                "inversion_nudging_height_above": parameters.inversion_nudging_height_above,
+                "inversion_nudging_transition": parameters.inversion_nudging_transition,
+                "inversion_nudging_time": parameters.inversion_nudging_time,
+            }
+        else:
+            raise NotImplementedError(f"Inversion nudging `{inversion_nudging}` not implemented") 
+        ds_dephy.attrs.update(ds_inversion)
     return ds_dephy

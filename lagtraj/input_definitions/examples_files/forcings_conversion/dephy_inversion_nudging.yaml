@@ -1,5 +1,5 @@
 levels_method   : copy
-version         : 1.0.0
+version         : 1.0.1
 export_format   : dephy
 comment         : Forcing and initial conditions for Lagrangian case
 campaign        : EUREC4A
@@ -21,15 +21,15 @@ rad_thetal      : 0
 forc_omega      : 0
 forc_w          : 1
 forc_geo        : 1
-nudging_u       : 0
-nudging_v       : 0
-nudging_temp    : 0
-nudging_theta   : 0
-nudging_thetal  : 0
-nudging_qv      : 0
-nudging_qt      : 0
-nudging_rv      : 0
-nudging_rt      : 0
+nudging_u       : 1
+nudging_v       : 1
+nudging_temp    : 1
+nudging_theta   : 1
+nudging_thetal  : 1
+nudging_qv      : 1
+nudging_qt      : 1
+nudging_rv      : 1
+nudging_rt      : 1
 surfaceType     : ocean
 surfaceForcing  : ts
 surfaceForcingWind               : z0_traj

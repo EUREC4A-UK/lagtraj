@@ -118,7 +118,7 @@ To use for example the `eurec4a_circle` domain definition
 for downloading domain data run lagtraj.domain.download as follows:
 
 ```bash
-    $> python -m lagtraj.domain.download lagtraj://eurec4a_circle 2020/02/01 2020/02/03
+    $> python -m lagtraj.domain.download lagtraj://eurec4a_circle 2020/02/02 2020/02/02
 ```
 
 ## 1. Making source data available
@@ -184,7 +184,7 @@ Or use one of the forcing definitions included with `lagtraj` (e.g.
 `eurec4a_20200202_first_short`)
 
 ```bash
-$> python -m lagtraj.forcing.create lagtraj://eurec4a_20200202_first_short [--conversion <conversion_name>]
+$> python -m lagtraj.forcings.create lagtraj://eurec4a_20200202_first_short [--conversion <conversion_name>]
 ```
 
 ### Forcing profiles conversion (targeting a specific GCM/LES)
@@ -221,7 +221,7 @@ bundled with `lagtraj` and have it converted to the `dephy` format with the
 default parameters you would run
 
 ```bash
-$> python -m lagtraj.forcing.create lagtraj://eurec4a_20200202_first_short --conversion lagtraj://dephy
+$> python -m lagtraj.forcings.create lagtraj://eurec4a_20200202_first_short --conversion lagtraj://dephy
 ```
 
 This will create the un-converted forcing in
@@ -234,7 +234,7 @@ forcing creation with your local copy of the conversion definition (note the
 absence of the `lagtraj://` prefix):
 
 ```bash
-$> python -m lagtraj.forcing.create lagtraj://eurec4a_20200202_first_short --conversion dephy
+$> python -m lagtraj.forcings.create lagtraj://eurec4a_20200202_first_short --conversion dephy
 ```
 
 You are of course welcome to rename the conversion however you like if for

@@ -109,9 +109,9 @@ def _set_placeholder_args(cmd):
     default_args = [
         ("<command>", "input_definitions.examples"),
         ("<domain_name>", "lagtraj://eurec4a_circle"),
-        ("<trajectory_name>", "lagtraj://eurec4a_20200202_12_lag_short"),
-        ("<forcing_name>", "lagtraj://eurec4a_20200202_12_lag_short"),
-        ("<start_date>", "2020/02/01"),
+        ("<trajectory_name>", "lagtraj://eurec4a_20200202_first_short"),
+        ("<forcing_name>", "lagtraj://eurec4a_20200202_first_short"),
+        ("<start_date>", "2020/02/02"),
         ("<end_date>", "2020/02/02"),
     ]
     for k, v in default_args:
@@ -140,12 +140,21 @@ def test_readme_cli_commands(cli_command):
     except ImportError:
         raise NotImplementedError(
             f"Can't test for CLI command `{cli_command}` in README because it"
-            "isn't clear what entrypoint function this command uses"
+            " isn't clear what entrypoint function this command uses"
         )
 
     cmds_without_datapath = ["lagtraj.input_definitions.examples"]
-    if cli_command not in cmds_without_datapath:
+    if module_name not in cmds_without_datapath:
         args += ["--data-path", str(TESTDATA_DIR.absolute())]
+
+        # before we run the cli command we need to ensure that it only refers
+        # to domain data that we know is included in the testdata dataset
+        print(f"checking that we have testdata for command `{args}`")
+        if not module.has_data_for_cli_command(args):
+            raise Exception(
+                f"The `{cli_command}` command in the README will use data "
+                "which is not included in the testdata tar-ball"
+            )
 
     print(f"running {module.__name__}.cli with args {args}")
     cli_fn(args)

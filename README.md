@@ -180,37 +180,8 @@ example you'd like to have multiple different converted version of the same
 forcings file.
 
 
-# Implementation details
+## Modifying lagtraj
 
-Required utilies:
-
-- download ECMWF data
-
-- conversion of physical variables
-
-- interpolation (do we need Steffen interpolation?)
-
-- smoothing
-
-- plotting (to some extent)
-
-- generating dephy formatted output netCDF files
-
-- timing (can use tqdm for this)
-
-
-## Algorithmic approach:
-
-a) Download all data needed (across entire domain, single/model levels+).
-   Currently this creates daily files, but we may aim for the minimum number of
-   requests from ECMWF (However, grib to netcdf conversion via the cds api
-   can only deal with files of up to about 10GB).
-
-b) Split these into daily files
-
-Considerations:
-
-- may need whole domain for plotting
-
-- how many download requests can we make with ECMWF's data server? One big
-  request seems better than many small ones
+If you spot a bug in lagtraj or would like to add features yourself please have
+a look in [docs/developing.md](docs/developing.md) where we have added some
+notes on how to get started. All contributions are very welcome!

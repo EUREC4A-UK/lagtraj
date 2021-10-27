@@ -162,7 +162,7 @@ $> python -m lagtraj.trajectory.create <trajectory_name>
 ```
 
 Or use one of the domain definitions included with `lagtraj` (e.g.
-`eurec4a_20200202_first_short.yaml`
+`eurec4a_20200202_first_short`
 
 
 ```bash

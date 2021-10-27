@@ -1,0 +1,11 @@
+trajectory      : lagtraj://drydown_cardington_20200420_00_eul
+domain          : lagtraj://drydown_cardington_local
+gradient_method : boundary
+advection_velocity_sampling_method: domain_mean
+sampling_mask   : land_only
+averaging_width : 1.0
+levels_method   : exponential
+levels_number   : 250
+levels_dzmin    : 20.0
+levels_ztop     : 72000.0
+version: 1.0.0

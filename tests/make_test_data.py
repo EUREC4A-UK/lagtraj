@@ -7,7 +7,7 @@ from lagtraj import DEFAULT_ROOT_DATA_PATH
 from lagtraj.utils import optional_debugging
 
 
-TEST_FORCING_NAME = "lagtraj://eurec4a_20200202_12_lag_short"
+TEST_FORCING_NAME = "lagtraj://eurec4a_20200103_lag_testcase"
 
 
 def main(

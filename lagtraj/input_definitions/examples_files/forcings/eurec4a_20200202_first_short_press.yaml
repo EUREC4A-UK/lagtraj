@@ -1,8 +1,9 @@
-trajectory      : lagtraj://eurec4a_20200205_15_lag
-version         : 1.0.1
+trajectory      : lagtraj://eurec4a_20200202_first_short_press
+version         : 1.0.0
 domain          : lagtraj://eurec4a_circle
 gradient_method : regression
 advection_velocity_sampling_method : domain_mean
+sampling_mask   : ocean_only
 averaging_width : 2.0
 levels_method   : exponential
 levels_number   : 250

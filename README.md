@@ -54,11 +54,11 @@ data
 │       :
 │       └── fc_single_2020-01-03.nc
 ├── forcings
-│   ├── eure4a_20191209_12_eul.yaml
-│   └── eure4a_20191209_12_eul.nc
+│   ├── eure4a_20200103_lag_testcase.yaml
+│   └── eure4a_20200103_lag_testcase.nc
 └── trajectories
-    ├── eure4a_20191209_12_eul.yaml
-    └── eure4a_20191209_12_eul.nc
+    ├── eure4a_20200103_lag_testcase.yaml
+    └── eure4a_20200103_lag_testcase.nc
 ```
 
 The `name` of each domain/trajectory/forcing inside `lagtraj` will be the
@@ -80,19 +80,45 @@ with lagtraj:
 
 lagtraj://
  ├── domains
- │   ├── eurec4a_north_atlantic
- │   └── eurec4a_circle_eul
+ │   ├── drydown_cardington_local
+ │   ├── eurec4a_circle
+ │   └── eurec4a_north_atlantic
  ├── forcings
- │   └── eurec4a_20191209_12_eul
+ │   ├── drydown_cardington_20200420_00_eul
+ │   ├── eurec4a_campaign_eulerian
+ │   ├── eurec4a_20200128_first
+ │   ├── eurec4a_20200202_first_short_press
+ │   ├── eurec4a_20200202_first_short
+ │   ├── eurec4a_20200202_first
+ │   ├── eurec4a_20200205_second
+ │   ├── eurec4a_20200207_first
+ │   ├── eurec4a_20200209_first
+ │   ├── eurec4a_20200202_first_short_eul
+ │   └── eurec4a_20200103_lag_testcase
+ ├── forcings_conversion
+ │   ├── dephy
+ │   ├── eurec4a_dephy_prescribed_rad
+ │   ├── kpt
+ │   ├── kpt__120_levels
+ │   └── dephy_prescribed_rad
  └── trajectories
-     ├── eurec4a_20191209_12_lin
-     └── eurec4a_20191209_12_eul
+     ├── drydown_cardington_20200420_00_eul
+     ├── eurec4a_campaign_eulerian
+     ├── eurec4a_20200202_first
+     ├── eurec4a_20200128_first
+     ├── eurec4a_20200205_second
+     ├── eurec4a_20200207_first
+     ├── eurec4a_20200209_first
+     ├── eurec4a_20200202_first_short
+     ├── eurec4a_20200202_first_short_press
+     ├── eurec4a_20200202_first_short_eul
+     └── eurec4a_20200103_lag_testcase
 
-
-To use for example the `eurec4a_north_atlantic` domain definition
+To use for example the `eurec4a_circle` domain definition
 for downloading domain data run lagtraj.domain.download as follows:
 
-    $> python -m lagtraj.domain.download lagtraj://eurec4a_circle 2020/02/01 2020/02/02
+```bash
+    $> python -m lagtraj.domain.download lagtraj://eurec4a_circle 2020/02/01 2020/02/03
 ```
 
 ## 1. Making source data available
@@ -112,7 +138,7 @@ $> python -m lagtraj.domain.download <domain_name> <start_date> <end_date>
 ```
 
 Or use one of the domain definitions included with `lagtraj` (e.g.
-`eurec4a_north_atlantic`
+`eurec4a_circle`
 
 
 ```bash
@@ -136,11 +162,11 @@ $> python -m lagtraj.trajectory.create <trajectory_name>
 ```
 
 Or use one of the domain definitions included with `lagtraj` (e.g.
-`eurec4a_20191209_12_lag`
+`eurec4a_20200202_first_short.yaml`
 
 
 ```bash
-$> python -m lagtraj.trajectory.create lagtraj://eurec4a_20200202_12_lag_short
+$> python -m lagtraj.trajectory.create lagtraj://eurec4a_20200202_first_short
 ```
 
 The created trajectory will be stored in `data/trajectories/<trajectory_name>.nc`.
@@ -155,10 +181,10 @@ $> python -m lagtraj.forcings.create <forcing_name> [--conversion <conversion_na
 ```
 
 Or use one of the forcing definitions included with `lagtraj` (e.g.
-`eurec4a_20200202_12_lag`)
+`eurec4a_20200202_first_short`)
 
 ```bash
-$> python -m lagtraj.forcings.create lagtraj://eurec4a_20200202_12_lag_short [--conversion <conversion_name>]
+$> python -m lagtraj.forcing.create lagtraj://eurec4a_20200202_first_short [--conversion <conversion_name>]
 ```
 
 ### Forcing profiles conversion (targeting a specific GCM/LES)
@@ -190,25 +216,25 @@ $> python -m lagtraj.forcings.create <forcing_name> [--conversion <conversion_na
 Instead of creating a conversion definition starting from an empty file you can
 bootstrap the process by using the default parameters for a given target model
 included with lagtraj. This is achieved by using the `lagtraj://`-prefix when
-choosing the conversion name. E.g. to create the `eurec4a_20200202_12_lag`
+choosing the conversion name. E.g. to create the `eurec4a_20200202_first_short`
 bundled with `lagtraj` and have it converted to the `dephy` format with the
 default parameters you would run
 
 ```bash
-$> python -m lagtraj.forcings.create lagtraj://eurec4a_20200202_12_lag_short --conversion lagtraj://dephy
+$> python -m lagtraj.forcing.create lagtraj://eurec4a_20200202_first_short --conversion lagtraj://dephy
 ```
 
 This will create the un-converted forcing in
-`data/forcings/eurec4a_20200202_12_lag.nc`, the converted on in
-`data/forcings/eurec4a_20200202_12_lag.dephy.nc` and the conversion definition
-will be copied to `data/forcings/eurec4a_20200202_12_lag.dephy.yaml`. You can
+`data/forcings/eurec4a_20200202_first_short.nc`, the converted on in
+`data/forcings/eurec4a_20200202_first_short.dephy.nc` and the conversion definition
+will be copied to `data/forcings/eurec4a_20200202_first_short.dephy.yaml`. You can
 then modify the forcing parameters (for example change the number of levels) by
-editing `data/forcings/eurec4a_20200202_12_lag.dephy.yaml` and rerunning the
+editing `data/forcings/eurec4a_20200202_first_short.dephy.yaml` and rerunning the
 forcing creation with your local copy of the conversion definition (note the
 absence of the `lagtraj://` prefix):
 
 ```bash
-$> python -m lagtraj.forcings.create lagtraj://eurec4a_20200202_12_lag_short --conversion dephy
+$> python -m lagtraj.forcing.create lagtraj://eurec4a_20200202_first_short --conversion dephy
 ```
 
 You are of course welcome to rename the conversion however you like if for

@@ -11,7 +11,7 @@ import lagtraj.domain.load
 from make_test_data import TEST_FORCING_NAME, trajectory_load, forcing_load
 
 
-TESTDATA_URL = "http://gws-access.jasmin.ac.uk/public/eurec4auk/testdata/lagtraj.testdata.v2.tar.gz"  # noqa
+TESTDATA_URL = "http://gws-access.jasmin.ac.uk/public/eurec4auk/testdata/lagtraj.testdata.v0.1.0.tar.gz"  # noqa
 
 if os.environ.get("LAGTRAJ_TESTDATA_DIR", None):
     TESTDATA_DIR = Path(os.environ["LAGTRAJ_TESTDATA_DIR"])

@@ -1,4 +1,4 @@
-xarray
+xarray>=0.16.0
 pytest
 netCDF4
 datetime

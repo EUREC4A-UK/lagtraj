@@ -52,8 +52,8 @@ INPUT_REQUIRED_FIELDS = dict(
     nudging_transition_momentum_traj=(None, float),
     inversion_nudging=(None, int),
     inversion_nudging_height_above=(None, float),
-    inversion_nudging_transition=(None,float),
-    inversion_nudging_time=(None,float)
+    inversion_nudging_transition=(None, float),
+    inversion_nudging_time=(None, float),
 )
 
 ConversionDefinition = namedtuple(

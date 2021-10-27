@@ -452,30 +452,54 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     ds_dephy["wprtp"] = forcing_field_dephy(wprtp, "wprtp")
     rh = _rh_dephy(ds_dephy["temp"], ds_dephy["pressure"], ds_dephy["qt"])
     ds_dephy["rh"] = init_field_dephy(rh.values[:, :, 0, 0], "rh")
-    def _calc_inv_time_inversion(rh,thetal,height_array,nudging_parameters):
-        len_temp=np.shape(rh)[0]
-        len_lat=np.shape(rh)[2]
-        len_lon=np.shape(rh)[3]
-        inv_time_array=np.zeros(np.shape(rh),np.double)
+
+    def _calc_inv_time_inversion(rh, thetal, height_array, nudging_parameters):
+        len_temp = np.shape(rh)[0]
+        len_lat = np.shape(rh)[2]
+        len_lon = np.shape(rh)[3]
+        inv_time_array = np.zeros(np.shape(rh), np.double)
         nudging_height = nudging_parameters.height
         nudging_transition = nudging_parameters.transition
         nudging_time = nudging_parameters.time
-        drhdz=(rh[:,1:,:,:]-rh[:,:-1,:,:])/(height_array[:,1:,:,:]-height_array[:,:-1,:,:])
-        dthetaldz=(thetal[:,1:,:,:]-thetal[:,:-1,:,:])/(height_array[:,1:,:,:]-height_array[:,:-1,:,:])
-        product_of_gradients=drhdz*dthetaldz*(0.5*(height_array[:,1:,:,:]+height_array[:,:-1,:,:])<5000.)
+        drhdz = (rh[:, 1:, :, :] - rh[:, :-1, :, :]) / (
+            height_array[:, 1:, :, :] - height_array[:, :-1, :, :]
+        )
+        dthetaldz = (thetal[:, 1:, :, :] - thetal[:, :-1, :, :]) / (
+            height_array[:, 1:, :, :] - height_array[:, :-1, :, :]
+        )
+        product_of_gradients = (
+            drhdz
+            * dthetaldz
+            * (0.5 * (height_array[:, 1:, :, :] + height_array[:, :-1, :, :]) < 5000.0)
+        )
         for this_time in range(len_temp):
             for this_lat in range(len_lat):
                 for this_lon in range(len_lon):
-                    height_argmin=np.argmin(product_of_gradients[this_time,:,this_lat,this_lon])
-                    inversion_height=0.5*(height_array[this_time,1:,this_lat,this_lon]+height_array[this_time,:-1,this_lat,this_lon])[height_argmin]
-                    relative_height=height_array[this_time,:,this_lat,this_lon]-inversion_height-nudging_height
+                    height_argmin = np.argmin(
+                        product_of_gradients[this_time, :, this_lat, this_lon]
+                    )
+                    inversion_height = (
+                        0.5
+                        * (
+                            height_array[this_time, 1:, this_lat, this_lon]
+                            + height_array[this_time, :-1, this_lat, this_lon]
+                        )[height_argmin]
+                    )
+                    relative_height = (
+                        height_array[this_time, :, this_lat, this_lon]
+                        - inversion_height
+                        - nudging_height
+                    )
                     div_factor = cos_transition(
                         relative_height,
                         0.5 * nudging_transition,
-                        - 0.5 * nudging_transition,
-                    )            
-                    inv_time_array[this_time,:,this_lat,this_lon] = div_factor / nudging_time
+                        -0.5 * nudging_transition,
+                    )
+                    inv_time_array[this_time, :, this_lat, this_lon] = (
+                        div_factor / nudging_time
+                    )
         return inv_time_array
+
     def nudging_inv_time_prof(nudging_parameters, variable):
         height_array = ds_dephy["height_forc"].values
         nudging_method = nudging_parameters.method
@@ -487,14 +511,14 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         elif nudging_method == "inversion":
             ds_temp = xr.Dataset(
                 coords={
-                **dephy_time_coord,
-                **dephy_level_coord,
-                **dephy_lat_coord,
-                **dephy_lon_coord,
+                    **dephy_time_coord,
+                    **dephy_level_coord,
+                    **dephy_lat_coord,
+                    **dephy_lon_coord,
                 }
             )
             # get full time evolution of variables otherwise only use in initialisation
-            temp_variables=["temp","pressure","qt","thetal"]
+            temp_variables = ["temp", "pressure", "qt", "thetal"]
             for variable in temp_variables:
                 era5_var = dephy_from_era5_initial_variables[variable]
                 da_era5 = ds_era5[era5_var]
@@ -502,9 +526,14 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
                 unit_guess = era5_to_dephy_units.get(da_era5.units, da_era5.units)
                 unit_check(unit_guess, variable)
                 ds_temp[variable] = forcing_field_dephy(da_era5.values, variable)
-            rh_time = _rh_dephy(ds_temp["temp"],ds_temp["pressure"],ds_temp["qt"])
+            rh_time = _rh_dephy(ds_temp["temp"], ds_temp["pressure"], ds_temp["qt"])
             print(rh_time)
-            inv_time_array=_calc_inv_time_inversion(rh_time.values,ds_temp["thetal"].values,height_array,nudging_parameters)
+            inv_time_array = _calc_inv_time_inversion(
+                rh_time.values,
+                ds_temp["thetal"].values,
+                height_array,
+                nudging_parameters,
+            )
         elif nudging_method == "cos":
             div_factor = cos_transition(
                 height_array,
@@ -615,15 +644,17 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         "surfaceForcingWind": parameters.surfaceForcingWind,
     }
     ds_dephy.attrs.update(dephy_dictionary)
-    if(parameters.inversion_nudging is not None):
-        if(parameters.inversion_nudging in [0,1]):
-            ds_inversion={
+    if parameters.inversion_nudging is not None:
+        if parameters.inversion_nudging in [0, 1]:
+            ds_inversion = {
                 "inversion_nudging": parameters.inversion_nudging,
                 "inversion_nudging_height_above": parameters.inversion_nudging_height_above,
                 "inversion_nudging_transition": parameters.inversion_nudging_transition,
                 "inversion_nudging_time": parameters.inversion_nudging_time,
             }
         else:
-            raise NotImplementedError(f"Inversion nudging `{inversion_nudging}` not implemented") 
+            raise NotImplementedError(
+                f"Inversion nudging `{inversion_nudging}` not implemented"
+            )
         ds_dephy.attrs.update(ds_inversion)
     return ds_dephy

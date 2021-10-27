@@ -102,8 +102,12 @@ def load_definition(root_data_path, forcing_name, conversion_name):
         nudging_parameters_momentum_traj=conversion_nudging_momentum_definition,
         nudging_parameters_scalar_traj=conversion_nudging_scalar_definition,
         inversion_nudging=conversion_params.get("inversion_nudging", None),
-        inversion_nudging_height_above=conversion_params.get("inversion_nudging_height_above", None),
-        inversion_nudging_transition=conversion_params.get("inversion_nudging_transition", None),
+        inversion_nudging_height_above=conversion_params.get(
+            "inversion_nudging_height_above", None
+        ),
+        inversion_nudging_transition=conversion_params.get(
+            "inversion_nudging_transition", None
+        ),
         inversion_nudging_time=conversion_params.get("inversion_nudging_time", None),
     )
 

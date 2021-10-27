@@ -132,8 +132,9 @@ def _get_times_from_domain(trajectory_definition, root_data_path):
 
     if not download_complete(
         root_data_path=root_data_path,
-        domain_name=trajectory_definition.domain, start_date=t_min.date(),
-        end_date=t_max.date()
+        domain_name=trajectory_definition.domain,
+        start_date=t_min.date(),
+        end_date=t_max.date(),
     ):
         warnings.warn(
             "Some of the data for the selected domain"

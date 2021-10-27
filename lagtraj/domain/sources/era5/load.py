@@ -27,10 +27,14 @@ def _era_5_normalise_longitude(ds):
         """Sets longitude to be between -180 and 180 degrees"""
         return (longitude + 180.0) % 360.0 - 180.0
 
-    ds.coords["longitude"] = (
-        "longitude",
-        np.round(longitude_set_meridian(ds.coords["longitude"]), decimals=4),
-        ds.coords["longitude"].attrs,
+    longitude_values = ds.coords["longitude"].data
+    longitude_values_rounded_normed = np.round(
+        longitude_set_meridian(longitude_values), decimals=4
+    )
+    ds.coords["longitude"] = xr.DataArray(
+        longitude_values_rounded_normed,
+        name="longitude",
+        attrs=ds.coords["longitude"].attrs,
     )
     return ds
 
@@ -206,7 +210,10 @@ class ERA5DataSet(object):
                     slices[d] = s
 
             ds_v_slice = ds[variables].sel(
-                **slices, method=method, tolerance=tolerance, drop=drop,
+                **slices,
+                method=method,
+                tolerance=tolerance,
+                drop=drop,
             )
             ds_v_slice.load()
             # Change the long name of these variables, so the units are no

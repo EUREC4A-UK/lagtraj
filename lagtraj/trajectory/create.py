@@ -126,8 +126,14 @@ def main(data_path, trajectory_name):
 
 
 def _get_times_from_domain(trajectory_definition, root_data_path):
+    t0 = trajectory_definition.origin.datetime
+    t_min = t0 - trajectory_definition.duration.backward
+    t_max = t0 + trajectory_definition.duration.forward
+
     if not download_complete(
-        root_data_path=root_data_path, domain_name=trajectory_definition.domain
+        root_data_path=root_data_path,
+        domain_name=trajectory_definition.domain, start_date=t_min.date(),
+        end_date=t_max.date()
     ):
         warnings.warn(
             "Some of the data for the selected domain"
@@ -137,9 +143,6 @@ def _get_times_from_domain(trajectory_definition, root_data_path):
     ds_domain = load_domain_data(
         root_data_path=root_data_path, name=trajectory_definition.domain
     )
-    t0 = trajectory_definition.origin.datetime
-    t_min = t0 - trajectory_definition.duration.backward
-    t_max = t0 + trajectory_definition.duration.forward
     da_times = ds_domain.time.sel(time=slice(t_min, t_max))
     if da_times.count() == 0:
         raise Exception(

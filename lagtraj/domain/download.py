@@ -221,7 +221,10 @@ def _run_cli(args=None, timedomain_lookup="by_arguments"):
         while True:
             attempt_download()
             if download_complete(
-                args.data_path, domain_name=domain, start_date=start_date, end_date=end_date
+                args.data_path,
+                domain_name=domain,
+                start_date=start_date,
+                end_date=end_date,
             ):
                 break
             else:

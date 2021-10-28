@@ -154,7 +154,7 @@ def download_data(
         print("All files downloaded!")
 
 
-def all_data_is_downloaded(path, start_date, end_date, bbox, latlon_sampling):
+def find_missing_files(path, start_date, end_date, bbox, latlon_sampling):
     """
     Check if all data has been downloaded in the request time interval,
     bounding-box and resolution.
@@ -171,14 +171,18 @@ def all_data_is_downloaded(path, start_date, end_date, bbox, latlon_sampling):
         )
     )
 
+    missing_files = []
+
     # check if any files don't exist locally yet
     # NOTE: this will not check if files are only partially downloaded
-    for output_filename, _ in dl_queries:
+    for output_filename, query_kwargs in dl_queries:
         fp = Path(path) / output_filename
         if not fp.exists():
-            return False
+            missing_files.append(
+                dict(filepath=fp, source="ERA5 CDSAPI", query_kwargs=query_kwargs)
+            )
 
-    return True
+    return missing_files
 
 
 def data_backend_is_processing_requests(path):

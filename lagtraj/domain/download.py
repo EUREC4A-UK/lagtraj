@@ -75,10 +75,9 @@ def download_named_domain(
     )
 
 
-def download_complete(root_data_path, domain_name, start_date, end_date):
+def _find_missing_files(root_data_path, domain_name, start_date, end_date):
     """
-    Check that all files have been downloaded and that they contain the data in
-    the expected date range
+    For the selected data source return a list of the files that haven't yet been downloaded
     """
     domain_params = load_definition(domain_name=domain_name, data_path=root_data_path)
     source = domain_params["source"]
@@ -99,7 +98,7 @@ def download_complete(root_data_path, domain_name, start_date, end_date):
     )
 
     if source.lower() == "era5":
-        all_data_downloaded = era5.all_data_is_downloaded(
+        return era5.find_missing_files(
             path=domain_data_path,
             start_date=start_date,
             end_date=end_date,
@@ -111,8 +110,37 @@ def download_complete(root_data_path, domain_name, start_date, end_date):
             "Source type `{}` unknown. Should for example be 'era5'".format(source)
         )
 
-    if not all_data_downloaded:
-        return False
+
+def download_complete(root_data_path, domain_name, start_date, end_date):
+    """
+    Check that all files have been downloaded and that they contain the data in
+    the expected date range
+    """
+    missing_files = _find_missing_files(
+        root_data_path=root_data_path,
+        domain_name=domain_name,
+        start_date=start_date,
+        end_date=end_date,
+    )
+    return len(missing_files) == 0
+
+
+def list_files_still_to_download(root_data_path, domain_name, start_date, end_date):
+    """
+    Print out the files that haven't yet been downloaded
+    """
+    missing_files = _find_missing_files(
+        root_data_path=root_data_path,
+        domain_name=domain_name,
+        start_date=start_date,
+        end_date=end_date,
+    )
+    if len(missing_files) == 0:
+        print("All files downloaded!")
+    else:
+        print("The following datafiles would be requested for download:")
+        for item in missing_files:
+            print(f"\t{item['source']}: {item['filepath'].name}")
 
 
 def _parse_date(s):
@@ -144,12 +172,19 @@ def _run_cli(args=None, timedomain_lookup="by_arguments"):
         type=float,
         help="Retry time delay (in minutes) when some files are still processing",
     )
+    argparser.add_argument(
+        "--dry-run",
+        default=False,
+        action="store_true",
+        help="Don't actually make any data requests, only list the ones that would be made",
+    )
+
     args = argparser.parse_args(args=args)
 
     if timedomain_lookup == "by_arguments":
         domain = args.domain
-        t_min = args.start_date
-        t_max = args.end_date
+        start_date = args.start_date
+        end_date = args.end_date
     elif timedomain_lookup == "by_trajectory":
         traj_defn = load_traj_definition(
             root_data_path=args.data_path, name=args.trajectory
@@ -157,6 +192,10 @@ def _run_cli(args=None, timedomain_lookup="by_arguments"):
         domain = traj_defn.domain
         t_min = traj_defn.origin.datetime - traj_defn.duration.backward
         t_max = traj_defn.origin.datetime + traj_defn.duration.forward
+        # downloads are done by date, so we just extract the date here to
+        # ensure the whole day is made available
+        start_date = t_min.date()
+        end_date = t_max.date()
     else:
         raise NotImplementedError(timedomain_lookup)
 
@@ -164,16 +203,28 @@ def _run_cli(args=None, timedomain_lookup="by_arguments"):
         download_named_domain(
             data_path=args.data_path,
             name=domain,
-            start_date=t_min,
-            end_date=t_max,
+            start_date=start_date,
+            end_date=end_date,
             overwrite_existing=args.l_overwrite,
         )
+
+    if args.dry_run:
+        list_files_still_to_download(
+            root_data_path=args.data_path,
+            domain_name=domain,
+            start_date=start_date,
+            end_date=end_date,
+        )
+        return
 
     if args.retry_rate is not None:
         while True:
             attempt_download()
             if download_complete(
-                args.data_path, domain_name=domain, start_date=t_min, end_date=t_max
+                args.data_path,
+                domain_name=domain,
+                start_date=start_date,
+                end_date=end_date,
             ):
                 break
             else:

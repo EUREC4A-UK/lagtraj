@@ -1,2 +1,3 @@
 include versioneer.py
 include lagtraj/_version.py
+recursive-include lagtraj/input_definitions/examples_files *

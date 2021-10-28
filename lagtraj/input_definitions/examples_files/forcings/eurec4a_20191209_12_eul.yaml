@@ -1,8 +1,9 @@
-trajectory      : lagtraj://eurec4a_campaign_eulerian
+trajectory      : lagtraj://eurec4a_20191209_12_eul
 version         : 1.0.1
 domain          : lagtraj://eurec4a_circle
 gradient_method : regression
 advection_velocity_sampling_method : domain_mean
+sampling_mask   : ocean_only
 averaging_width : 2.0
 levels_method   : exponential
 levels_number   : 250

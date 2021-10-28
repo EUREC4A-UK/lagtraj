@@ -15,7 +15,7 @@ MODEL_RUN_TYPES = ["an", "fc"]  # analysis and forecast runs
 LEVEL_TYPES = ["model", "single"]  # need model and surface data
 
 
-def _era_5_normalise_longitude(ds):
+def _create_normalised_longitude(da_lon):
     """Normalise longitudes to be between 0 and 360 degrees
     This is needed because these are stored differently in the surface
     and model level data. Rounding up to 4 decimals seems to work for now,
@@ -27,12 +27,16 @@ def _era_5_normalise_longitude(ds):
         """Sets longitude to be between -180 and 180 degrees"""
         return (longitude + 180.0) % 360.0 - 180.0
 
-    ds.coords["longitude"] = (
-        "longitude",
-        np.round(longitude_set_meridian(ds.coords["longitude"]), decimals=4),
-        ds.coords["longitude"].attrs,
+    longitude_values = da_lon.data
+    longitude_values_rounded_normed = np.round(
+        longitude_set_meridian(longitude_values), decimals=4
     )
-    return ds
+    return xr.DataArray(
+        longitude_values_rounded_normed,
+        dims=("longitude"),
+        name="longitude",
+        attrs=da_lon.attrs,
+    )
 
 
 def _find_datasets(data_path):
@@ -57,7 +61,9 @@ def _find_datasets(data_path):
             # redundant
             if model_run_type == "an" and level_type == "model":
                 ds_ = ds_.drop_vars(["lnsp", "z"])
-            ds_ = _era_5_normalise_longitude(ds=ds_)
+            da_lon = ds_.coords["longitude"]
+            da_lon_normalised = _create_normalised_longitude(da_lon=da_lon)
+            ds_ = ds_.assign_coords(dict(longitude=da_lon_normalised))
             ds_ = ds_.rename(dict(latitude="lat", longitude="lon"))
 
             dataset_identifier = f"{model_run_type}__{level_type}"

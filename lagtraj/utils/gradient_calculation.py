@@ -15,35 +15,49 @@ def _boundary_gradients(x_array, y_array, val_array):
     len_lons = np.shape(val_array)[3]
     x_gradient_array = np.empty((len_temp, len_levels))
     y_gradient_array = np.empty((len_temp, len_levels))
-    dval_dx = np.empty((len_lats))
-    dval_dy = np.empty((len_lons))
     for this_time in range(len_temp):
         for this_level in range(len_levels):
-            # This calculates the x-gradient at each latitude
+            dxval_tot = 0.0
+            dyval_tot = 0.0
+            dx_tot = 0.0
+            dy_tot = 0.0
+            # This calculates the x-gradient as a weighted average over latitude
+            # The way the averaging is done now is such that the weight of a particular
+            # latitude/longitude is proportional to the length of the segment over
+            # which a gradient is calculated at that latitude/longitude.
+            # This length varies, and may even be zero in extreme cases,
+            # due to the use of a mask (and also a bit due to the lat-lon grid,
+            # but that would mostly be notable close to the poles). This changes
+            # ensures there is no inappropriately high weighting given when a
+            # gradient is calculated over a short (or zero) distance.
             # The ~np.isnan operation is used to filter out masked values
             # The first and last filtered values are used
             for this_lat in range(len_lats):
                 vals_at_lat = val_array[this_time, this_level, this_lat, :].flatten()
                 x_at_lat = x_array[this_lat, :].flatten()
                 vals_filtered = vals_at_lat[~np.isnan(vals_at_lat)]
-                x_filtered = x_at_lat[~np.isnan(vals_at_lat)]
-                dvals = vals_filtered[-1] - vals_filtered[0]
-                dval_dx[this_lat] = dvals / (x_filtered[-1] - x_filtered[0])
-            # This similarly calculates the y-gradient at each longitude
+                if len(vals_filtered) > 1:
+                    x_filtered = x_at_lat[~np.isnan(vals_at_lat)]
+                    dxval_tot = dxval_tot + vals_filtered[-1] - vals_filtered[0]
+                    dx_tot = dx_tot + x_filtered[-1] - x_filtered[0]
+            # This similarly calculates the y-gradient weighted average
             for this_lon in range(len_lons):
                 vals_at_lon = val_array[this_time, this_level, :, this_lon].flatten()
                 y_at_lat = y_array[:, this_lon].flatten()
                 vals_filtered = vals_at_lon[~np.isnan(vals_at_lon)]
-                y_filtered = y_at_lat[~np.isnan(vals_at_lon)]
-                dvals = vals_filtered[-1] - vals_filtered[0]
-                dval_dy[this_lon] = dvals / (y_filtered[-1] - y_filtered[0])
+                if len(vals_filtered) > 1:
+                    y_filtered = y_at_lat[~np.isnan(vals_at_lon)]
+                    dyval_tot = dyval_tot + vals_filtered[-1] - vals_filtered[0]
+                    dy_tot = dy_tot + y_filtered[-1] - y_filtered[0]
             # Average these gradients (not weighted at this point, but filtering out all nan values due to e.g. division by zero!)
-            x_gradient_array[this_time, this_level] = np.mean(
-                dval_dx[~np.isnan(dval_dx)]
-            )
-            y_gradient_array[this_time, this_level] = np.mean(
-                dval_dy[~np.isnan(dval_dy)]
-            )
+            if abs(dx_tot) > 1e-4:
+                x_gradient_array[this_time, this_level] = dxval_tot / dx_tot
+            else:
+                x_gradient_array[this_time, this_level] = np.nan
+            if abs(dy_tot) > 1e-4:
+                y_gradient_array[this_time, this_level] = dyval_tot / dy_tot
+            else:
+                y_gradient_array[this_time, this_level] = np.nan
     return x_gradient_array, y_gradient_array
 
 
@@ -65,19 +79,27 @@ def _regression_gradients(x_array, y_array, val_array):
             data_flat_filter = np.expand_dims(data_flat[~np.isnan(data_flat)], axis=1)
             x_flat_filter = np.expand_dims(x_flat[~np.isnan(data_flat)], axis=1)
             y_flat_filter = np.expand_dims(y_flat[~np.isnan(data_flat)], axis=1)
-            ones_flat_filter = np.expand_dims(ones_flat[~np.isnan(data_flat)], axis=1)
-            oxy_mat = np.hstack((ones_flat_filter, x_flat_filter, y_flat_filter))
-            # Use the normal method to find the best fit of a plane through the data
-            # At each individual model level
-            theta = np.dot(
-                np.dot(
-                    np.linalg.pinv(np.dot(oxy_mat.transpose(), oxy_mat)),
-                    oxy_mat.transpose(),
-                ),
-                data_flat_filter,
-            )
-            x_gradient_array[this_time, this_level] = theta[1][0]
-            y_gradient_array[this_time, this_level] = theta[2][0]
+            if (np.nanmin(x_flat_filter) < np.nanmax(x_flat_filter)) and (
+                np.nanmin(y_flat_filter) < np.nanmax(y_flat_filter)
+            ):
+                ones_flat_filter = np.expand_dims(
+                    ones_flat[~np.isnan(data_flat)], axis=1
+                )
+                oxy_mat = np.hstack((ones_flat_filter, x_flat_filter, y_flat_filter))
+                # Use the normal method to find the best fit of a plane through the data
+                # At each individual model level
+                theta = np.dot(
+                    np.dot(
+                        np.linalg.pinv(np.dot(oxy_mat.transpose(), oxy_mat)),
+                        oxy_mat.transpose(),
+                    ),
+                    data_flat_filter,
+                )
+                x_gradient_array[this_time, this_level] = theta[1][0]
+                y_gradient_array[this_time, this_level] = theta[2][0]
+            else:
+                x_gradient_array[this_time, this_level] = np.nan
+                y_gradient_array[this_time, this_level] = np.nan
     return x_gradient_array, y_gradient_array
 
 

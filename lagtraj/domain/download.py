@@ -183,8 +183,8 @@ def _run_cli(args=None, timedomain_lookup="by_arguments"):
 
     if timedomain_lookup == "by_arguments":
         domain = args.domain
-        t_min = args.start_date
-        t_max = args.end_date
+        start_date = args.start_date
+        end_date = args.end_date
     elif timedomain_lookup == "by_trajectory":
         traj_defn = load_traj_definition(
             root_data_path=args.data_path, name=args.trajectory
@@ -192,6 +192,10 @@ def _run_cli(args=None, timedomain_lookup="by_arguments"):
         domain = traj_defn.domain
         t_min = traj_defn.origin.datetime - traj_defn.duration.backward
         t_max = traj_defn.origin.datetime + traj_defn.duration.forward
+        # downloads are done by date, so we just extract the date here to
+        # ensure the whole day is made available
+        start_date = t_min.date()
+        end_date = t_max.date()
     else:
         raise NotImplementedError(timedomain_lookup)
 
@@ -199,8 +203,8 @@ def _run_cli(args=None, timedomain_lookup="by_arguments"):
         download_named_domain(
             data_path=args.data_path,
             name=domain,
-            start_date=t_min,
-            end_date=t_max,
+            start_date=start_date,
+            end_date=end_date,
             overwrite_existing=args.l_overwrite,
         )
 
@@ -208,8 +212,8 @@ def _run_cli(args=None, timedomain_lookup="by_arguments"):
         list_files_still_to_download(
             root_data_path=args.data_path,
             domain_name=domain,
-            start_date=t_min,
-            end_date=t_max,
+            start_date=start_date,
+            end_date=end_date,
         )
         return
 
@@ -217,7 +221,7 @@ def _run_cli(args=None, timedomain_lookup="by_arguments"):
         while True:
             attempt_download()
             if download_complete(
-                args.data_path, domain_name=domain, start_date=t_min, end_date=t_max
+                args.data_path, domain_name=domain, start_date=start_date, end_date=end_date
             ):
                 break
             else:

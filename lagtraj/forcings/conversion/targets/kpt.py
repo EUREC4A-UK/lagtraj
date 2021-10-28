@@ -14,7 +14,7 @@ from ....utils.interpolation.methods import (
     central_estimate,
 )
 
-kpt_variables = {
+kpt_attributes = {
     "lat": {"units": "degrees North", "long_name": "latitude"},
     "lon": {"units": "degrees East", "long_name": "longitude"},
     "zf": {"units": "m", "long_name": "full level height"},
@@ -352,7 +352,7 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         da_era5 = ds_era5[era5_var]
         # perform units check
         unit_guess = era5_to_kpt_units.get(da_era5.units, da_era5.units)
-        if not unit_guess == kpt_variables[variable]["units"]:
+        if not unit_guess == kpt_attributes[variable]["units"]:
             except_str = (
                 "Incompatible units between ERA5 and kpt for variable "
                 + variable
@@ -360,12 +360,13 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
                 + "dictionary: ERA converted variable is "
                 + unit_guess
                 + ", kpt variable is "
-                + kpt_variables[variable]["units"]
+                + kpt_attributes[variable]["units"]
             )
             raise Exception(except_str)
         # single level variable
         if np.ndim(da_era5.values) == 1:
-            ds_kpt[variable] = (("time"), da_era5, kpt_variables[variable])
+            ds_kpt[variable] = da_era5
+            ds_kpt[variable].attrs.update(kpt_attributes[variable])
         # half level variable
         elif variable in ["zh", "presh"]:
             da_era5_on_half_levels = steffen_1d_no_ep_time(
@@ -374,7 +375,7 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
             ds_kpt[variable] = (
                 ("time", "nlevp1"),
                 da_era5_on_half_levels,
-                kpt_variables[variable],
+                kpt_attributes[variable],
             )
         # full level variable
         else:
@@ -384,7 +385,7 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
             ds_kpt[variable] = (
                 ("time", "nlev"),
                 da_era5_on_full_levels,
-                kpt_variables[variable],
+                kpt_attributes[variable],
             )
     # Simple unit fix fails for these variables
     # So these are added manually after checking
@@ -401,7 +402,7 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     }
     for variable in variables_to_manually_add:
         ds_kpt[variable] = ds_era5[variables_to_manually_add[variable]]
-        ds_kpt[variable].attrs.update(**kpt_variables[variable])
+        ds_kpt[variable].attrs.update(**kpt_attributes[variable])
     variables_to_centralise = {
         "msnswrf": "msnswrf_mean",
         "msnlwrf": "msnlwrf_mean",
@@ -420,7 +421,7 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         ds_kpt[variable] = (
             ("time"),
             this_central_estimate,
-            kpt_variables[variable],
+            kpt_attributes[variable],
         )
     # Soil moisture: combine levels
     swvl1 = ds_era5["swvl1_mean"].values
@@ -431,7 +432,7 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     ds_kpt["q_soil"] = (
         ("time", "nlevs"),
         q_soil,
-        kpt_variables["q_soil"],
+        kpt_attributes["q_soil"],
     )
     # Soil temperature: combine levels
     stl1 = ds_era5["stl1_mean"].values
@@ -442,57 +443,57 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     ds_kpt["t_soil"] = (
         ("time", "nlevs"),
         t_soil,
-        kpt_variables["t_soil"],
+        kpt_attributes["t_soil"],
     )
     # Soil thickness: combine levels
     h_soil = np.array([0.07, 0.21, 0.72, 1.89])
     ds_kpt["h_soil"] = (
         ("nlevs"),
         h_soil,
-        kpt_variables["h_soil"],
+        kpt_attributes["h_soil"],
     )
     # Orography: derive from surface geopotential
     ds_kpt["orog"] = ds_era5["z_mean"] / rg
-    ds_kpt["orog"].attrs.update(**kpt_variables["orog"])
+    ds_kpt["orog"].attrs.update(**kpt_attributes["orog"])
     # Heat roughness, derive from "flsr" variable
     ds_kpt["heat_rough"] = np.exp(ds_era5["flsr_mean"])
-    ds_kpt["heat_rough"].attrs.update(**kpt_variables["heat_rough"])
+    ds_kpt["heat_rough"].attrs.update(**kpt_attributes["heat_rough"])
     # Apply correction to t_skin (see output files)
     ds_kpt["t_skin"] = ds_era5["stl1_mean"] + 1.0
-    ds_kpt["t_skin"].attrs.update(**kpt_variables["t_skin"])
+    ds_kpt["t_skin"].attrs.update(**kpt_attributes["t_skin"])
     # Surface fluxes: obtain from time mean in ERA data, do not change sign
     sfc_sens_flx = central_estimate(ds_era5["msshf_mean"].values)
     ds_kpt["sfc_sens_flx"] = (
         ("time"),
         sfc_sens_flx,
-        kpt_variables["sfc_sens_flx"],
+        kpt_attributes["sfc_sens_flx"],
     )
     sfc_lat_flx = central_estimate(ds_era5["mslhf_mean"].values)
     ds_kpt["sfc_lat_flx"] = (
         ("time"),
         sfc_lat_flx,
-        kpt_variables["sfc_lat_flx"],
+        kpt_attributes["sfc_lat_flx"],
     )
     # Final checks: are all variables present?
     ds_kpt["time_traj"] = (
         ds_era5["time"] - np.datetime64("1970-01-01T00:00")
     ) / np.timedelta64(1, "s")
-    ds_kpt["time_traj"].attrs.update(**kpt_variables["time_traj"])
-    ds_kpt["DS"] = (("nDS"), ["Trajectory origin"], kpt_variables["DS"])
+    ds_kpt["time_traj"].attrs.update(**kpt_attributes["time_traj"])
+    ds_kpt["DS"] = (("nDS"), ["Trajectory origin"], kpt_attributes["DS"])
     ds_kpt["timDS"] = (
         ("nDS"),
         [
             (ds_era5["origin_datetime"] - np.datetime64("1970-01-01T00:00"))
             / np.timedelta64(1, "s")
         ],
-        kpt_variables["timDS"],
+        kpt_attributes["timDS"],
     )
-    ds_kpt["latDS"] = (("nDS"), [ds_era5["origin_lat"]], kpt_variables["latDS"])
-    ds_kpt["lonDS"] = (("nDS"), [ds_era5["origin_lon"]], kpt_variables["lonDS"])
+    ds_kpt["latDS"] = (("nDS"), [ds_era5["origin_lat"]], kpt_attributes["latDS"])
+    ds_kpt["lonDS"] = (("nDS"), [ds_era5["origin_lon"]], kpt_attributes["lonDS"])
     # Change order of data, to confirm to other kpt input
     ds_kpt = ds_kpt.sortby("nlev", ascending=True)
     ds_kpt = ds_kpt.sortby("nlevp1", ascending=True)
-    for var in kpt_variables:
+    for var in kpt_attributes:
         if var not in ds_kpt:
             print(var + " is missing in the kpt formatted output")
     # Needs improvement still

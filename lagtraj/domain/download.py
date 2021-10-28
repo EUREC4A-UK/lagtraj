@@ -147,7 +147,7 @@ def _parse_date(s):
     return dateutil.parser.parse(s).date()
 
 
-def _run_cli(args=None, timedomain_lookup="by_arguments"):
+def _make_cli_argparser(timedomain_lookup):
     import argparse
 
     argparser = argparse.ArgumentParser()
@@ -179,6 +179,11 @@ def _run_cli(args=None, timedomain_lookup="by_arguments"):
         help="Don't actually make any data requests, only list the ones that would be made",
     )
 
+    return argparser
+
+
+def _run_cli(args=None, timedomain_lookup="by_arguments"):
+    argparser = _make_cli_argparser(timedomain_lookup=timedomain_lookup)
     args = argparser.parse_args(args=args)
 
     if timedomain_lookup == "by_arguments":
@@ -239,6 +244,19 @@ def _run_cli(args=None, timedomain_lookup="by_arguments"):
 
 def cli(args):
     _run_cli(args=args, timedomain_lookup="by_arguments")
+
+
+def has_data_for_cli_command(args):
+    argparser = _make_cli_argparser(timedomain_lookup="by_arguments")
+    args = argparser.parse_args(args=args)
+
+    missing_files = _find_missing_files(
+        root_data_path=args.data_path,
+        domain_name=args.domain,
+        start_date=args.start_date,
+        end_date=args.end_date,
+    )
+    return len(missing_files) == 0
 
 
 if __name__ == "__main__":

@@ -40,7 +40,7 @@ git push origin my-new-feature
 ## Installing from a local copy
 
 When you're making modifications to the lagtraj codebase you will want to
-install this local copy with `pip` instead of installing from github og pypi.
+install this local copy with `pip` instead of installing from github or pypi.
 First you will want to [create your own fork]() of lagtraj on github.
 
 ```bash

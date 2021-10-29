@@ -1,0 +1,8 @@
+lat_max: 53.2
+lat_min: 50.5
+lat_samp: 0.1
+lon_max: 2.0
+lon_min: -2.5
+lon_samp: 0.1
+source: era5
+version: 1.0.0

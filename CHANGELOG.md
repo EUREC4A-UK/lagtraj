@@ -9,9 +9,12 @@ First tagged version of lagtraj!
 This version provides complete functionality to produce large-scale forcings for
 running Lagrangian (flow-following) limited area simulations (e.g. Large-Eddy
 Simulations or Single Column Models) to produce convective clouds based on
-ECMWF ERA5 reanalysis data. Output forcings can currently target the [MONC]()
-[DALES]() models and any model supporting the [HIGHTUNE]() data-format
-specification.
+ECMWF ERA5 reanalysis data. Output forcings can currently target the models
+supporting the
+[KPT](https://www.lmd.jussieu.fr/~mpllmd/dephy2_forcages_communs/KPT_documentation.pdf)
+(e.g. [DALES](https://github.com/dalesteam/dales)) and
+[DEPHY](https://docs.google.com/document/d/118xP04jB9HO7Y2LqWk3HZpZ9n3CFujgzimLI7Ug8vO4/edit)
+(e.g. [MONC](https://github.com/Leeds-MONC/monc)) input formats.
 
 Features:
 

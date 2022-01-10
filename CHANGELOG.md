@@ -8,7 +8,7 @@ First tagged version of lagtraj!
 
 This version provides complete functionality to produce large-scale forcings for
 running Lagrangian (flow-following) limited area simulations (e.g. Large-Eddy
-Simulations or Single Column Models) to produce convective clouds based on
+Simulations or Single Column Models) to simulate convective clouds based on
 ECMWF ERA5 reanalysis data. Output forcings can currently target the models
 supporting the
 [KPT](https://www.lmd.jussieu.fr/~mpllmd/dephy2_forcages_communs/KPT_documentation.pdf)

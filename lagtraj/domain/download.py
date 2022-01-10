@@ -204,15 +204,6 @@ def _run_cli(args=None, timedomain_lookup="by_arguments"):
     else:
         raise NotImplementedError(timedomain_lookup)
 
-    def attempt_download():
-        download_named_domain(
-            data_path=args.data_path,
-            name=domain,
-            start_date=start_date,
-            end_date=end_date,
-            overwrite_existing=args.l_overwrite,
-        )
-
     if args.dry_run:
         list_files_still_to_download(
             root_data_path=args.data_path,
@@ -222,24 +213,33 @@ def _run_cli(args=None, timedomain_lookup="by_arguments"):
         )
         return
 
-    if args.retry_rate is not None:
-        while True:
-            attempt_download()
-            if download_complete(
-                args.data_path,
-                domain_name=domain,
-                start_date=start_date,
-                end_date=end_date,
-            ):
-                break
-            else:
-                t_now = datetime.datetime.now()
-                t_now_s = t_now.strftime("%Y%m%dT%H%M")
-                print(f"{t_now_s}: Sleeping {args.retry_rate}min...")
-                sleep(args.retry_rate * 60.0)
-                print("Retrying download")
-    else:
+    def _download_complete():
+        return download_complete(
+            args.data_path,
+            domain_name=domain,
+            start_date=start_date,
+            end_date=end_date,
+        )
+
+    def attempt_download():
+        download_named_domain(
+            data_path=args.data_path,
+            name=domain,
+            start_date=start_date,
+            end_date=end_date,
+            overwrite_existing=args.l_overwrite,
+        )
+
+    while not _download_complete():
         attempt_download()
+        if args.retry_rate is None:
+            break
+        else:
+            t_now = datetime.datetime.now()
+            t_now_s = t_now.strftime("%Y%m%dT%H%M")
+            print(f"{t_now_s}: Sleeping {args.retry_rate}min...")
+            sleep(args.retry_rate * 60.0)
+            print("Retrying download")
 
 
 def cli(args):

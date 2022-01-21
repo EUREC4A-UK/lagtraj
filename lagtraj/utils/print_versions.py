@@ -102,7 +102,7 @@ def show_versions(file=sys.stdout):
         ("pandas", lambda mod: mod.__version__),
         ("numpy", lambda mod: mod.__version__),
         ("scipy", lambda mod: mod.__version__),
-        # xarray optionals
+        # optionals
         ("netCDF4", lambda mod: mod.__version__),
         ("pydap", lambda mod: mod.__version__),
         ("h5netcdf", lambda mod: mod.__version__),
@@ -110,7 +110,8 @@ def show_versions(file=sys.stdout):
         ("bottleneck", lambda mod: mod.__version__),
         ("dask", lambda mod: mod.__version__),
         ("distributed", lambda mod: mod.__version__),
-        # xarray setup/test
+        ("numba", lambda mod: mod.__version__),
+        # setup/test
         ("setuptools", lambda mod: mod.__version__),
         ("pip", lambda mod: mod.__version__),
         ("conda", lambda mod: mod.__version__),

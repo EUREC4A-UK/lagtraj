@@ -1,5 +1,5 @@
-trajectory      : lagtraj://eurec4a_20200202_12_lag
-version         : 1.0.1
+trajectory      : lagtraj://eurec4a_20200103_lag_testcase
+version         : 1.0.0
 domain          : lagtraj://eurec4a_circle
 gradient_method : regression
 advection_velocity_sampling_method : domain_mean

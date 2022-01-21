@@ -14,14 +14,15 @@ supporting the
 [KPT](https://www.lmd.jussieu.fr/~mpllmd/dephy2_forcages_communs/KPT_documentation.pdf)
 (e.g. [DALES](https://github.com/dalesteam/dales)) and
 [DEPHY](https://docs.google.com/document/d/118xP04jB9HO7Y2LqWk3HZpZ9n3CFujgzimLI7Ug8vO4/edit)
-(e.g. [MONC](https://github.com/Leeds-MONC/monc)) input formats.
+(e.g. [MONC](https://github.com/Leeds-MONC/monc), DEPHY functionality yet on
+MOSRS trunk) input formats.
 
 Features:
 
 - calculation of large-scale forcings along a lat/lon trajectory and conversion
   to target specific LES models
-- calculation of air-mass trajectories following either a) fixed-pressure or b)
-  fixed-height
+- calculation of air-mass trajectories following either a) fixed-pressure, b)
+  fixed-height or fixed velocity from a starting point
 - automatic download of ECMWF ERA5 reanalysis data from CDSAPI (handling both
   data requests, download and consistency checks)
 - rudimentary support for calculation of forcing profiles over land (by

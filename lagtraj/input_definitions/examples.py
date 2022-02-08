@@ -66,7 +66,7 @@ def print_available(input_types="all"):
     print(box_tr(examples_tree))
 
 
-def main():
+def cli(args=None):
     print(
         "The following domain/forcing/trajectory definitions are"
         " currently included with lagtraj:"
@@ -87,4 +87,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    cli()

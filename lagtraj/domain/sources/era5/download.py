@@ -5,7 +5,6 @@ import datetime
 import warnings
 from pathlib import Path
 
-import netCDF4
 import yaml
 import requests
 
@@ -19,13 +18,37 @@ TIME_FORMAT = "%h:%M:%s"
 REPOSITORY_NAME = "reanalysis-era5-complete"
 
 
+def _normalise_date(d):
+    if isinstance(d, datetime.datetime):
+        warnings.warn(
+            "the era5 downloader for lagtraj downloads data in blocks of days"
+            f" and so the time component of the provided datetime `{d}` will be ignored"
+        )
+        return d.date()
+    return d
+
+
 def download_data(
-    path, t_start, t_end, bbox, latlon_sampling, version, overwrite_existing=False
+    path, start_date, end_date, bbox, latlon_sampling, version, overwrite_existing=False
 ):
+    """
+    Queue and download ERA5 data from ECMWF using the CDSAPI in the time range
+    `start_date` to `end_date` into a local directory defined by `path` and give this
+    dataset a specific `version`. The lat/lon sampling resolution is given by
+    `latlon_sampling`. Download is split into individual files per day,
+    run-type (analysis or forecast) and height-level (model or surface). Un
+    less `overwite_existing==True` only missing files will be queued and
+    downloaded.
+    """
+    start_date = _normalise_date(start_date)
+    end_date = _normalise_date(end_date)
 
     dl_queries = list(
         _build_queries(
-            t_start=t_start, t_end=t_end, bbox=bbox, latlon_sampling=latlon_sampling
+            start_date=start_date,
+            end_date=end_date,
+            bbox=bbox,
+            latlon_sampling=latlon_sampling,
         )
     )
 
@@ -131,7 +154,41 @@ def download_data(
         print("All files downloaded!")
 
 
-def all_data_is_downloaded(path):
+def find_missing_files(path, start_date, end_date, bbox, latlon_sampling):
+    """
+    Check if all data has been downloaded in the request time interval,
+    bounding-box and resolution.
+    """
+    start_date = _normalise_date(start_date)
+    end_date = _normalise_date(end_date)
+
+    dl_queries = list(
+        _build_queries(
+            start_date=start_date,
+            end_date=end_date,
+            bbox=bbox,
+            latlon_sampling=latlon_sampling,
+        )
+    )
+
+    missing_files = []
+
+    # check if any files don't exist locally yet
+    # NOTE: this will not check if files are only partially downloaded
+    for output_filename, query_kwargs in dl_queries:
+        fp = Path(path) / output_filename
+        if not fp.exists():
+            missing_files.append(
+                dict(filepath=fp, source="ERA5 CDSAPI", query_kwargs=query_kwargs)
+            )
+
+    return missing_files
+
+
+def data_backend_is_processing_requests(path):
+    """
+    Check if the CDSAPI is still processing some of the data requests
+    """
     c = RequestFetchCDSClient()
     return len(_get_files(path=path, c=c, with_status=["queued", "running"])) == 0
 
@@ -170,7 +227,7 @@ def _get_files(path, c, debug=False, with_status=None):
     return files
 
 
-def _build_query_times(model_run_type, t_start, t_end):
+def _build_query_times(model_run_type, start_date, end_date):
     """
     We currently download era5 data by date, build the query dates as datetime
     objects in the request time range
@@ -178,19 +235,19 @@ def _build_query_times(model_run_type, t_start, t_end):
     """
     if model_run_type == "an":
         return [
-            (t_start + datetime.timedelta(days=x))
-            for x in range(0, (t_end.date() - t_start.date()).days + 1)
+            (start_date + datetime.timedelta(days=x))
+            for x in range(0, (end_date - start_date).days + 1)
         ]
     elif model_run_type == "fc":
         return [
-            (t_start + datetime.timedelta(days=x))
-            for x in range(-1, (t_end.date() - t_start.date()).days + 1)
+            (start_date + datetime.timedelta(days=x))
+            for x in range(-1, (end_date - start_date).days + 1)
         ]
     else:
         raise NotImplementedError(model_run_type)
 
 
-def _build_queries(t_start, t_end, bbox, latlon_sampling):
+def _build_queries(start_date, end_date, bbox, latlon_sampling):
     """
     Return a list of cdsapi query arguments for any files that don't already
     exist
@@ -200,7 +257,7 @@ def _build_queries(t_start, t_end, bbox, latlon_sampling):
 
     for model_run_type in model_run_types:
         query_times = _build_query_times(
-            model_run_type=model_run_type, t_start=t_start, t_end=t_end
+            model_run_type=model_run_type, start_date=start_date, end_date=end_date
         )
         for level_type in level_types:
             for t in query_times:

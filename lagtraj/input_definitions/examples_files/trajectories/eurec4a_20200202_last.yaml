@@ -1,0 +1,11 @@
+trajectory_type : lagrangian
+version         : 1.0.0
+velocity_method : single_height_level
+velocity_method_height: 500.
+domain          : lagtraj://eurec4a_north_atlantic
+lat_origin      : 13.28629017
+lon_origin      : -57.71426392
+datetime_origin : "2020-02-02T19:06"
+backward_duration : PT92H
+forward_duration : PT6H
+timestep        : domain_data  # or for example PT1H

@@ -241,41 +241,9 @@ You are of course welcome to rename the conversion however you like if for
 example you'd like to have multiple different converted version of the same
 forcings file.
 
-
-# Implementation details
-
-Required utilies:
-
-- download ECMWF data
-
-- conversion of physical variables
-
-- interpolation (do we need Steffen interpolation?)
-
-- smoothing
-
-- plotting (to some extent)
-
-- generating dephy formatted output netCDF files
-
-- timing (can use tqdm for this)
-
-
-## Algorithmic approach:
-
-a) Download all data needed (across entire domain, single/model levels+).
-   Currently this creates daily files, but we may aim for the minimum number of
-   requests from ECMWF (However, grib to netcdf conversion via the cds api
-   can only deal with files of up to about 10GB).
-
-b) Split these into daily files
-
-Considerations:
-
-- may need whole domain for plotting
-
 # Contributing and comments
 
-Please feel free to [open an
-issue](https://github.com/EUREC4A-UK/lagtraj/issues/new) if you have any
-comments/questions/issues about `lagtraj`. Thank you!
+If you have any comments/questions/issues about `lagtraj` please feel free to
+[open an issue](https://github.com/EUREC4A-UK/lagtraj/issues/new) or have a
+look in [docs/developing.md](docs/developing.md) where we have added some notes
+on how to get started. All contributions are very welcome!

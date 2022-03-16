@@ -2,6 +2,10 @@ from collections import namedtuple
 
 import numpy as np
 
+from ...utils.interpolation.levels import (  # noqa
+    LevelsDefinition as ConversionLevelsDefinition,
+)
+
 INPUT_REQUIRED_FIELDS = dict(
     export_format=str,
     levels_method=(None, str),

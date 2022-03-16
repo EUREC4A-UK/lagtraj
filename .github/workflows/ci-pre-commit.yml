@@ -8,7 +8,7 @@ on:
 
 jobs:
   linting:
-    name: "lint /w pre-commit hooks"
+    name: "linting with pre-commit hooks"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2

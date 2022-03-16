@@ -1,5 +1,4 @@
 from lagtraj.forcings.profile_calculation import FORCING_VARS
-from .output.ncview_validation import check_for_ncview_warnings, build_valid_encoding
 
 
 def validate_trajectory(ds_traj):

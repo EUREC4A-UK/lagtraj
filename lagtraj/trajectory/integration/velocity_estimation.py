@@ -1,7 +1,7 @@
 import numpy as np
 
-from ...utils.interpolation import methods as interpolation_methods
 from ...domain import interpolate_to_height_levels, interpolate_to_pressure_levels
+from ...utils.interpolation import methods as interpolation_methods
 
 
 def weighted_velocity(ds_column, pres_cutoff_start, pres_cutoff_end):

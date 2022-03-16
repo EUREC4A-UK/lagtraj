@@ -1,6 +1,12 @@
-import numpy as np
 from collections import namedtuple
 
+import numpy as np
+
+from ...utils.interpolation.levels import (  # noqa
+    LevelsDefinition as ConversionLevelsDefinition,
+)
+from . import targets  # noqa
+from .process import export_for_target  # noqa
 
 INPUT_REQUIRED_FIELDS = dict(
     export_format=str,
@@ -91,7 +97,13 @@ ConversionParametersDefinition = namedtuple(
 )
 
 ConversionNudgingDefinition = namedtuple(
-    "ConversionNudgingDefinition", ["method", "time", "height", "transition",],
+    "ConversionNudgingDefinition",
+    [
+        "method",
+        "time",
+        "height",
+        "transition",
+    ],
 )
 
 ConversionMetadataDefinition = namedtuple(
@@ -106,9 +118,3 @@ ConversionMetadataDefinition = namedtuple(
         "case",
     ],
 )
-
-from . import targets  # noqa
-from ...utils.interpolation.levels import (
-    LevelsDefinition as ConversionLevelsDefinition,
-)  # noqa
-from .process import export_for_target

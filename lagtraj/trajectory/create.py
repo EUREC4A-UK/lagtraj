@@ -1,19 +1,19 @@
 import datetime
-from pathlib import Path
 import warnings
+from pathlib import Path
 
-import xarray as xr
 import numpy as np
 import tqdm
+import xarray as xr
 
 from .. import DEFAULT_ROOT_DATA_PATH
-from .load import load_definition
-from . import build_data_path, extrapolation
-from ..domain.load import load_data as load_domain_data
 from ..domain.download import download_complete
+from ..domain.load import load_data as load_domain_data
 from ..utils import optional_debugging, validation
-from ..utils.xarray import create_attributes_dictionary
 from ..utils.units import fix_units
+from ..utils.xarray import create_attributes_dictionary
+from . import build_data_path, extrapolation
+from .load import load_definition
 
 """ Routines for creating a trajectory
 
@@ -223,7 +223,11 @@ def create_linear_trajectory(origin, da_times, U):
             s = -1.0
 
         lat_new, lon_new = extrapolation.extrapolate_posn_with_fixed_velocity(
-            lat=lat, lon=lon, u_vel=s * U[0], v_vel=s * U[1], dt=s * dt,
+            lat=lat,
+            lon=lon,
+            u_vel=s * U[0],
+            v_vel=s * U[1],
+            dt=s * dt,
         )
         u_start_and_end = (U[0], U[0])
         v_start_and_end = (U[1], U[1])

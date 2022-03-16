@@ -1,12 +1,12 @@
-from unittest.mock import patch
 import importlib
-
-import lagtraj.forcings.create
-from lagtraj.forcings import build_forcing_data_path
-import lagtraj.trajectory.create
-from lagtraj.trajectory import build_data_path as build_trajectory_data_path
+from unittest.mock import patch
 
 from test_forcing_profiles_extraction import AVAILABLE_CONVERSIONS
+
+import lagtraj.forcings.create
+import lagtraj.trajectory.create
+from lagtraj.forcings import build_forcing_data_path
+from lagtraj.trajectory import build_data_path as build_trajectory_data_path
 
 
 @patch("lagtraj.domain.download.download_complete")

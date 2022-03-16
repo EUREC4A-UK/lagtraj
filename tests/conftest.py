@@ -1,14 +1,13 @@
-from pathlib import Path
+import os
 import tarfile
 import tempfile
-import os
+from pathlib import Path
 
-import requests
 import pytest
+import requests
+from make_test_data import TEST_FORCING_NAME, forcing_load, trajectory_load
 
 import lagtraj.domain.load
-from make_test_data import TEST_FORCING_NAME, trajectory_load, forcing_load
-
 
 TESTDATA_URL = "http://gws-access.jasmin.ac.uk/public/eurec4auk/testdata/lagtraj.testdata.v0.1.0.tar.gz"  # noqa
 
@@ -51,7 +50,9 @@ def ds_trajectory_linear(ds_domain_test):
     t0 = ds_domain_test.time.isel(time=-15)
 
     origin = lagtraj.trajectory.TrajectoryOrigin(
-        lat=ds_domain_test.lat.mean(), lon=ds_domain_test.lon.mean(), datetime=t0,
+        lat=ds_domain_test.lat.mean(),
+        lon=ds_domain_test.lon.mean(),
+        datetime=t0,
     )
 
     da_times = ds_domain_test.time

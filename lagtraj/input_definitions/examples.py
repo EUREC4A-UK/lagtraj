@@ -1,12 +1,10 @@
-from pathlib import Path
 from collections import OrderedDict as OD
-import yaml
+from pathlib import Path
 
-from asciitree import LeftAligned
-from asciitree import drawing
+import yaml
+from asciitree import LeftAligned, drawing
 
 from .. import DATA_TYPE_PLURAL
-
 
 EXAMPLES_ROOT_PATH = Path(__file__).parent / "examples_files"
 LAGTRAJ_EXAMPLES_PATH_PREFIX = "lagtraj://"

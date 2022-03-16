@@ -339,12 +339,7 @@ def _create_extrapolated_trajectory(origin, da_times, extrapolation_func):
     return ds_traj
 
 
-def cli(args=None):
-    """
-    Function called with arguments passed from the command line when making
-    trajectories through the CLI. When `args==None` they will be taken from
-    `sys.argv`
-    """
+def _make_cli_argparser():
     import argparse
 
     argparser = argparse.ArgumentParser()
@@ -353,10 +348,54 @@ def cli(args=None):
         "-d", "--data-path", default=DEFAULT_ROOT_DATA_PATH, type=Path
     )
     argparser.add_argument("--debug", default=False, action="store_true")
+    return argparser
+
+
+def cli(args=None):
+    """
+    Function called with arguments passed from the command line when making
+    trajectories through the CLI. When `args==None` they will be taken from
+    `sys.argv`
+    """
+    argparser = _make_cli_argparser()
     args = argparser.parse_args(args=args)
 
     with optional_debugging(args.debug):
         main(data_path=args.data_path, trajectory_name=args.trajectory)
+
+
+def has_data_for_cli_command(args):
+    argparser = _make_cli_argparser()
+    args = argparser.parse_args(args=args)
+
+    data_path = args.data_path
+    trajectory_name = args.trajectory
+    return required_data_available(data_path=data_path, trajectory_name=trajectory_name)
+
+
+def required_data_available(data_path, trajectory_name):
+    traj_definition = load_definition(root_data_path=data_path, name=trajectory_name)
+
+    if traj_definition.domain is not None:
+        ds_domain = load_domain_data(
+            root_data_path=data_path, name=traj_definition.domain
+        )
+        t0 = traj_definition.origin.datetime
+        traj_t_min = t0 - traj_definition.duration.backward
+        traj_t_max = t0 + traj_definition.duration.forward
+
+        def dt64_to_dt(v):
+            # to make a datetime.datetime we first have to remove the
+            # nanosecond precision
+            return v.astype("datetime64[s]").astype(datetime.datetime)
+
+        data_t_min = dt64_to_dt(ds_domain.time.min().values)
+        data_t_max = dt64_to_dt(ds_domain.time.max().values)
+
+        has_time_range = data_t_min <= traj_t_min and traj_t_max <= data_t_max
+        return has_time_range
+
+    return True
 
 
 if __name__ == "__main__":

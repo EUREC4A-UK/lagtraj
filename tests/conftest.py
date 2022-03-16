@@ -1,4 +1,5 @@
 import os
+import shutil
 import tarfile
 import tempfile
 from pathlib import Path
@@ -12,10 +13,10 @@ import lagtraj.domain.load
 TESTDATA_URL = "http://gws-access.jasmin.ac.uk/public/eurec4auk/testdata/lagtraj.testdata.v0.1.0.tar.gz"  # noqa
 
 if os.environ.get("LAGTRAJ_TESTDATA_DIR", None):
-    testdata_dir = Path(os.environ["LAGTRAJ_TESTDATA_DIR"])
+    TESTDATA_DIR = Path(os.environ["LAGTRAJ_TESTDATA_DIR"])
 else:
     tempdir = tempfile.TemporaryDirectory()
-    testdata_dir = Path(tempdir.name)
+    TESTDATA_DIR = Path(tempdir.name)
 
 
 def _download_testdata():
@@ -25,23 +26,29 @@ def _download_testdata():
     fhtar.write(r.content)
     fhtar.close()
 
-    tarfile.open(fhtar.name, "r:gz").extractall(testdata_dir)
+    tarfile.open(fhtar.name, "r:gz").extractall(TESTDATA_DIR)
 
 
-def _ensure_testdata_available():
-    if not testdata_dir.exists():
-        raise Exception(f"Couldn't find test-data directory {testdata_dir}")
+def ensure_testdata_available():
+    if not TESTDATA_DIR.exists():
+        raise Exception(f"Couldn't find test-data directory {TESTDATA_DIR}")
     # Download testdata if it is not there yet
-    if len(list(testdata_dir.glob("**/*.nc"))) == 0:
+    if len(list(TESTDATA_DIR.glob("**/*.nc"))) == 0:
         print("Downloading testdata...")
         _download_testdata()
+
+    # the testdata directory should only contain the domain data anothing else
+    testdata_dir_contents = TESTDATA_DIR.glob("*")
+    to_delete = [p for p in testdata_dir_contents if p.name != "domains"]
+    for path_to_delete in to_delete:
+        shutil.rmtree(path_to_delete)
 
 
 @pytest.fixture
 def ds_domain_test(scope="session"):
-    _ensure_testdata_available()
+    ensure_testdata_available()
     DOMAIN_NAME = "eurec4a_circle"
-    ds = lagtraj.domain.load.load_data(root_data_path=testdata_dir, name=DOMAIN_NAME)
+    ds = lagtraj.domain.load.load_data(root_data_path=TESTDATA_DIR, name=DOMAIN_NAME)
     return ds
 
 
@@ -70,8 +77,8 @@ def testdata_info():
     These are used for the CLI tests. We might want to add input definitions to
     the testdata (see `make_test_data.py`) and test more CLI calls in future.
     """
-    _ensure_testdata_available()
-    p_root = Path(testdata_dir)
+    ensure_testdata_available()
+    p_root = Path(TESTDATA_DIR)
     forcing_name = TEST_FORCING_NAME
     forcing_defn = forcing_load.load_definition(p_root, forcing_name=forcing_name)
     trajectory_name = forcing_defn.name

@@ -14,17 +14,17 @@ from .examples import get_available as get_available_input_examples
 FOLDER_STRUCTURE_EXAMPLE = """
 data
 ├── domains
-│   ├── eurec4a_circle_eul.yaml
-│   └── eurec4a_circle_eul_data
-│       ├── an_model_2020-01-01.nc
-│       :
-│       └── fc_single_2020-01-03.nc
+│   ├── eurec4a_circle.yaml
+│   └── eurec4a_circle_data
+│       ├── an_model_2020-01-01.nc
+│       :
+│       └── fc_single_2020-01-03.nc
 ├── forcings
-│   ├── eure4a_20191209_12_eul.yaml
-│   └── eure4a_20191209_12_eul.nc
+│   ├── eure4a_20200103_lag_testcase.yaml
+│   └── eure4a_20200103_lag_testcase.nc
 └── trajectories
-    ├── eure4a_20191209_12_eul.yaml
-    └── eure4a_20191209_12_eul.nc
+    ├── eure4a_20200103_lag_testcase.yaml
+    └── eure4a_20200103_lag_testcase.nc
 """
 
 

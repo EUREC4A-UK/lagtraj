@@ -147,7 +147,7 @@ def _parse_date(s):
     return dateutil.parser.parse(s).date()
 
 
-def _run_cli(args=None, timedomain_lookup="by_arguments"):
+def _make_cli_argparser(timedomain_lookup):
     import argparse
 
     argparser = argparse.ArgumentParser()
@@ -179,6 +179,11 @@ def _run_cli(args=None, timedomain_lookup="by_arguments"):
         help="Don't actually make any data requests, only list the ones that would be made",
     )
 
+    return argparser
+
+
+def _run_cli(args=None, timedomain_lookup="by_arguments"):
+    argparser = _make_cli_argparser(timedomain_lookup=timedomain_lookup)
     args = argparser.parse_args(args=args)
 
     if timedomain_lookup == "by_arguments":
@@ -199,15 +204,6 @@ def _run_cli(args=None, timedomain_lookup="by_arguments"):
     else:
         raise NotImplementedError(timedomain_lookup)
 
-    def attempt_download():
-        download_named_domain(
-            data_path=args.data_path,
-            name=domain,
-            start_date=start_date,
-            end_date=end_date,
-            overwrite_existing=args.l_overwrite,
-        )
-
     if args.dry_run:
         list_files_still_to_download(
             root_data_path=args.data_path,
@@ -217,25 +213,51 @@ def _run_cli(args=None, timedomain_lookup="by_arguments"):
         )
         return
 
-    if args.retry_rate is not None:
-        while True:
-            attempt_download()
-            if download_complete(
-                args.data_path,
-                domain_name=domain,
-                start_date=start_date,
-                end_date=end_date,
-            ):
-                break
-            else:
-                t_now = datetime.datetime.now()
-                t_now_s = t_now.strftime("%Y%m%dT%H%M")
-                print(f"{t_now_s}: Sleeping {args.retry_rate}min...")
-                sleep(args.retry_rate * 60.0)
-                print("Retrying download")
-    else:
+    def _download_complete():
+        return download_complete(
+            args.data_path,
+            domain_name=domain,
+            start_date=start_date,
+            end_date=end_date,
+        )
+
+    def attempt_download():
+        download_named_domain(
+            data_path=args.data_path,
+            name=domain,
+            start_date=start_date,
+            end_date=end_date,
+            overwrite_existing=args.l_overwrite,
+        )
+
+    while not _download_complete():
         attempt_download()
+        if args.retry_rate is None:
+            break
+        else:
+            t_now = datetime.datetime.now()
+            t_now_s = t_now.strftime("%Y%m%dT%H%M")
+            print(f"{t_now_s}: Sleeping {args.retry_rate}min...")
+            sleep(args.retry_rate * 60.0)
+            print("Retrying download")
+
+
+def cli(args):
+    _run_cli(args=args, timedomain_lookup="by_arguments")
+
+
+def has_data_for_cli_command(args):
+    argparser = _make_cli_argparser(timedomain_lookup="by_arguments")
+    args = argparser.parse_args(args=args)
+
+    missing_files = _find_missing_files(
+        root_data_path=args.data_path,
+        domain_name=args.domain,
+        start_date=args.start_date,
+        end_date=args.end_date,
+    )
+    return len(missing_files) == 0
 
 
 if __name__ == "__main__":
-    _run_cli(timedomain_lookup="by_arguments")
+    cli(args=None)

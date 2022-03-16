@@ -11,7 +11,7 @@ def test_loading_local_file_by_name():
     tempdir = tempfile.TemporaryDirectory()
     testdata_dir = Path(tempdir.name)
 
-    input_name = "eurec4a_20191209_12_eul"
+    input_name = "eurec4a_20200103_lag_testcase"
     input_type = "trajectory"
 
     # copy an example out from the lagtraj input examples

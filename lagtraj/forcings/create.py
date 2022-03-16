@@ -6,6 +6,9 @@ from tqdm import tqdm
 
 from .. import DEFAULT_ROOT_DATA_PATH
 from ..domain.load import load_data as load_domain_data
+from ..trajectory.create import (
+    required_data_available as required_data_available_for_trajectory,
+)
 from ..trajectory.load import load_data as load_trajectory_data
 from ..utils import optional_debugging, validation
 from ..utils.interpolation.levels import make_levels
@@ -212,12 +215,7 @@ def main(data_path, forcing_defn, conversion_name=None):
         print("Wrote converted forcing file to `{}`".format(converted_output_file_path))
 
 
-def cli(args=None):
-    """
-    Function called with arguments passed from the command line when making
-    trajectories through the CLI. When `args==None` they will be taken from
-    `sys.argv`
-    """
+def _make_cli_argparser():
     import argparse
 
     argparser = argparse.ArgumentParser()
@@ -234,6 +232,16 @@ def cli(args=None):
         default=None,
     )
     argparser.add_argument("--debug", default=False, action="store_true")
+    return argparser
+
+
+def cli(args=None):
+    """
+    Function called with arguments passed from the command line when making
+    trajectories through the CLI. When `args==None` they will be taken from
+    `sys.argv`
+    """
+    argparser = _make_cli_argparser()
     args = argparser.parse_args(args=args)
 
     forcing_defn = load.load_definition(
@@ -245,6 +253,21 @@ def cli(args=None):
             forcing_defn=forcing_defn,
             conversion_name=args.conversion,
         )
+
+
+def has_data_for_cli_command(args):
+    argparser = _make_cli_argparser()
+    args = argparser.parse_args(args=args)
+
+    data_path = args.data_path
+    forcing_defn = load.load_definition(
+        root_data_path=args.data_path, forcing_name=args.forcing
+    )
+    trajectory_name = forcing_defn.trajectory
+
+    return required_data_available_for_trajectory(
+        data_path=data_path, trajectory_name=trajectory_name
+    )
 
 
 if __name__ == "__main__":

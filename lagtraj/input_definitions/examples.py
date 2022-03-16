@@ -64,7 +64,7 @@ def print_available(input_types="all"):
     print(box_tr(examples_tree))
 
 
-def main():
+def cli(args=None):
     print(
         "The following domain/forcing/trajectory definitions are"
         " currently included with lagtraj:"
@@ -80,9 +80,9 @@ def main():
         " follows:\n"
         "\n"
         "    $> python -m lagtraj.domain.download"
-        " lagtraj://eurec4a_20191209_12_eul"
+        " lagtraj://eurec4a_20200202_first"
     )
 
 
 if __name__ == "__main__":
-    main()
+    cli()

@@ -1,5 +1,10 @@
 from lagtraj.forcings.profile_calculation import FORCING_VARS
 
+from .output.ncview_validation import (  # noqa
+    build_valid_encoding,
+    check_for_ncview_warnings,
+)
+
 
 def validate_trajectory(ds_traj):
     required_fields = [

@@ -15,7 +15,7 @@ There are three steps to making forcing profiles with lagtraj:
 2. [Produce trajectory](#2-producing-a-trajectory)
 
 3. [Extract forcing
-   profiles](https://github.com/EUREC4A-UK/lagtraj#3-producing-forcing-profiles)
+   profiles](#3-producing-forcing-profiles)
    along the trajectory (with optional conversion to target a specific LES/GCM
    model)
 

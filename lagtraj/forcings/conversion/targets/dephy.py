@@ -226,6 +226,7 @@ era5_to_dephy_units = {
     "Pa s**-1": "Pa s-1",
     "m s**-1 s**-1": "m s-2",
     "metres": "m",
+    "m" : "m",
     "kg kg**-1": "kg kg-1",
     "K s**-1": "K s-1",
     "kg kg**-1 s**-1": "kg kg-1 s-1",

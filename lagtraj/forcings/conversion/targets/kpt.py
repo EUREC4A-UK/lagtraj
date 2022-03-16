@@ -301,6 +301,7 @@ era5_to_kpt_units = {
     "degrees_north": "degrees North",
     "degrees_east": "degrees East",
     "metres": "m",
+    "m": "m",
     "kg kg**-1": "kg/kg",
     "Pa s**-1": "Pa/s",
     "K s**-1": "K/s",

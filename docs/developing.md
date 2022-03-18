@@ -11,10 +11,8 @@ Here's a quick TLDR version if you're already familiar with github:
 # clone locally your fork of lagtraj on github
 git clone https://github.com/<your-github-username>/lagtraj/
 
-# install this local copy with pip and additionally install the development
-# tools
-pip install -e .
-pip install pytest ipdb black==19.10.b0
+# install this local copy with pip with the necessary development tools
+pip install -e ".[dev]"
 
 # create a branch for your fix/feature
 git checkout -b my-new-feature
@@ -48,18 +46,19 @@ git clone https://github.com/<your-github-username>/lagtraj/
 ```
 
 You can then install with `pip` using the following command (the `-e`-flag
-ensures that pip will pick up any changes you make to the source directory)
-
-```
-pip install -e .
-```
-
-There are few additional tools that you will want for testing (`pytest`),
-interactive debugging (`ipdb`) and automatic code-cleanup (`black`). These can
-also be installed with `pip`
+ensures that pip will pick up any changes you make to the source directory).
+Everything needed to get a working developing environment set up is stored
+inside `setup.cfg` can be installed with pip by calling:
 
 ```bash
-pip install pytest ipdb black==19.10.b0
+python -m pip install -e ".[dev]"
+```
+
+Linting is done with [pre-commit](https://pre-commit.com/), run the following
+command to have linting run automatically for each git commit:
+
+```bash
+pre-commit install
 ```
 
 ## Adding features and fixing bugs

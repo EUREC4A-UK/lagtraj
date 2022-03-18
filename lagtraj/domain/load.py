@@ -1,7 +1,6 @@
 from ..input_definitions import load
 from . import INPUT_REQUIRED_FIELDS, build_domain_data_path
 from .sources import era5
-from ..input_definitions.examples import LAGTRAJ_EXAMPLES_PATH_PREFIX
 
 
 def load_definition(domain_name, data_path):
@@ -12,7 +11,7 @@ def load_definition(domain_name, data_path):
         required_fields=INPUT_REQUIRED_FIELDS,
     )
 
-    if not "version" in domain_params:
+    if "version" not in domain_params:
         domain_params["version"] = "unversioned"
 
     return domain_params

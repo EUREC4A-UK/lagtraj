@@ -1,6 +1,5 @@
 import semver
 
-
 from .. import build_data_path
 
 

@@ -69,15 +69,7 @@ def test_create_lagrangian_trajectory(ds_domain_test):
     validation.validate_trajectory(ds_traj)
 
 
-def test_check_for_all_timesteps(ds_domain_test):
-    # name the trajectory yaml file using the current function's name
-    fn_name = inspect.getframeinfo(inspect.currentframe()).function
-    mod_name = __name__
-    name = f"{mod_name}__{fn_name}"
-
-    domain_name = ds_domain_test.name
-
-    traj_example_yaml = """
+TIMESTEP_TEST_YAML_TEMPLATE = """
 lat_origin: 13.0
 lon_origin: -54.0
 trajectory_type: eulerian
@@ -86,9 +78,18 @@ forward_duration: PT3H
 backward_duration: null
 domain: lagtraj://{domain_name}
 timestep: domain_data
-""".format(
-        domain_name=domain_name
-    )
+"""
+
+
+def test_check_for_all_timesteps(ds_domain_test):
+    # name the trajectory yaml file using the current function's name
+    fn_name = inspect.getframeinfo(inspect.currentframe()).function
+    mod_name = __name__
+    name = f"{mod_name}__{fn_name}"
+
+    domain_name = ds_domain_test.name
+
+    traj_example_yaml = TIMESTEP_TEST_YAML_TEMPLATE.format(domain_name=domain_name)
     traj_params = yaml.load(traj_example_yaml)
 
     data_path_root = Path(ds_domain_test.data_path).parent.parent
@@ -117,9 +118,5 @@ timestep: domain_data
     da_t_expected = da_domain_times.sel(
         time=slice(da_t_min_expected, da_t_max_expected)
     )
-
-    import ipdb
-
-    ipdb.set_trace()
 
     assert np.testing.assert_allclose(da_t_expected, ds_traj.time)

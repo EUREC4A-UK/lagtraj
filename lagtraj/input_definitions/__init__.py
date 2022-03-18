@@ -145,23 +145,24 @@ def validate_input(input_params, required_fields):
         if "|" in f_name:
             f_names = f_name.split("|")
             exceptions = []
+            valid_f_names = []
             for f_name in f_names:
                 try:
                     new_val = _check_field(f_name, f_option)
                     if new_val is not None:
                         input_params[f_name] = new_val
+                        valid_f_names.append(f_name)
                 except Exception as e:
                     exceptions.append(e)
 
-            if len(exceptions) == len(f_names):
+            if len(exceptions) > 0:
                 raise InvalidInputDefinition(
-                    "None of the fields `{}` were correctly defined in the input"
-                    " definition. Please define at least one with the {} type"
-                    "\n\nThe errors incurred where: {}"
-                    "".format(", ".join(f_names), f_option, exceptions)
+                    "The following issues were found when trying to parse "
+                    f"the values of {', '.join(f_names)} for the `{f_option}` parameters: "
+                    f"{exceptions}"
                 )
             else:
-                checked_valid_fields += f_names
+                checked_valid_fields += valid_f_names
         else:
             new_val = _check_field(f_name, f_option)
             if new_val is not None:

@@ -19,6 +19,10 @@ def load_definition(root_data_path, name):
         required_fields=INPUT_REQUIRED_FIELDS,
     )
 
+    return create_definition_from_params(params=params)
+
+
+def create_definition_from_params(params):
     origin = TrajectoryOrigin(
         lat=params["lat_origin"],
         lon=params["lon_origin"],

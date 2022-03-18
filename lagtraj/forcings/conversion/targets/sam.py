@@ -385,8 +385,17 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     )
     
     # build Tref and qref: (To-fix boradcasting)
-    Tref = ds_era5['t_mean'].mean(axis=0).values #(broadcast to have shape time, nlev)
-    qref = ds_sam['qv'].mean(axis=0).values 
+    Nt, nlev = np.shape(ds_era5['t_mean'])
+    tvec = np.ones((Nt, 1))
+    Tref_vec = np.zeros((1, nlev))
+    qref_vec = np.zeros((1, nlev))
+
+    Tref_vec[0,:] = ds_era5['t_mean'].mean(axis=0).values #(broadcast to have shape time, nlev)
+    Tref = Tref_vec * tvec
+    
+    qref_vec[0,:] = ds_sam['qv'].mean(axis=0).values
+    qref = qref_vec * tvec
+
     ds_sam["Tref"] = (
         ("time", "nlev"), 
         Tref, 

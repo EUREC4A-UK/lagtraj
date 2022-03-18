@@ -5,6 +5,7 @@
 """
 import xarray as xr
 import numpy as np
+import scipy.interpolate as intp
 import datetime
 
 
@@ -17,7 +18,7 @@ from ....utils.interpolation.methods import (
 # refer to Peter's matlab script; It seems that it works well with the kpt formatted output as well.
 sam_attributes = {
 ## following Peter Blossey's matlab script structure:
-# 1. Surface level variables
+# 1. Surface level variables (manually added)
     "Ps": {"units": "Pa", "long_name": "surface pressure"},
     "Ptend" : {"units": "Pa/s", "long_name":"surface pressure tendency"},
     "Tg": {
@@ -27,10 +28,10 @@ sam_attributes = {
         "Motivation: value from IFS is actually the open SST, "
         "which is lower than the skin temperature.",
     },
-    # both value needs to be change sign
+    # both value needs to be change sign (done)
     "shflx": {"units": "W/m2", "long_name": "surface sensible heat flux"},
     "lhflx": {"units": "W/m2", "long_name": "surface latent heat flux"},
-    # thest two needs to be computed 
+    # thest two needs to be computed  (done)
     "Tsair" :{"units": "K", "long_name": "Surface Air Temperature (extrapolated to z=0)"},
     "qsrf" : {"units": "kg/kg", "long_name": "Surface Water Vapor Mass Mixing ratio (extrapolated to z=0)"},
     # need to double check which is the right lon, lat for SAM and how they are different.
@@ -50,9 +51,10 @@ sam_attributes = {
     "zf": {"units": "m", "long_name": "full level height"},
 #    "zh": {"units": "m", "long_name": "half level height"},
     "pres": {"units": "Pa", "long_name": "full level pressure"},
-#    "presh": {"units": "Pa", "long_name": "half level pressure"},
+    "presh": {"units": "Pa", "long_name": "half level pressure"},
     "u": {"units": "m/s", "long_name": "zonal wind (domain averaged)"},
     "v": {"units": "m/s", "long_name": "meridional wind (domain averaged)"},
+#    "t": {"units": "K", "long_name": "temperature (domain averaged)"},
     "ug": {
         "units": "m/s",
         "long_name": "geostrophic wind - zonal component",
@@ -70,8 +72,7 @@ sam_attributes = {
         "long_name": "large-scale pressure velocity (domain averaged)",
     },
 # Note: these two variables need to be calculated from the era5 variables.
-    "T" : {"units": "K", "long_name": "Liquid Water Temperature (Tl = T - (L/Cp)*ql)",
-           "standard_name": "air_temperature"}, # Tl
+    "T" : {"units": "K", "long_name": "Liquid Water Temperature (Tl = T - (L/Cp)*ql)"}, #"standard_name": "air_temperature"}, # Tl
     "q" : {"units":"kg/kg", "long_name": "Total Water Mass Mixing Ratio (Vapor + Cloud Liquid)"}, # qtot
     "divT": {
         "units": "K/s",
@@ -141,47 +142,48 @@ sam_attributes = {
 # (we loop over sam variables here)
 # XYC Development Note: I think the first column is the variable name in SAM and the second is the 
 # era5 variable name
+# the number of variables here need to match those in the sam_attributes;
 sam_from_era5_variables = {
     "zf": "height_h_local",
-    "zh": "height_h_local",
-    "ps": "sp_mean",
+#    "zh": "height_h_local",
+#    "ps": "sp_mean",
     "pres": "p_h_mean",
     "presh": "p_h_mean",
     "u": "u_mean",
     "v": "v_mean",
-    "t": "t_mean",
-    "q": "q_mean",
+#    "t": "t_mean",
+    "qv": "q_mean",
     "ql": "clwc_mean",
-    "qi": "ciwc_mean",
-    "cloud_fraction": "cc_mean",
+#    "qi": "ciwc_mean",
+    "cloudERA": "cc_mean",
     "omega": "w_pressure_corr_mean",
     "o3mmr": "o3_mean",
-    "t_local": "t_local",
-    "q_local": "q_local",
-    "ql_local": "clwc_local",
-    "qi_local": "ciwc_local",
-    "u_local": "u_local",
-    "v_local": "v_local",
-    "cc_local": "cc_local",
+#    "t_local": "t_local",
+#    "q_local": "q_local",
+#    "ql_local": "clwc_local",
+#    "qi_local": "ciwc_local",
+#    "u_local": "u_local",
+#    "v_local": "v_local",
+#    "cc_local": "cc_local",
     "tadv": "dtdt_adv",
     "qadv": "dqdt_adv",
-    "uadv": "dudt_adv",
-    "vadv": "dvdt_adv",
+#    "uadv": "dudt_adv",
+#    "vadv": "dvdt_adv",
     "ug": "u_g",
     "vg": "v_g",
-    "tladv": "dt_ldt_adv",
-    "qladv": "dclwcdt_adv",
-    "qiadv": "dciwcdt_adv",
-    "ccadv": "dccdt_adv",
+#    "tladv": "dt_ldt_adv",
+#    "qladv": "dclwcdt_adv",
+#    "qiadv": "dciwcdt_adv",
+#    "ccadv": "dccdt_adv",
     "lat": "lat",
     "lon": "lon",
     "lat_traj": "lat",
     "lon_traj": "lon",
-    "lat_grid": "lat",
-    "lon_grid": "lon",
+#    "lat_grid": "lat",
+#    "lon_grid": "lon",
     "u_traj": "u_traj",
     "v_traj": "v_traj",
-    "open_sst": "sst_mean",
+#    "open_sst": "sst_mean",
 }
 
 # era5 units : sam units
@@ -207,7 +209,8 @@ era5_to_sam_units = {
 def from_era5(ds_era5, da_levels, parameters, metadata):
     """Obtain a sam input file from era5 variable set at high resolution"""
     # Put full levels midway between half-levels, I think this is consistent with DALES
-    # Reverse order of data, to confirm to other sam input
+    # Reverse order of data, to confirm to other kpt input
+    ### Does it apply to sam as well? 
     sam_half_level_array = da_levels.values
     sam_full_level_array = 0.5 * (sam_half_level_array[:-1] + sam_half_level_array[1:])
     sam_half_level_coord = {
@@ -225,15 +228,15 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         )
     }
     nDS_coord = {"nDS": ("nDS", [0], {},)}
-    sam_soil_coord = {
-        "nlevs": ("nlevs", np.arange(4) + 1.0, {"long_name": "soil levels"})
-    }
+#    sam_soil_coord = {
+#        "nlevs": ("nlevs", np.arange(4) + 1.0, {"long_name": "soil levels"})
+#    }
     ds_sam = xr.Dataset(
         coords={
             "time": ds_era5.time,
             **sam_full_level_coord,
             **sam_half_level_coord,
-            **sam_soil_coord,
+#            **sam_soil_coord,
             **nDS_coord,
         }
     )
@@ -282,29 +285,29 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     # Simple unit fix fails for these variables
     # So these are added manually after checking
     # that units are compatible
-    variables_to_manually_add = {
-        "high_veg_type": "tvh_mean",
-        "low_veg_type": "tvl_mean",
-        "high_veg_lai": "lai_hv_mean",
-        "low_veg_lai": "lai_lv_mean",
-        "slor": "slor_mean",
-        "q_skin": "src_mean",
-        "snow": "sd_mean",
-        "lsm": "lsm_mean",
-    }
-    for variable in variables_to_manually_add:
-        ds_sam[variable] = ds_era5[variables_to_manually_add[variable]]
-        ds_sam[variable].attrs.update(**sam_attributes[variable])
+#    variables_to_manually_add = {
+#        "high_veg_type": "tvh_mean",
+#        "low_veg_type": "tvl_mean",
+#        "high_veg_lai": "lai_hv_mean",
+#        "low_veg_lai": "lai_lv_mean",
+#        "slor": "slor_mean",
+#        "q_skin": "src_mean",
+#        "snow": "sd_mean",
+#        "lsm": "lsm_mean",
+#    }
+#    for variable in variables_to_manually_add:
+#        ds_sam[variable] = ds_era5[variables_to_manually_add[variable]]
+#        ds_sam[variable].attrs.update(**sam_attributes[variable])
     variables_to_centralise = {
-        "msnswrf": "msnswrf_mean",
-        "msnlwrf": "msnlwrf_mean",
-        "mtnswrf": "mtnswrf_mean",
-        "mtnlwrf": "mtnlwrf_mean",
-        "mtnswrfcs": "mtnswrfcs_mean",
-        "mtnlwrfcs": "mtnlwrfcs_mean",
-        "msnswrfcs": "msnswrfcs_mean",
-        "msnlwrfcs": "msnlwrfcs_mean",
-        "mtdwswrf": "mtdwswrf_mean",
+        "fsnsERA": "msnswrf_mean",
+        "flnsERA": "msnlwrf_mean",
+        "fsntERA": "mtnswrf_mean",
+        "flntERA": "mtnlwrf_mean",
+        "fsntcERA": "mtnswrfcs_mean",
+        "flntcERA": "mtnlwrfcs_mean",
+        "fsnscERA": "msnswrfcs_mean",
+        "flnscERA": "msnlwrfcs_mean",
+        "fsdtERA": "mtdwswrf_mean",
     }
     for variable in variables_to_centralise:
         this_central_estimate = central_estimate(
@@ -317,6 +320,83 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         )
 #### XYC note: I think this is where I can compute extra varialbles from ERA5 and add to ds_sam
     # Tl, qtot:
+    L = 2.5e6          # J/kg specific heat of condensation
+    Cp = 1004          # specific heat of air at constant pressure p; J/kg/Kcontanst as in SAM
+    T_lw = ds_era5['t_mean'].values - L/Cp * ds_sam['ql'].values
+    ds_sam["T"] = (
+        ("time", "nlev"), 
+        T_lw,
+        sam_attributes["T"],
+    )
+        
+    qtot = ds_sam['qv'].values + ds_sam['ql'].values
+    ds_sam["q"] = (
+        ("time", "nlev"), 
+        qtot,
+        sam_attributes["q"],
+    )
+
+    # surface pressure:
+    Ps = ds_sam["presh"][:,-1].values
+    ds_sam['Ps'] = (
+        ("time"), 
+        Ps,  sam_attributes["Ps"], 
+    )
+    # surface temperature and humidity: (needs interpolation)
+    Nt = len(ds_era5.time)
+    T_surf = np.zeros(Nt)
+    q_surf = np.zeros(Nt)
+    for it in range(Nt):    
+        FT = intp.interp1d(ds_sam['pres'][it,:].values, ds_sam['t'][it,:].values, bounds_error=False, fill_value='extrapolate')
+        Fq = intp.interp1d(ds_sam['pres'][it,:].values, ds_sam['qv'][it,:].values, bounds_error=False, fill_value='extrapolate')
+        T_surf[it] = FT(Ps[it])
+        q_surf[it] = Fq(Ps[it])
+    
+    ds_sam["Tsair"] = (
+        ("time"), 
+        T_surf,
+        sam_attributes["Tsair"],
+    )
+    ds_sam["qsrf"] = (
+        ("time"), 
+        q_surf,
+        sam_attributes["qsrf"],
+    )
+
+    # remove surface omega (based on the notion that surface vertical velocity corresponds to the atmos. tide)
+    omega_out = ds_sam["omega"].values
+    lev = ds_sam["pres"].values.mean(axis=0)  # time averaged pressure levels
+    for it in range(Nt):
+        xx = max(0, min(1, (700e2-lev)/(700e2-150e2) ))
+        f = 0.5*(1 + np.cos(np.pi * xx)
+        omega_out[it,:] = omega_out[it,:] - f*omega_out[it,-1]
+
+    ds_sam["omega"] = (
+        ("time", "nlev"), 
+        omega_out,
+        sam_attributes["omega"],
+    )
+
+    # surface pressure tendencey (zeros, equiv. to surface omega, which has been removed above.)
+    ds_sam["Ptend"] = (
+        ("time", "nlev"), 
+        np.zeros_like(ds_sam['Ps'].values), 
+        sam_attributes["Ptend"]
+    )
+    
+    # build Tref and qref: (To-fix boradcasting)
+    Tref = ds_era5['t_mean'].mean(axis=0).values #(broadcast to have shape time, nlev)
+    qref = ds_sam['qv'].mean(axis=0).values 
+    ds_sam["Tref"] = (
+        ("time", "nlev"), 
+        Tref, 
+        sam_attributes["Tref"]
+    )
+    ds_sam["qref"] = (
+        ("time", "nlev"), 
+        qref, 
+        sam_attributes["qref"]
+    )
 
     # Soil moisture: combine levels
 #    swvl1 = ds_era5["swvl1_mean"].values
@@ -354,8 +434,8 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
 #    ds_sam["heat_rough"] = np.exp(ds_era5["flsr_mean"])
 #    ds_sam["heat_rough"].attrs.update(**sam_attributes["heat_rough"])
     # Apply correction to t_skin (see output files)
-    ds_sam["t_skin"] = ds_era5["stl1_mean"] + 1.0
-    ds_sam["t_skin"].attrs.update(**sam_attributes["t_skin"])
+    ds_sam["Tg"] = ds_era5["stl1_mean"] + 1.0
+    ds_sam["Tg"].attrs.update(**sam_attributes["Tg"])
     # Surface fluxes: obtain from time mean in ERA data, do not change sign (do change sign for SAM)
     sfc_sens_flx = central_estimate(ds_era5["msshf_mean"].values)
     ds_sam["shflx"] = (
@@ -370,6 +450,9 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         sam_attributes["lhflx"],
     )
     # Final checks: are all variables present?
+    # also putting in several time variables and lat lon variables:
+    # the time structuring may need to be changed for SAM:
+    # fix this tomorrow;
     ds_sam["time_traj"] = (
         ds_era5["time"] - np.datetime64("1970-01-01T00:00")
     ) / np.timedelta64(1, "s")
@@ -409,6 +492,8 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         "t_skin_correct": "Skin temperature has been corrected "
         "by 1.000000. Motivation: value from IFS is actually "
         "the open SST, which is lower than the skin temperature.",
+        "omega_correct" : "surface omega corresponds to the atmospheric tide has been removed."
+        "by assuming its vertical structure is uniformly one up to 700 hPa and zero above 150hPa (P.Blossey)"
     }
     ds_sam.attrs.update(**sam_dict)
     return ds_sam

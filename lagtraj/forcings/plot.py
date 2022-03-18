@@ -3,16 +3,16 @@ if __name__ == "__main__":  # noqa
 
     matplotlib.use("Agg")
 
-import matplotlib.pyplot as plt
-from matplotlib.gridspec import GridSpec
-import xarray as xr
-import numpy as np
 import cartopy.crs as ccrs
+import matplotlib.pyplot as plt
+import numpy as np
+import xarray as xr
+from matplotlib.gridspec import GridSpec
 
-from .profile_calculation import FORCING_VARS
 from ..domain import load as domain_load
 from ..trajectory import load as trajectory_load
 from ..trajectory import plot as trajectory_plot
+from .profile_calculation import FORCING_VARS
 
 
 def main(ds):

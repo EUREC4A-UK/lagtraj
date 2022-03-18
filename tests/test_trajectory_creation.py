@@ -1,18 +1,14 @@
 import datetime
-import tempfile
-from pathlib import Path
 import inspect
-import xarray as xr
+from pathlib import Path
+
 import isodate
-import pandas as pd
 import numpy as np
-
-from lagtraj.utils import validation
-import lagtraj.trajectory.create
-from lagtraj.input_definitions.load import load_definition
-from lagtraj.trajectory.load import create_definition_from_params
-
+import xarray as xr
 import yaml
+
+import lagtraj.trajectory.create
+from lagtraj.utils import validation
 
 
 def test_create_stationary_trajectory(ds_domain_test):
@@ -123,6 +119,7 @@ timestep: domain_data
     )
 
     import ipdb
+
     ipdb.set_trace()
 
     assert np.testing.assert_allclose(da_t_expected, ds_traj.time)

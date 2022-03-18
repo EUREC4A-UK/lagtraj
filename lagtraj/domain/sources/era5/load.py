@@ -1,15 +1,15 @@
-import xarray as xr
-import numpy as np
-
-from pathlib import Path
+import datetime
 import functools
 import warnings
-import datetime
+from pathlib import Path
 
+import numpy as np
+import xarray as xr
+
+from ....utils.units import round_time
+from .. import MissingDomainData
 from . import FILENAME_FORMAT, VERSION_FILENAME
 from .utils import add_era5_global_attributes
-from .. import MissingDomainData
-from ....utils.units import round_time
 
 MODEL_RUN_TYPES = ["an", "fc"]  # analysis and forecast runs
 LEVEL_TYPES = ["model", "single"]  # need model and surface data
@@ -212,7 +212,10 @@ class ERA5DataSet(object):
                     slices[d] = s
 
             ds_v_slice = ds[variables].sel(
-                **slices, method=method, tolerance=tolerance, drop=drop,
+                **slices,
+                method=method,
+                tolerance=tolerance,
+                drop=drop,
             )
             ds_v_slice.load()
             # Change the long name of these variables, so the units are no

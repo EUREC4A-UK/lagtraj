@@ -2,10 +2,11 @@
 Ensure that output of lagtraj doesn't produce errors in ncview by setting the
 correct encoding for output and running ncview to check its output
 """
-import tempfile
 import signal
-import psutil
 import subprocess
+import tempfile
+
+import psutil
 
 
 def build_valid_encoding(ds):

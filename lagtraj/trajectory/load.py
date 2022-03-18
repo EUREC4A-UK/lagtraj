@@ -1,13 +1,14 @@
 import datetime
+
 import xarray as xr
 
 from ..input_definitions import load
-from . import INPUT_REQUIRED_FIELDS
 from . import (
+    INPUT_REQUIRED_FIELDS,
+    TrajectoryDefinition,
     TrajectoryDuration,
     TrajectoryOrigin,
     build_data_path,
-    TrajectoryDefinition,
 )
 
 
@@ -77,7 +78,7 @@ def load_data(root_data_path, name):
     )
     ds = xr.open_dataset(trajectory_data_path)
 
-    if not "version" in ds.attrs:
+    if "version" not in ds.attrs:
         raise Exception(
             f"The trajectory stored in `{trajectory_data_path}` "
             "doesn't `version` attribute set. Please delete and "

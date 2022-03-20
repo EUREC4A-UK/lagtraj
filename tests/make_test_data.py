@@ -1,17 +1,18 @@
 import tarfile
 
-from lagtraj.domain import load, download as domain_download
-from lagtraj.trajectory import load as trajectory_load
-from lagtraj.forcings import load as forcing_load
 from lagtraj import DEFAULT_ROOT_DATA_PATH
+from lagtraj.domain import download as domain_download
+from lagtraj.domain import load
+from lagtraj.forcings import load as forcing_load
+from lagtraj.trajectory import load as trajectory_load
 from lagtraj.utils import optional_debugging
-
 
 TEST_FORCING_NAME = "lagtraj://eurec4a_20200202_first_short"
 
 
 def main(
-    forcing_name=TEST_FORCING_NAME, output_filename="lagtraj.testdata.tar.gz",
+    forcing_name=TEST_FORCING_NAME,
+    output_filename="lagtraj.testdata.tar.gz",
 ):
     p_root = DEFAULT_ROOT_DATA_PATH
 

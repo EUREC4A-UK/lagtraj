@@ -3,16 +3,13 @@
     2. the mapping between the internal lagtraj variables (era5) and KPT
     3. and a function to process the conversion
 """
-import xarray as xr
-import numpy as np
 import datetime
 
+import numpy as np
+import xarray as xr
 
 from ....domain.sources.era5.constants import rg
-from ....utils.interpolation.methods import (
-    steffen_1d_no_ep_time,
-    central_estimate,
-)
+from ....utils.interpolation.methods import central_estimate, steffen_1d_no_ep_time
 
 kpt_attributes = {
     "lat": {"units": "degrees North", "long_name": "latitude"},
@@ -333,7 +330,13 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
             {"long_name": "model full levels"},
         )
     }
-    nDS_coord = {"nDS": ("nDS", [0], {},)}
+    nDS_coord = {
+        "nDS": (
+            "nDS",
+            [0],
+            {},
+        )
+    }
     kpt_soil_coord = {
         "nlevs": ("nlevs", np.arange(4) + 1.0, {"long_name": "soil levels"})
     }

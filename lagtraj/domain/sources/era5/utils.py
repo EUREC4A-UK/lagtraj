@@ -6,17 +6,18 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import xarray as xr
-import datetime
 
 from .... import njit
-from .constants import rg, rd, rv_over_rd_minus_one
+from .constants import rd, rg, rv_over_rd_minus_one
 
 
 def _load_ecmwf_level_coefficients():
     levels_file = Path(__file__).parent / "137levels.dat"
     levels_table = pd.read_table(levels_file, sep=r"\s+")
 
-    ds_levels_coeffs = xr.Dataset(coords=dict(level=levels_table["n"].values),)
+    ds_levels_coeffs = xr.Dataset(
+        coords=dict(level=levels_table["n"].values),
+    )
     ds_levels_coeffs["a"] = xr.DataArray(levels_table["a[Pa]"].values, dims=("level",))
     ds_levels_coeffs["b"] = xr.DataArray(levels_table["b"].values, dims=("level",))
     return ds_levels_coeffs
@@ -112,18 +113,29 @@ def calculate_heights_and_pressures(ds):
 
         height_dims = ds_time.t.dims
         height_h, height_f, p_h, p_f = _calculate_heights_and_pressures(
-            p_surf, height_surf, a_coeffs, b_coeffs, t_field, q_field,
+            p_surf,
+            height_surf,
+            a_coeffs,
+            b_coeffs,
+            t_field,
+            q_field,
         )
         ds_extra = xr.Dataset(coords=ds_time.coords)
         ds_extra["height_h"] = xr.DataArray(
             height_h,
             dims=height_dims,
-            attrs={"long_name": "height above sea level at half level", "units": "m",},
+            attrs={
+                "long_name": "height above sea level at half level",
+                "units": "m",
+            },
         )
         ds_extra["height_f"] = xr.DataArray(
             height_f,
             dims=height_dims,
-            attrs={"long_name": "height above sea level at full level", "units": "m",},
+            attrs={
+                "long_name": "height above sea level at full level",
+                "units": "m",
+            },
         )
         ds_extra["p_h"] = xr.DataArray(
             p_h,

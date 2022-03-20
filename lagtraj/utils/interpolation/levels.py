@@ -5,10 +5,8 @@ Except steffen interpolation, which is in separate pyx file
 from collections import namedtuple
 
 import numpy as np
-from scipy.optimize import ridder
-
 import xarray as xr
-
+from scipy.optimize import ridder
 
 LevelsDefinition = namedtuple(
     "LevelsDefinition", ["method", "n_levels", "z_top", "dz_min"]

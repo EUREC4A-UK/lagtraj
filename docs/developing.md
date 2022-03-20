@@ -11,8 +11,10 @@ Here's a quick TLDR version if you're already familiar with github:
 # clone locally your fork of lagtraj on github
 git clone https://github.com/<your-github-username>/lagtraj/
 
-# install this local copy with pip with the necessary development tools
+# install this local copy with pip with the necessary development tools. Set up
+# pre-commit to automatically run all linting checks on every commit
 pip install -e ".[dev]"
+pre-commit install
 
 # create a branch for your fix/feature
 git checkout -b my-new-feature
@@ -21,8 +23,8 @@ git checkout -b my-new-feature
 # bug and the run the tests
 python -m pytest .
 
-# apply code cleanup with black, then commit these changes locally with git
-black .
+# commit these changes locally with git (pre-commit will automatically lint
+# your code)
 git add .
 git commit
 
@@ -89,14 +91,12 @@ testing below)
 python -m pytest .
 ```
 
-Finally, when you're happy with your changes you should apply `black` to
-cleanup the code and push your branch to github and make a pull-request. The
-pull-request will tell the rest of the lagtraj community that you have a change
-you'd like to get added to the public version of lagtraj
+Finally, when you're happy with your changes push your branch to github and
+make a pull-request. The pull-request will tell the rest of the lagtraj
+community that you have a change you'd like to get added to the public version
+of lagtraj
 
 ```bash
-black .
-git commit -m 'apply black'
 git push origin my-new-feature
 ```
 

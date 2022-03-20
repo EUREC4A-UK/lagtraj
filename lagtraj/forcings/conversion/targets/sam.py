@@ -464,7 +464,7 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     # fix this tomorrow;
     ds_sam["time_traj"] = (
         ds_era5["time"] - np.datetime64("1970-01-01T00:00")
-    ) / np.timedelta64(1, "s")
+    ) / np.timedelta64(1, "s") / np.timedelta64(86400, "s") + np.datetime64("1970-01-01T00:00")   # datenumber for SAM
     ds_sam["time_traj"].attrs.update(**sam_attributes["time_traj"])
     ds_sam["DS"] = (("nDS"), ["Trajectory origin"], sam_attributes["DS"])
     ds_sam["timDS"] = (
@@ -477,6 +477,10 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     )
     ds_sam["latDS"] = (("nDS"), [ds_era5["origin_lat"]], sam_attributes["latDS"])
     ds_sam["lonDS"] = (("nDS"), [ds_era5["origin_lon"]], sam_attributes["lonDS"])
+  
+    # Peter Blossey' computed iyear and calday for the time variable and its attributes etc. Need to add those to here as well.
+
+
     # Change order of data, to confirm to other sam input
     ds_sam = ds_sam.sortby("nlev", ascending=True)
     ds_sam = ds_sam.sortby("nlevp1", ascending=True)

@@ -7,7 +7,7 @@ from lagtraj.utils import validation
 import tempfile
 
 
-AVAILABLE_CONVERSIONS = [None, "lagtraj://kpt", "lagtraj://dephy"]
+AVAILABLE_CONVERSIONS = [None, "lagtraj://kpt", "lagtraj://dephy","lagtraj://sam"]
 
 
 @pytest.mark.parametrize(

@@ -241,6 +241,12 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
             {"long_name": "model full levels"},
         )
     }
+    sam_mean_preslev_coord = {
+        "lev": (
+            "lev", 
+            ds_era5["p_h_mean"].values.mean(axis=0),  # time averaged pressure levels
+            {"units":"Pa", "long_name": "Pressure level (time-averaged)"} ) 
+    }
     nDS_coord = {"nDS": ("nDS", [0], {},)}
 #    sam_soil_coord = {
 #        "nlevs": ("nlevs", np.arange(4) + 1.0, {"long_name": "soil levels"})
@@ -249,33 +255,37 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     sam_lon_coord = {
         "lon": (
             "lon", 
-             ds_era5.lon[0].values,
+            ds_era5.lon[0].values,
             {"units": "degrees_north", "long_name": "Longitude"},
         )
     }
     sam_lat_coord = {
         "lat": (
             "lat", 
-             ds_era5.lat[0].values,
+            ds_era5.lat[0].values,
             {"units": "degrees_east", "long_name": "Latitude"},
         )
     }
 
     # set up the right value for "tsec" dimension according to Peter Blossey's script
-    dates = ds_era5.time.values
-    yyyy = dates.astype('datetime64[Y]').astype(int) + 1970
-    mm = dates.astype('datetime64[M]').astype(int) % 12 + 1
-    dd = dates - dates.astype('datetime64[M]') + 1
-    # need to add loop, how can I do it without loop?
-    calday = np.zeros(np.shape(dates))
-    for i in range(len(yyyy)):
-         refdates = np.datetime64(str(yyyy[i]-1) + '-12-31')
-         calday[i] = (dates[i] - refdates)/np.timedelta64(86400, 's')
+    # this part here can be turned in to a function in this python script. 
+    # --------------------------------------------------------------------------- #
+    sam_timevars = convert_era5_time_to_sam_timevars(ds_era5.time.values)
+    sam_time_coord = {
+        "tsec": (
+            "tsec", 
+            sam_timevars['time'],
+            {"units": "s", "long_name": "Time in seconds after 00Z on nbdate"},
+        )
+    } 
+    # --------------------------------------------------------------------------- #
 
     ds_sam = xr.Dataset(
         coords={
-            "tsec": calday, #ds_era5.time,
+#            "tsec": sam_timevars['time'], #ds_era5.time,
+            **sam_time_coord,
             **sam_full_level_coord,
+            **sam_mean_preslev_coord,
 #            **sam_half_level_coord,
             **sam_lat_coord,
             **sam_lon_coord,
@@ -303,16 +313,22 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
             raise Exception(except_str)
         # single level variable
         if np.ndim(da_era5.values) == 1:
-            ds_sam[variable] = da_era5
-            ds_sam[variable].attrs.update(sam_attributes[variable])
+            Ntime = da_era5.values.shape
+            # prescribe the dimensions of the variable as well as following:
+            ds_sam[variable] = (
+                ("tsec","lat", "lon"), 
+                da_era5.values.reshape((Ntime, 1,1)).astype(np.single),
+                sam_attributes[variable],
+            ) 
         # half level variable
         elif variable in ["zh", "presh"]:
             da_era5_on_half_levels = steffen_1d_no_ep_time(
                 da_era5.values, ds_era5["level"].values, sam_half_level_array
             )
+            Ntime, Nlev1 = da_era5_on_half_levels.shape
             ds_sam[variable] = (
-                ("tsec", "nlevp1"),
-                da_era5_on_half_levels,
+                ("tsec", "nlevp1","lat","lon"),
+                da_era5_on_half_levels.reshape((Ntime, Nlev1, 1,1)).astype(np.single),
                 sam_attributes[variable],
             )
         # full level variable
@@ -320,14 +336,14 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
             da_era5_on_full_levels = steffen_1d_no_ep_time(
                 da_era5.values, ds_era5["level"].values, sam_full_level_array
             )
+            #  get dimensions out:
+            Ntime, Nlev = da_era5_on_full_levels.shape
             ds_sam[variable] = (
-                ("tsec", "nlev"),
-                da_era5_on_full_levels,
+                ("tsec", "lev", "lat", "lon"),
+                da_era5_on_full_levels.reshape((Ntime, Nlev, 1, 1)).astype(np.single),
                 sam_attributes[variable],
             )
 
-        # change data type to single for sam:
-        ds_sam[variable].astype(np.single)
     # Simple unit fix fails for these variables
     # So these are added manually after checking
     # that units are compatible
@@ -359,6 +375,7 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         this_central_estimate = central_estimate(
             ds_era5[variables_to_centralise[variable]].values
         )
+        this_central_estimate = this_central_estimate.reshape((Ntime,1,1,))
         ds_sam[variable] = (
             ("tsec","lat","lon"),
             this_central_estimate.astype(np.single),
@@ -369,16 +386,17 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     L = 2.5e6          # J/kg specific heat of condensation
     Cp = 1004          # specific heat of air at constant pressure p; J/kg/Kcontanst as in SAM
     T_lw = ds_era5['t_mean'].values - L/Cp * ds_sam['ql'].values
+    Ntime, Nlev = T_lw.shape
     ds_sam["T"] = (
-        ("tsec", "nlev","lat","lon"), 
-        T_lw.astype(np.single),
+        ("tsec", "lev","lat","lon"), 
+        T_lw.astype(np.single).reshape((Ntime,Nlev,1,1)),
         sam_attributes["T"],
     )
         
     qtot = ds_sam['qv'].values + ds_sam['ql'].values
     ds_sam["q"] = (
-        ("tsec", "nlev","lat","lon"), 
-        qtot,
+        ("tsec", "lev","lat","lon"), 
+        qtot.astype(np.single).reshape((Ntime, Nlev, 1,1)),
         sam_attributes["q"],
     )
 
@@ -386,26 +404,27 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     Ps = ds_sam["presh"][:,-1].values
     ds_sam['Ps'] = (
         ("tsec","lat","lon"), 
-        Ps,  sam_attributes["Ps"], 
+        Ps.astype(np.single).reshape((Ntime, 1,1)),  
+        sam_attributes["Ps"], 
     )
     # surface temperature and humidity: (needs interpolation)
     Nt = len(ds_era5.time)
-    T_surf = np.zeros(Nt)
-    q_surf = np.zeros(Nt)
+    T_surf = np.zeros((Nt,1,1))
+    q_surf = np.zeros((Nt,1,1))
     for it in range(Nt):    
         FT = intp.interp1d(ds_sam['pres'][it,:].values, ds_sam['t'][it,:].values, bounds_error=False, fill_value='extrapolate')
         Fq = intp.interp1d(ds_sam['pres'][it,:].values, ds_sam['qv'][it,:].values, bounds_error=False, fill_value='extrapolate')
-        T_surf[it] = FT(Ps[it])
-        q_surf[it] = Fq(Ps[it])
+        T_surf[it,:,:] = FT(Ps[it])
+        q_surf[it,:,:] = Fq(Ps[it])
     
     ds_sam["Tsair"] = (
         ("tsec","lat","lon"), 
-        T_surf,
+        T_surf.astype(np.single),
         sam_attributes["Tsair"],
     )
     ds_sam["qsrf"] = (
         ("tsec","lat","lon"), 
-        q_surf,
+        q_surf.astype(np.single),
         sam_attributes["qsrf"],
     )
 
@@ -414,24 +433,25 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     omega_out = np.zeros(np.shape(omega))
     lev = ds_sam["pres"].values.mean(axis=0)  # time averaged pressure levels
     for it in range(Nt):
-        xx = max(0, min(1, (700e2-lev)/(700e2-150e2) ))
-        f = 0.5*(1 + np.cos(np.pi * xx)
+        xx = np.maximum(np.zeros_like(lev), np.minimum(np.ones_like(lev), (700e2-lev)/(700e2-150e2) ))
+        f = 0.5*(1 + np.cos(np.pi * xx))  # shape (nlev,)
         omega_out[it,:] = omega[it,:] - f*omega[it,-1]
 
+    Ntime, Nlev = omega_out.shape
     ds_sam["omega"] = (
-        ("tsec", "nlev","lat","lon"), 
-        omega_out,
+        ("tsec", "lev","lat","lon"), 
+        omega_out.astype(np.single).reshape((Ntime, Nlev, 1,1)),
         sam_attributes["omega"],
     )
 
     # surface pressure tendencey (zeros, equiv. to surface omega, which has been removed above.)
     ds_sam["Ptend"] = (
-        ("tsec", "nlev","lat","lon"), 
-        np.zeros_like(ds_sam['Ps'].values), 
+        ("tsec", "lev","lat","lon"), 
+        np.zeros_like(omega_out).astype(np.single), 
         sam_attributes["Ptend"]
     )
     
-    # build Tref and qref: (To-fix boradcasting)
+    # build Tref and qref: time or trajectory averaged t and q
     Nt, nlev = np.shape(ds_era5['t_mean'])
     tvec = np.ones((Nt, 1))
     Tref_vec = np.zeros((1, nlev))
@@ -444,13 +464,13 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     qref = qref_vec * tvec
 
     ds_sam["Tref"] = (
-        ("tsec", "nlev", "lat", "lon"), 
-        Tref, 
+        ("tsec", "lev", "lat", "lon"), 
+        Tref.reshape((Nt, nlev, 1,1)).astype(np.single), 
         sam_attributes["Tref"]
     )
     ds_sam["qref"] = (
-        ("tsec", "nlev", "lat", "lon"), 
-        qref, 
+        ("tsec", "lev", "lat", "lon"), 
+        qref.reshape((Nt, nlev, 1,1)).astype(np.single), 
         sam_attributes["qref"]
     )
 
@@ -489,20 +509,27 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     # Heat roughness, derive from "flsr" variable
 #    ds_sam["heat_rough"] = np.exp(ds_era5["flsr_mean"])
 #    ds_sam["heat_rough"].attrs.update(**sam_attributes["heat_rough"])
+
     # Apply correction to t_skin (see output files)
-    ds_sam["Tg"] = ds_era5["stl1_mean"] + 1.0
-    ds_sam["Tg"].attrs.update(**sam_attributes["Tg"])
+#    ds_sam["Tg"] = ds_era5["stl1_mean"].values + 1.0
+#    ds_sam["Tg"].attrs.update(**sam_attributes["Tg"])
+    Tg_corr = ds_era5["stl1_mean"].values + 1.0
+    ds_sam["Tg"] = (
+        ("tsec", "lat","lon"), 
+        Tg_corr.reshape((Nt, 1,1)).astype(np.single),
+        sam_attributes["Tg"],
+    )
     # Surface fluxes: obtain from time mean in ERA data, do not change sign (do change sign for SAM)
     sfc_sens_flx = central_estimate(ds_era5["msshf_mean"].values)
     ds_sam["shflx"] = (
         ("tsec", "lat", "lon"),
-        -sfc_sens_flx,
+        -sfc_sens_flx.reshape((Nt, 1,1)).astype(np.single),
         sam_attributes["shflx"],
     )
     sfc_lat_flx = central_estimate(ds_era5["mslhf_mean"].values)
     ds_sam["lhflx"] = (
         ("tsec", "lat", "lon"),
-        -sfc_lat_flx,
+        -sfc_lat_flx.reshape((Nt,1,1)).astype(np.single),
         sam_attributes["lhflx"],
     )
     # Final checks: are all variables present?
@@ -528,37 +555,46 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     # Peter Blossey' computed iyear and calday for the time variable and its attributes etc. Need to add those to here as well.
     # add dimenson variables: (lat, lon, lev, tsec, time, calday, year, month, day, hour, nbdate, bdate, phis)
      # varn: [datatype, dimensions]
-    time = np.round(86400*(calday - np.floor(calday(1))))
-    yy = yyyy[0]%100
-    nbdate = 1e4*yy + 1e2*mm[0] + dd[0]
     Dimension_variables = {
-        "lev": [np.double, ("nlev"), lev],
-        "tsec": [np.int32, ("tsec"), time],
-        "time": [np.int32, ("tsec"), time],
-        "calday": [np.double, ("tsec"), calday],
-        "year": [np.int32, ("tsec"), yyyy],
-        "month": [np.int32, ("tsec"), mm],
-        "day": [np.int32, ("tsec"), dd],
-        "hour": [np.double, ("tsec"), hh],
-        "nbdate": [np.int32, (), nbdate],
-        "bdate": [np.int32, (), nbdate],
-        "phis": [np.double, ("lon","lat"), 0],
+#        "lev": [np.double, ("nlev"), lev],
+#        "tsec": [np.int32, ("tsec"), time],
+        "time": [np.int32, ("tsec"), sam_timevars['time']],
+        "calday": [np.double, ("tsec"), sam_timevars['calday']],
+        "year": [np.int32, ("tsec"), sam_timevars['year']],
+        "month": [np.int32, ("tsec"), sam_timevars['month']],
+        "day": [np.int32, ("tsec"), sam_timevars['day']],
+        "hour": [np.double, ("tsec"), sam_timevars['hour']],
+        "nbdate": [np.int32, (), sam_timevars['nbdate']],
+        "bdate": [np.int32, (), sam_timevars['nbdate']],
+        "phis": [np.double, ("lat","lon"), 0],
     }
+    sam_dimvars_attrs = {
+        "time": {"units":"s", "long_name": "Time in seconds after 00Z on nbdate"},
+        "calday": {"units": "d", "long_name": "Time in days after 00Z on 31 Dec"},
+        "year" : {"units": "year", "long_name": "Year of data"},
+        "month": {"units": "month", "long_name": "Month of data"},
+        "day"  : {"units": "day", "long_name": "day of data"}, 
+        "hour" : {"units": "hour", "long_nmae": "data hour"},
+        "nbdate" : {"units": "yyyymmdd", "long_name": "Base date (Note that only two digit year is permitted)"},
+        "bdate" : {"units": "yyyymmdd", "long_name": "Base date (Note that only two digit year is permitted)"},
+        "phis" : {"units": "m2/s2", "long_name": "Surface geopotential"}
+    }
+
     for variable in Dimension_variables:
         var_dtype = Dimension_variables[variable][0]
         var_dim = Dimension_variables[variable][1]
         var_val = Dimension_variables[variable][2] 
         ds_sam[variable] = (
             var_dim,
-            var_val.astype(var_dtype),  # to be created
-            sam_attributes[variable], # to be added
+            var_val.astype(var_dtype),  # to be created in a function
+            sam_dimvars_attrs[variable], # to be added
         )
-#        ds_sam[variable].astype(var_dtype)
-
-#   update the attribute for calday:
-    ds_sam[variable].attrs.update=({"long_name": 
-        "Time in days after 00Z on 31 Dec {0:s}".format(str(yyyy[0]-1))
-        })
+        #   update the attribute for calday:
+        if variable=='calday':
+           yyyy = Dimension_variables['year'][2]
+           ds_sam["calday"].attrs.update=({"long_name": 
+                  "Time in days after 00Z on 31 Dec {0:s}".format(str(yyyy[0]-1))
+           })
 
 
     # Change order of data, to confirm to other sam input
@@ -590,3 +626,28 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     }
     ds_sam.attrs.update(**sam_dict)
     return ds_sam
+
+
+def convert_era5_time_to_sam_timevars(era5_time):
+    """
+     Note: era5_time is a numpy data array.
+    """
+    yyyy = era5_time.astype('datetime64[Y]').astype(int) + 1970
+    mm = era5_time.astype('datetime64[M]').astype(int) % 12 + 1
+    dd = era5_time.astype('datetime64[D]') - era5_time.astype('datetime64[M]') + 1
+    Hour = era5_time.astype('datetime64[h]') - era5_time.astype('datetime64[D]')
+    # need to add loop, how can I do it without loop?
+    calday = np.zeros(np.shape(era5_time))
+    for i in range(len(yyyy)):
+        refdates = np.datetime64(str(yyyy[i]-1) + '-12-31')
+        calday[i] = (era5_time[i] - refdates)/np.timedelta64(86400, 's')
+    time_in_sec = np.round(86400*(calday - np.floor(calday[0])))
+    time_in_sec = time_in_sec.astype(np.int32)
+        
+    #time = np.round(86400*(calday - np.floor(calday[0]))) same as time_in_sec above.
+
+    yy = yyyy[0]%100
+    nbdate = 1e4*yy + 1e2*mm[0] + dd[0]
+
+    return {'calday': calday, 'time': time_in_sec,'year': yyyy, 'month': mm,
+            'day': dd, 'hour': Hour, 'nbdate': nbdate}

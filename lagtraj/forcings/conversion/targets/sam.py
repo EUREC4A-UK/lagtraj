@@ -2,8 +2,9 @@
     1. a list of the SAM variables as a dictionary
     2. the mapping between the internal lagtraj variables (era5) and SAM
     3. and a function to process the conversion
-To-DO: correct the variable dimension to match the assigned one. 
-       broadcast to have [time, nlev, 1, 1] 
+    4. a function to compute some time related variables for SAM.
+    Notes: this module is created based on kpt.py because Peter Blossey's matlab conversion scripts 
+           take in kpt format output. 
 """
 import xarray as xr
 import numpy as np
@@ -17,7 +18,6 @@ from ....utils.interpolation.methods import (
     central_estimate,
 )
 
-# refer to Peter's matlab script; It seems that it works well with the kpt formatted output as well.
 sam_attributes = {
 ## following Peter Blossey's matlab script structure:
 # 1. Surface level variables (manually added)
@@ -153,9 +153,6 @@ sam_attributes = {
 
 
 # sam variable : era5 variable
-# (we loop over sam variables here)
-# XYC Development Note: I think the first column is the variable name in SAM and the second is the 
-# era5 variable name
 # the number of variables here need to match those in the sam_attributes;
 sam_from_era5_variables = {
     "zf": "height_h_local",
@@ -208,7 +205,6 @@ era5_to_sam_units = {
     "degrees_north": "degrees North",
     "degrees_east": "degrees East",
     "metres": "m",
-    "m": "m",
     "kg kg**-1": "kg/kg",
     "Pa s**-1": "Pa/s",
     "K s**-1": "K/s",
@@ -552,12 +548,9 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     ds_sam["latDS"] = (("nDS"), [ds_era5["origin_lat"]], sam_attributes["latDS"])
     ds_sam["lonDS"] = (("nDS"), [ds_era5["origin_lon"]], sam_attributes["lonDS"])
   
-    # Peter Blossey' computed iyear and calday for the time variable and its attributes etc. Need to add those to here as well.
-    # add dimenson variables: (lat, lon, lev, tsec, time, calday, year, month, day, hour, nbdate, bdate, phis)
-     # varn: [datatype, dimensions]
+    # Follow Peter Blossey's netCDF formatting. 
+    # add dimenson variables: (time, calday, year, month, day, hour, nbdate, bdate, phis)
     Dimension_variables = {
-#        "lev": [np.double, ("nlev"), lev],
-#        "tsec": [np.int32, ("tsec"), time],
         "time": [np.int32, ("tsec"), sam_timevars['time']],
         "calday": [np.double, ("tsec"), sam_timevars['calday']],
         "year": [np.int32, ("tsec"), sam_timevars['year']],

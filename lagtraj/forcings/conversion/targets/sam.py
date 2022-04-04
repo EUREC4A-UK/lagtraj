@@ -37,8 +37,12 @@ sam_attributes = {
     "Tsair" :{"units": "K", "long_name": "Surface Air Temperature (extrapolated to z=0)"},
     "qsrf" : {"units": "kg/kg", "long_name": "Surface Water Vapor Mass Mixing ratio (extrapolated to z=0)"},
     # need to double check which is the right lon, lat for SAM and how they are different.
-    "lat": {"units": "degrees North", "long_name": "latitude"},
-    "lon": {"units": "degrees East", "long_name": "longitude"},
+    #"lat": {"units": "degrees North", "long_name": "latitude"},
+    #"lon": {"units": "degrees East", "long_name": "longitude"},
+    "time_traj": {
+        "units": "seconds since 1-1-1970 00:00",
+        "long_name": "time values at trajectory waypoints",
+    },
     "lat_traj": {
         "units": "degrees North",
         "long_name": "latitude of trajectory waypoints",
@@ -56,7 +60,7 @@ sam_attributes = {
     "presh": {"units": "Pa", "long_name": "half level pressure"},
     "u": {"units": "m/s", "long_name": "zonal wind (domain averaged)"},
     "v": {"units": "m/s", "long_name": "meridional wind (domain averaged)"},
-#    "t": {"units": "K", "long_name": "temperature (domain averaged)"},
+    "t": {"units": "K", "long_name": "temperature (domain averaged)"},
     "ug": {
         "units": "m/s",
         "long_name": "geostrophic wind - zonal component",
@@ -74,7 +78,7 @@ sam_attributes = {
         "long_name": "large-scale pressure velocity (domain averaged)",
     },
 # Note: these two variables need to be calculated from the era5 variables.
-    "T" : {"units": "K", "long_name": "Liquid Water Temperature (Tl = T - (L/Cp)*ql)"}, #"standard_name": "air_temperature"}, # Tl
+    "T" : {"units": "K", "long_name": "Liquid Water Temperature (Tl = t - (L/Cp)*ql)"}, #"standard_name": "air_temperature"}, # Tl
     "q" : {"units":"kg/kg", "long_name": "Total Water Mass Mixing Ratio (Vapor + Cloud Liquid)"}, # qtot
     "divT": {
         "units": "K/s",
@@ -138,10 +142,10 @@ sam_attributes = {
 # 4. cloud fraction
     "cloudERA": {"units": "0-1", "long_name": "cloud fraction (domain averaged)"},
 # 5.dimension related parameters:
-    "lev": {"units": "Pa", "long_name": "Pressure level"},
+    #"lev": {"units": "Pa", "long_name": "Pressure level"},
+    #"tsec": {"units": "s", "long_name": "Time in seconds after 00Z on nbdate"},
     "tsec": {"units": "s", "long_name": "Time in seconds after 00Z on nbdate"},
-    "time": {"units": "s", "long_name": "Time in seconds after 00Z on nbdate"},
-#    "calday": {"units": "d", "long_name": "'Time in days after 00Z on 31 Dec iyear"},
+    "calday": {"units": "d", "long_name": "'Time in days after 00Z on 31 Dec iyear"},
     "year": {"units": "year", "long_name": "Year"},
     "month": {"units": "month", "long_name": "Month"},
     "day": {"units": "day", "long_name": "Day"},
@@ -149,6 +153,25 @@ sam_attributes = {
     "nbdate": {"units": "yymmdd", "long_name": "Base date (Note that only two digit year is permitted)"},
     "bdate": {"units": "yymmdd", "long_name": "Base date (Note that only two digit year is permitted)"},
     "phis": {"units": "m2/s2", "long_name": "Surface geopotential"},
+    "DS": {"long_name": "label of trajectory reference point"},
+    "timDS": {
+        "units": "seconds since 1-1-1970 00:00",
+        "long_name": "time at trajectory reference point",
+        "info": "the reference point is the space-time "
+        "coordinate from which the trajectory is calculated",
+    },
+    "latDS": {
+        "units": "degrees North",
+        "long_name": "latitude at trajectory reference point",
+        "info": "the reference point is the space-time coordinate "
+        "from which the trajectory is calculated",
+    },
+    "lonDS": {
+        "units": "degrees East",
+        "long_name": "longitude at trajectory reference point",
+        "info": "the reference point is the space-time coordinate "
+        "from which the trajectory is calculated",
+    },
 }
 
 
@@ -162,7 +185,7 @@ sam_from_era5_variables = {
     "presh": "p_h_mean",
     "u": "u_mean",
     "v": "v_mean",
-#    "t": "t_mean",
+    "t": "t_mean",
     "qv": "q_mean",
     "ql": "clwc_mean",
 #    "qi": "ciwc_mean",
@@ -176,8 +199,8 @@ sam_from_era5_variables = {
 #    "u_local": "u_local",
 #    "v_local": "v_local",
 #    "cc_local": "cc_local",
-    "tadv": "dtdt_adv",
-    "qadv": "dqdt_adv",
+    "divT": "dtdt_adv",
+    "divq": "dqdt_adv",
 #    "uadv": "dudt_adv",
 #    "vadv": "dvdt_adv",
     "ug": "u_g",
@@ -186,8 +209,8 @@ sam_from_era5_variables = {
 #    "qladv": "dclwcdt_adv",
 #    "qiadv": "dciwcdt_adv",
 #    "ccadv": "dccdt_adv",
-    "lat": "lat",
-    "lon": "lon",
+#    "lat": "lat",
+#    "lon": "lon",
     "lat_traj": "lat",
     "lon_traj": "lon",
 #    "lat_grid": "lat",
@@ -223,13 +246,13 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     ### Does it apply to sam as well? 
     sam_half_level_array = da_levels.values
     sam_full_level_array = 0.5 * (sam_half_level_array[:-1] + sam_half_level_array[1:])
-#    sam_half_level_coord = {
-#        "nlevp1": (
-#            "nlevp1",
-#            (np.arange(len(sam_half_level_array)) + 1.0)[::-1],
-#            {"long_name": "model half levels"},
-#        )
-#    }
+    sam_half_level_coord = {
+        "nlevp1": (
+            "nlevp1",
+            (np.arange(len(sam_half_level_array)) + 1.0)[::-1],
+            {"long_name": "model half levels"},
+        )
+    }
     sam_full_level_coord = {
         "nlev": (
             "nlev",
@@ -240,7 +263,8 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     sam_mean_preslev_coord = {
         "lev": (
             "lev", 
-            ds_era5["p_h_mean"].values.mean(axis=0),  # time averaged pressure levels
+            # time averaged pressure levels (temporary, need to double check here)
+            sam_full_level_array.astype(np.double),
             {"units":"Pa", "long_name": "Pressure level (time-averaged)"} ) 
     }
     nDS_coord = {"nDS": ("nDS", [0], {},)}
@@ -251,15 +275,14 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     sam_lon_coord = {
         "lon": (
             "lon", 
-            ds_era5.lon[0].values,
-            {"units": "degrees_north", "long_name": "Longitude"},
+            [ds_era5.lon.values[0].astype(np.double)],
+            {},
         )
     }
     sam_lat_coord = {
         "lat": (
             "lat", 
-            ds_era5.lat[0].values,
-            {"units": "degrees_east", "long_name": "Latitude"},
+            [ds_era5.lat.values[0].astype(np.double)], {},
         )
     }
 
@@ -268,8 +291,8 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     # --------------------------------------------------------------------------- #
     sam_timevars = convert_era5_time_to_sam_timevars(ds_era5.time.values)
     sam_time_coord = {
-        "tsec": (
-            "tsec", 
+        "time": (
+            "time", 
             sam_timevars['time'],
             {"units": "s", "long_name": "Time in seconds after 00Z on nbdate"},
         )
@@ -278,7 +301,7 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
 
     ds_sam = xr.Dataset(
         coords={
-#            "tsec": sam_timevars['time'], #ds_era5.time,
+#            "time": sam_timevars['time'], #ds_era5.time,
             **sam_time_coord,
             **sam_full_level_coord,
             **sam_mean_preslev_coord,
@@ -309,10 +332,10 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
             raise Exception(except_str)
         # single level variable
         if np.ndim(da_era5.values) == 1:
-            Ntime = da_era5.values.shape
+            Ntime, = da_era5.values.shape
             # prescribe the dimensions of the variable as well as following:
             ds_sam[variable] = (
-                ("tsec","lat", "lon"), 
+                ("time","lat", "lon"), 
                 da_era5.values.reshape((Ntime, 1,1)).astype(np.single),
                 sam_attributes[variable],
             ) 
@@ -323,7 +346,7 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
             )
             Ntime, Nlev1 = da_era5_on_half_levels.shape
             ds_sam[variable] = (
-                ("tsec", "nlevp1","lat","lon"),
+                ("time", "nlevp1","lat","lon"),
                 da_era5_on_half_levels.reshape((Ntime, Nlev1, 1,1)).astype(np.single),
                 sam_attributes[variable],
             )
@@ -335,7 +358,7 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
             #  get dimensions out:
             Ntime, Nlev = da_era5_on_full_levels.shape
             ds_sam[variable] = (
-                ("tsec", "lev", "lat", "lon"),
+                ("time", "lev", "lat", "lon"),
                 da_era5_on_full_levels.reshape((Ntime, Nlev, 1, 1)).astype(np.single),
                 sam_attributes[variable],
             )
@@ -373,7 +396,7 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         )
         this_central_estimate = this_central_estimate.reshape((Ntime,1,1,))
         ds_sam[variable] = (
-            ("tsec","lat","lon"),
+            ("time","lat","lon"),
             this_central_estimate.astype(np.single),
             sam_attributes[variable],
         )
@@ -381,25 +404,24 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     # Tl, qtot:
     L = 2.5e6          # J/kg specific heat of condensation
     Cp = 1004          # specific heat of air at constant pressure p; J/kg/Kcontanst as in SAM
-    T_lw = ds_era5['t_mean'].values - L/Cp * ds_sam['ql'].values
-    Ntime, Nlev = T_lw.shape
+    T_lw = ds_sam['t'].values - L/Cp * ds_sam['ql'].values
     ds_sam["T"] = (
-        ("tsec", "lev","lat","lon"), 
-        T_lw.astype(np.single).reshape((Ntime,Nlev,1,1)),
+        ("time", "lev","lat","lon"), 
+        T_lw.astype(np.single),
         sam_attributes["T"],
     )
         
     qtot = ds_sam['qv'].values + ds_sam['ql'].values
     ds_sam["q"] = (
-        ("tsec", "lev","lat","lon"), 
-        qtot.astype(np.single).reshape((Ntime, Nlev, 1,1)),
+        ("time", "lev","lat","lon"), 
+        qtot.astype(np.single),
         sam_attributes["q"],
     )
 
     # surface pressure:
     Ps = ds_sam["presh"][:,-1].values
     ds_sam['Ps'] = (
-        ("tsec","lat","lon"), 
+        ("time","lat","lon"), 
         Ps.astype(np.single).reshape((Ntime, 1,1)),  
         sam_attributes["Ps"], 
     )
@@ -408,65 +430,66 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     T_surf = np.zeros((Nt,1,1))
     q_surf = np.zeros((Nt,1,1))
     for it in range(Nt):    
-        FT = intp.interp1d(ds_sam['pres'][it,:].values, ds_sam['t'][it,:].values, bounds_error=False, fill_value='extrapolate')
-        Fq = intp.interp1d(ds_sam['pres'][it,:].values, ds_sam['qv'][it,:].values, bounds_error=False, fill_value='extrapolate')
-        T_surf[it,:,:] = FT(Ps[it])
-        q_surf[it,:,:] = Fq(Ps[it])
+        FT = intp.interp1d(ds_sam['pres'][it,:,0,0].values, ds_sam['t'][it,:,0,0].values, bounds_error=False, fill_value='extrapolate')
+        Fq = intp.interp1d(ds_sam['pres'][it,:,0,0].values, ds_sam['qv'][it,:,0,0].values, bounds_error=False, fill_value='extrapolate')
+        T_surf[it,:,:] = FT(Ps[it,0,0])
+        q_surf[it,:,:] = Fq(Ps[it,0,0])
     
     ds_sam["Tsair"] = (
-        ("tsec","lat","lon"), 
+        ("time","lat","lon"), 
         T_surf.astype(np.single),
         sam_attributes["Tsair"],
     )
     ds_sam["qsrf"] = (
-        ("tsec","lat","lon"), 
+        ("time","lat","lon"), 
         q_surf.astype(np.single),
         sam_attributes["qsrf"],
     )
 
     # remove surface omega (based on the notion that surface vertical velocity corresponds to the atmos. tide)
-    omega = ds_sam["omega"].values
-    omega_out = np.zeros(np.shape(omega))
-    lev = ds_sam["pres"].values.mean(axis=0)  # time averaged pressure levels
+    omega = ds_sam["omega"][:,:,0,0].values
+    omega_out = np.zeros_like(omega)
+    lev = ds_sam["pres"][:,:,0,0].values.mean(axis=0)  # time averaged pressure levels
     for it in range(Nt):
         xx = np.maximum(np.zeros_like(lev), np.minimum(np.ones_like(lev), (700e2-lev)/(700e2-150e2) ))
         f = 0.5*(1 + np.cos(np.pi * xx))  # shape (nlev,)
         omega_out[it,:] = omega[it,:] - f*omega[it,-1]
-
-    Ntime, Nlev = omega_out.shape
+    
+    Nt, Nlev = omega_out.shape
     ds_sam["omega"] = (
-        ("tsec", "lev","lat","lon"), 
-        omega_out.astype(np.single).reshape((Ntime, Nlev, 1,1)),
+        ("time", "lev","lat","lon"), 
+        omega_out.astype(np.single).reshape((Nt, Nlev, 1,1)),
         sam_attributes["omega"],
     )
 
     # surface pressure tendencey (zeros, equiv. to surface omega, which has been removed above.)
     ds_sam["Ptend"] = (
-        ("tsec", "lev","lat","lon"), 
-        np.zeros_like(omega_out).astype(np.single), 
+        ("time", "lev","lat","lon"), 
+        np.zeros_like(ds_sam["pres"].values).astype(np.single), 
         sam_attributes["Ptend"]
     )
     
     # build Tref and qref: time or trajectory averaged t and q
-    Nt, nlev = np.shape(ds_era5['t_mean'])
+    Nt, nlev = np.shape(ds_sam['t'][:,:,0,0])
+
     tvec = np.ones((Nt, 1))
     Tref_vec = np.zeros((1, nlev))
     qref_vec = np.zeros((1, nlev))
 
-    Tref_vec[0,:] = ds_era5['t_mean'].mean(axis=0).values #(broadcast to have shape time, nlev)
+    Tref_vec[0,:] = ds_sam['t'][:,:,0,0].mean(axis=0).values #(broadcast to have shape time, nlev)
     Tref = Tref_vec * tvec
-    
-    qref_vec[0,:] = ds_sam['qv'].mean(axis=0).values
+
+    qref_vec = ds_sam['qv'][:,:,0,0].mean(axis=0).values
     qref = qref_vec * tvec
 
     ds_sam["Tref"] = (
-        ("tsec", "lev", "lat", "lon"), 
+        ("time", "lev", "lat", "lon"), 
         Tref.reshape((Nt, nlev, 1,1)).astype(np.single), 
         sam_attributes["Tref"]
     )
     ds_sam["qref"] = (
-        ("tsec", "lev", "lat", "lon"), 
-        qref.reshape((Nt, nlev, 1,1)).astype(np.single), 
+        ("time", "lev", "lat", "lon"), 
+        qref.astype(np.single).reshape((Nt,nlev,1,1)), 
         sam_attributes["qref"]
     )
 
@@ -511,20 +534,20 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
 #    ds_sam["Tg"].attrs.update(**sam_attributes["Tg"])
     Tg_corr = ds_era5["stl1_mean"].values + 1.0
     ds_sam["Tg"] = (
-        ("tsec", "lat","lon"), 
+        ("time", "lat","lon"), 
         Tg_corr.reshape((Nt, 1,1)).astype(np.single),
         sam_attributes["Tg"],
     )
     # Surface fluxes: obtain from time mean in ERA data, do not change sign (do change sign for SAM)
     sfc_sens_flx = central_estimate(ds_era5["msshf_mean"].values)
     ds_sam["shflx"] = (
-        ("tsec", "lat", "lon"),
+        ("time", "lat", "lon"),
         -sfc_sens_flx.reshape((Nt, 1,1)).astype(np.single),
         sam_attributes["shflx"],
     )
     sfc_lat_flx = central_estimate(ds_era5["mslhf_mean"].values)
     ds_sam["lhflx"] = (
-        ("tsec", "lat", "lon"),
+        ("time", "lat", "lon"),
         -sfc_lat_flx.reshape((Nt,1,1)).astype(np.single),
         sam_attributes["lhflx"],
     )
@@ -550,42 +573,44 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
   
     # Follow Peter Blossey's netCDF formatting. 
     # add dimenson variables: (time, calday, year, month, day, hour, nbdate, bdate, phis)
+    # note: these variables already satisfied the data type
     Dimension_variables = {
-        "time": [np.int32, ("tsec"), sam_timevars['time']],
-        "calday": [np.double, ("tsec"), sam_timevars['calday']],
-        "year": [np.int32, ("tsec"), sam_timevars['year']],
-        "month": [np.int32, ("tsec"), sam_timevars['month']],
-        "day": [np.int32, ("tsec"), sam_timevars['day']],
-        "hour": [np.double, ("tsec"), sam_timevars['hour']],
+        "tsec": [np.int32, ("time"), sam_timevars['time']],
+        "calday": [np.double, ("time"), sam_timevars['calday']],
+        "year": [np.int32, ("time"), sam_timevars['year']],
+        "month": [np.int32, ("time"), sam_timevars['month']],
+        "day": [np.int32, ("time"), sam_timevars['day']],
+        "hour": [np.double, ("time"), sam_timevars['hour']],
         "nbdate": [np.int32, (), sam_timevars['nbdate']],
         "bdate": [np.int32, (), sam_timevars['nbdate']],
-        "phis": [np.double, ("lat","lon"), 0],
+        "phis": [np.double, ("lat","lon"), np.zeros((1,1)).astype(np.double)],
     }
-    sam_dimvars_attrs = {
-        "time": {"units":"s", "long_name": "Time in seconds after 00Z on nbdate"},
-        "calday": {"units": "d", "long_name": "Time in days after 00Z on 31 Dec"},
-        "year" : {"units": "year", "long_name": "Year of data"},
-        "month": {"units": "month", "long_name": "Month of data"},
-        "day"  : {"units": "day", "long_name": "day of data"}, 
-        "hour" : {"units": "hour", "long_nmae": "data hour"},
-        "nbdate" : {"units": "yyyymmdd", "long_name": "Base date (Note that only two digit year is permitted)"},
-        "bdate" : {"units": "yyyymmdd", "long_name": "Base date (Note that only two digit year is permitted)"},
-        "phis" : {"units": "m2/s2", "long_name": "Surface geopotential"}
-    }
+#    sam_dimvars_attrs = {
+#        "time": {"units":"s", "long_name": "Time in seconds after 00Z on nbdate"},
+#        "calday": {"units": "d", "long_name": "Time in days after 00Z on 31 Dec"},
+#        "year" : {"units": "year", "long_name": "Year of data"},
+#        "month": {"units": "month", "long_name": "Month of data"},
+#        "day"  : {"units": "day", "long_name": "day of data"}, 
+#        "hour" : {"units": "hour", "long_nmae": "data hour"},
+#        "nbdate" : {"units": "yyyymmdd", "long_name": "Base date (Note that only two digit year is permitted)"},
+#        "bdate" : {"units": "yyyymmdd", "long_name": "Base date (Note that only two digit year is permitted)"},
+#        "phis" : {"units": "m2/s2", "long_name": "Surface geopotential"}
+#    }
 
+    
     for variable in Dimension_variables:
-        var_dtype = Dimension_variables[variable][0]
+        #var_dtype = Dimension_variables[variable][0]
         var_dim = Dimension_variables[variable][1]
         var_val = Dimension_variables[variable][2] 
         ds_sam[variable] = (
             var_dim,
-            var_val.astype(var_dtype),  # to be created in a function
-            sam_dimvars_attrs[variable], # to be added
+            var_val,  
+            sam_attributes[variable], # to be added
         )
         #   update the attribute for calday:
         if variable=='calday':
            yyyy = Dimension_variables['year'][2]
-           ds_sam["calday"].attrs.update=({"long_name": 
+           ds_sam["calday"] = ds_sam['calday'].assign_attrs({"long_name": 
                   "Time in days after 00Z on 31 Dec {0:s}".format(str(yyyy[0]-1))
            })
 
@@ -625,10 +650,10 @@ def convert_era5_time_to_sam_timevars(era5_time):
     """
      Note: era5_time is a numpy data array.
     """
-    yyyy = era5_time.astype('datetime64[Y]').astype(int) + 1970
-    mm = era5_time.astype('datetime64[M]').astype(int) % 12 + 1
-    dd = era5_time.astype('datetime64[D]') - era5_time.astype('datetime64[M]') + 1
-    Hour = era5_time.astype('datetime64[h]') - era5_time.astype('datetime64[D]')
+    yyyy = era5_time.astype('datetime64[Y]').astype(np.int32) + 1970
+    mm = era5_time.astype('datetime64[M]').astype(np.int32) % 12 + 1
+    dd = (era5_time.astype('datetime64[D]') - era5_time.astype('datetime64[M]') + 1).astype(np.int32)
+    Hour = (era5_time.astype('datetime64[h]') - era5_time.astype('datetime64[D]')).astype(np.double)
     # need to add loop, how can I do it without loop?
     calday = np.zeros(np.shape(era5_time))
     for i in range(len(yyyy)):
@@ -642,5 +667,5 @@ def convert_era5_time_to_sam_timevars(era5_time):
     yy = yyyy[0]%100
     nbdate = 1e4*yy + 1e2*mm[0] + dd[0]
 
-    return {'calday': calday, 'time': time_in_sec,'year': yyyy, 'month': mm,
+    return {'calday': calday.astype(np.double), 'time': time_in_sec,'year': yyyy, 'month': mm,
             'day': dd, 'hour': Hour, 'nbdate': nbdate}

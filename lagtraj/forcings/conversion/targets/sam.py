@@ -291,7 +291,7 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     # --------------------------------------------------------------------------- #
     sam_timevars = convert_era5_time_to_sam_timevars(ds_era5.time.values)
     sam_time_coord = {
-        "time": (
+        "time_sam": (
             "time", 
             sam_timevars['time'],
             {"units": "s", "long_name": "Time in seconds after 00Z on nbdate"},
@@ -301,7 +301,7 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
 
     ds_sam = xr.Dataset(
         coords={
-#            "time": sam_timevars['time'], #ds_era5.time,
+            "time": ds_era5.time,
             **sam_time_coord,
             **sam_full_level_coord,
             **sam_mean_preslev_coord,

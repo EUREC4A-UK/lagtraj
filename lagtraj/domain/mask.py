@@ -1,5 +1,4 @@
 from .sources.era5.constants import rg
-import numpy as np
 
 
 def _compute_ocean_only_mask(ds, z_max=5.0, lsm_max=0.2):

@@ -1,6 +1,7 @@
 import numpy as np
-from .constants import r_earth
 from scipy.constants import pi
+
+from .constants import r_earth
 
 
 def lat_dist(lat1, lat2):

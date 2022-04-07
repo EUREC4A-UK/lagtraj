@@ -1,11 +1,14 @@
 import pytest
 
-
-from lagtraj.input_definitions import validate_input, InvalidInputDefinition
+from lagtraj.input_definitions import InvalidInputDefinition, validate_input
 
 
 def test_single_value_parameter():
-    required_fields = dict(a=float, b=int, c=str,)
+    required_fields = dict(
+        a=float,
+        b=int,
+        c=str,
+    )
     input_params = dict(a=2.0, b=42, c="foobar")
     validate_input(input_params=input_params, required_fields=required_fields)
 

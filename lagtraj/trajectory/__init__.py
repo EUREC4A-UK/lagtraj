@@ -1,9 +1,9 @@
-import isodate
 from collections import namedtuple
+
+import isodate
 
 from .. import build_data_path as build_data_path_global
 from ..input_definitions.examples import LAGTRAJ_EXAMPLES_PATH_PREFIX
-
 
 TrajectoryOrigin = namedtuple("TrajectoryOrigin", ["lat", "lon", "datetime"])
 
@@ -41,7 +41,10 @@ INPUT_REQUIRED_FIELDS = {
     # if the domain is given we can use domain data for the timestep, otherwise
     # the timestep should be a parsable duration string
     "timestep": (
-        dict(requires=dict(domain="__is_set__"), choices=["domain_data"],),
+        dict(
+            requires=dict(domain="__is_set__"),
+            choices=["domain_data"],
+        ),
         isodate.parse_duration,
     ),
     # only linear trajectories need to have their velocity prescribed
@@ -57,10 +60,12 @@ INPUT_REQUIRED_FIELDS = {
         ],
     ),
     "velocity_method_height": dict(
-        requires=dict(velocity_method="single_height_level"), choices=float,
+        requires=dict(velocity_method="single_height_level"),
+        choices=float,
     ),
     "velocity_method_pressure": dict(
-        requires=dict(velocity_method="single_pressure_level"), choices=float,
+        requires=dict(velocity_method="single_pressure_level"),
+        choices=float,
     ),
 }
 

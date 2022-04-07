@@ -1,6 +1,6 @@
 import xarray as xr
-from ..input_definitions import load
 
+from ..input_definitions import load
 from . import (
     INPUT_REQUIRED_FIELDS,
     ForcingDefinition,

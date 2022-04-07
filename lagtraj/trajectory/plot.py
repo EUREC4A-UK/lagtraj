@@ -3,9 +3,9 @@ if __name__ == "__main__":
 
     matplotlib.use("Agg")  # noqa
 
-import xarray as xr
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
+import xarray as xr
 
 try:
     import twinotter.external.eurec4a
@@ -39,14 +39,22 @@ def main(ds, add_ref=None, ax=None, reference_time="origin", **kwargs):
 
     ds_backward = ds.sel(time=slice(None, t_ref))
     (line,) = ax.plot(
-        ds_backward.lon, ds_backward.lat, markersize=1, alpha=0.4, **kwargs,
+        ds_backward.lon,
+        ds_backward.lat,
+        markersize=1,
+        alpha=0.4,
+        **kwargs,
     )
 
     ds_forward = ds.sel(time=slice(t_ref, None))
     ax.plot(ds_forward.lon, ds_forward.lat, markersize=1, **kwargs)
 
     ax.plot(
-        lon_ref, lat_ref, markersize=4, linestyle="", **kwargs,
+        lon_ref,
+        lat_ref,
+        markersize=4,
+        linestyle="",
+        **kwargs,
     )
 
     if add_ref == "eurec4a_circle":

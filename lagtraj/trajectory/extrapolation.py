@@ -1,9 +1,8 @@
 import numpy as np
 from scipy.constants import pi
 
-from ..utils.constants import r_earth
 from ..utils import geometry
-
+from ..utils.constants import r_earth
 from .integration.velocity_estimation import estimate_horizontal_velocities
 
 # optimisation constants
@@ -43,7 +42,11 @@ def extrapolate_posn_with_fixed_velocity(lat, lon, u_vel, v_vel, dt):
 
 
 def _extract_column_at_time(
-    ds_domain, t, lat, lon, method,
+    ds_domain,
+    t,
+    lat,
+    lon,
+    method,
 ):
     required_variables = ["u", "v", "sp", "z", "t", "q", "lsm"]
     # pick out only the variables we need, TODO: this should move into parent

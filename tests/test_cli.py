@@ -1,17 +1,16 @@
-from unittest.mock import patch
 import importlib
-from pathlib import Path
-import pytest
 import re
-import os
+from pathlib import Path
+from unittest.mock import patch
+
+import pytest
+from conftest import TESTDATA_DIR, ensure_testdata_available
+from test_forcing_profiles_extraction import AVAILABLE_CONVERSIONS
 
 import lagtraj.forcings.create
-from lagtraj.forcings import build_forcing_data_path
 import lagtraj.trajectory.create
+from lagtraj.forcings import build_forcing_data_path
 from lagtraj.trajectory import build_data_path as build_trajectory_data_path
-from conftest import TESTDATA_DIR, ensure_testdata_available
-
-from test_forcing_profiles_extraction import AVAILABLE_CONVERSIONS
 
 
 @patch("lagtraj.domain.download.download_complete")

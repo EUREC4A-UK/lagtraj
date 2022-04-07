@@ -1,0 +1,2 @@
+class MissingDomainData(Exception):
+    pass

@@ -1,11 +1,10 @@
-import pytest
+import tempfile
 
+import pytest
 
 import lagtraj.forcings.create
 from lagtraj.forcings import ForcingLevelsDefinition, ForcingSamplingDefinition
 from lagtraj.utils import validation
-import tempfile
-
 
 AVAILABLE_CONVERSIONS = [None, "lagtraj://kpt", "lagtraj://dephy","lagtraj://sam"]
 
@@ -32,7 +31,10 @@ def test_create_forcing_linear_trajectory(
     ds_domain = ds_domain_test
 
     levels_definition = ForcingLevelsDefinition(
-        method="exponential", n_levels=10, z_top=6.0e3, dz_min=100.0,
+        method="exponential",
+        n_levels=10,
+        z_top=6.0e3,
+        dz_min=100.0,
     )
     sampling_definition = ForcingSamplingDefinition(
         gradient_method=gradient_method,

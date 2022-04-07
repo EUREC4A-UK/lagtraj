@@ -188,7 +188,7 @@ kpt_attributes = {
     "low_veg_lai": {"units": "-", "long_name": "leaf area index of low vegetation"},
     "sea_ice_frct": {"units": "0-1", "long_name": "sea ice fraction"},
     "sdor": {
-        "units": "m",  #correct this units to match with the ERA5 units."0-1",
+        "units": "0-1",
         "long_name": "subgrid-scale orography - standard deviation",
     },
     "isor": {"units": "0-1", "long_name": "subgrid-scale orography - anisotropy"},

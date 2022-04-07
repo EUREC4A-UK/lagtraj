@@ -43,7 +43,7 @@ def _make_exponential_levels(dz_min, z_top, n_levels):
     level_list = [0.0]
     for level in range(1, n_levels):
         level_list = level_list + [
-            dz_min * ((1.0 - level_rate ** level) / (1.0 - level_rate))
+            dz_min * ((1.0 - level_rate**level) / (1.0 - level_rate))
         ]
     level_list[n_levels - 1] = z_top
     return np.array(level_list)

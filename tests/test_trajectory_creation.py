@@ -90,7 +90,7 @@ def test_check_for_all_timesteps(ds_domain_test):
     domain_name = ds_domain_test.name
 
     traj_example_yaml = TIMESTEP_TEST_YAML_TEMPLATE.format(domain_name=domain_name)
-    traj_params = yaml.load(traj_example_yaml)
+    traj_params = yaml.load(traj_example_yaml, Loader=yaml.FullLoader)
 
     data_path_root = Path(ds_domain_test.data_path).parent.parent
 
@@ -112,8 +112,8 @@ def test_check_for_all_timesteps(ds_domain_test):
 
     # we're using the timesteps of the source domain data, but the times that
     # result should contain the time span we have requested
-    da_t_min_expected = ds_domain_test.sel(time=slice(None, t_origin)).time.max()
-    da_t_max_expected = ds_domain_test.sel(time=slice(t_max, None)).time.min()
+    da_t_min_expected = ds_domain_test.time.sel(time=slice(None, t_origin)).max()
+    da_t_max_expected = ds_domain_test.time.sel(time=slice(t_max, None)).min()
 
     da_t_expected = da_domain_times.sel(
         time=slice(da_t_min_expected, da_t_max_expected)

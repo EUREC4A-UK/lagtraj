@@ -50,7 +50,7 @@ sam_attributes = {
     },
     "u_traj": {"units": "m/s", "long_name": "zonal wind at trajectory waypoints"},
     "v_traj": {"units": "m/s", "long_name": "meridional wind at trajectory waypoints"},
-    "zf": {"units": "m", "long_name": "full level height"},
+    "z": {"units": "m", "long_name": "full level height"},
     "pres": {"units": "Pa", "long_name": "full level pressure"},
     "presh": {"units": "Pa", "long_name": "half level pressure"},
     "u": {"units": "m/s", "long_name": "zonal wind (domain averaged)"},
@@ -184,7 +184,7 @@ sam_attributes = {
 # sam variable : era5 variable
 # the number of variables here need to match those in the sam_attributes;
 sam_from_era5_variables = {
-    "zf": "height_h_local",
+    "z": "height_h_local",
     "Ps": "sp_mean",
     "pres": "p_h_mean",
     "presh": "p_h_mean",

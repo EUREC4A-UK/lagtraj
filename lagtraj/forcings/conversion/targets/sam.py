@@ -185,6 +185,7 @@ sam_attributes = {
 # the number of variables here need to match those in the sam_attributes;
 sam_from_era5_variables = {
     "zf": "height_h_local",
+    "Ps": "sp_mean",
     "pres": "p_h_mean",
     "presh": "p_h_mean",
     "u": "u_mean",
@@ -393,13 +394,13 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         sam_attributes["q"],
     )
 
-    # surface pressure:
-    Ps = ds_sam["presh"][:, -1].values
-    ds_sam["Ps"] = (
-        ("time", "lat", "lon"),
-        Ps.astype(np.single).reshape((Ntime, 1, 1)),
-        sam_attributes["Ps"],
-    )
+    # surface pressure: (from ERA5 surface pressure)
+    Ps = ds_sam["presh"][:, -1, :, :].values
+    # ds_sam["Ps"] = (
+    #    ("time", "lat", "lon"),
+    #    Ps.astype(np.single).reshape((Ntime, 1, 1)),
+    #    sam_attributes["Ps"],
+    # )
     # surface temperature and humidity: (needs interpolation)
     Nt = len(ds_era5.time)
     T_surf = np.zeros((Nt, 1, 1))
@@ -460,8 +461,8 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
 
     # surface pressure tendencey (zeros, equiv. to surface omega, which has been removed above.)
     ds_sam["Ptend"] = (
-        ("time", "lev", "lat", "lon"),
-        np.zeros_like(ds_sam["pres"].values).astype(np.single),
+        ("time", "lat", "lon"),
+        np.zeros_like(ds_sam["qsrf"].values).astype(np.single),
         sam_attributes["Ptend"],
     )
 
@@ -544,12 +545,12 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     }
 
     for variable in Dimension_variables:
-        # var_dtype = Dimension_variables[variable][0]
+        var_dtype = Dimension_variables[variable][0]
         var_dim = Dimension_variables[variable][1]
         var_val = Dimension_variables[variable][2]
         ds_sam[variable] = (
             var_dim,
-            var_val,
+            var_val.astype(var_dtype),
             sam_attributes[variable],
         )
         #   update the attribute for calday:

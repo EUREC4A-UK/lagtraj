@@ -231,6 +231,7 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     # Does it apply to sam as well?
     sam_half_level_array = da_levels.values
     sam_full_level_array = 0.5 * (sam_half_level_array[:-1] + sam_half_level_array[1:])
+    #  lev = ds_sam["pres"][:, :, 0, 0].values.mean(axis=0)
     # sam_half_level_coord = {
     #    "nlevp1": (
     #        "nlevp1",
@@ -245,6 +246,9 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
             {"long_name": "model full levels"},
         )
     }
+
+    # note: the sam_full_level is actully height in meters, so later on in the code, I should actually
+    # update the values to make it truely the pressure coord.
     sam_mean_preslev_coord = {
         "lev": (
             "lev",
@@ -445,6 +449,13 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         ("time", "lev", "lat", "lon"),
         omega_out.astype(np.single).reshape((Nt, Nlev, 1, 1)),
         sam_attributes["omega"],
+    )
+
+    # update the pressure coordinate values
+    ds_sam["lev"] = (
+        ("lev"),
+        lev,
+        {"units": "Pa", "long_name": "Pressure level (time-averaged)"},
     )
 
     # surface pressure tendencey (zeros, equiv. to surface omega, which has been removed above.)

@@ -1,5 +1,5 @@
 trajectory      : lagtraj://eurec4a_20200128_first
-version         : 1.0.0
+version         : 1.0.1
 domain          : lagtraj://eurec4a_north_atlantic
 gradient_method : regression
 advection_velocity_sampling_method : domain_mean

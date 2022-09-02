@@ -2,8 +2,8 @@
 Romps and Kuang (2010), but with specific humidities rather than
 mixing ratios.
 """
-import xarray as xr
 import numpy as np
+import xarray as xr
 
 cpd = 1005.7  # specific heat at constant pressure (dry air).
 cpv = 1870.0  # specific heat at constant pressure (vapour).

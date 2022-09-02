@@ -1,15 +1,12 @@
-from ...input_definitions import (
-    load,
-    build_input_definition_path,
-)
+from ...input_definitions import build_input_definition_path, load
 from ...input_definitions.examples import LAGTRAJ_EXAMPLES_PATH_PREFIX
-from . import (
+from .input_definitions import (
     INPUT_REQUIRED_FIELDS,
     ConversionDefinition,
-    ConversionParametersDefinition,
-    ConversionMetadataDefinition,
     ConversionLevelsDefinition,
+    ConversionMetadataDefinition,
     ConversionNudgingDefinition,
+    ConversionParametersDefinition,
 )
 
 

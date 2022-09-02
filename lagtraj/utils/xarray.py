@@ -1,7 +1,7 @@
-import xarray as xr
-import isodate
 import datetime
 
+import isodate
+import xarray as xr
 
 from ..domain.sources.era5.load import ERA5DataSet
 

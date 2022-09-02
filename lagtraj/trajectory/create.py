@@ -144,13 +144,47 @@ def _get_times_from_domain(trajectory_definition, root_data_path):
     ds_domain = load_domain_data(
         root_data_path=root_data_path, name=trajectory_definition.domain
     )
-    da_times = ds_domain.time.sel(time=slice(t_min, t_max))
-    if da_times.count() == 0:
+
+    da_all_times = ds_domain.time
+    # Include first point before or equal to tmin and after or equal to tmax
+    da_times_start= da_all_times.sel(time=slice(None,t_min))
+
+    if da_times_start.count() == 0:
         raise Exception(
             "You selected to use the domain data for timesteps"
-            " in the trajectory, but in the time interval selected"
-            " for the trajectory ({}, {}) there are is no domain data"
-            " (time range: {} to {})".format(
+            " in the trajectory, but for the time interval selected"
+            " for the trajectory ({}, {}) there is no domain data"
+            " at the start of simulation (time range: {} to {})".format(
+                t_min,
+                t_max,
+                ds_domain.time.min().dt.strftime("%Y-%m-%d %H:%M").item(),
+                ds_domain.time.max().dt.strftime("%Y-%m-%d %H:%M").item(),
+            )
+        )
+    da_times_end= da_all_times.sel(time=slice(t_max,None))
+
+    if da_times_end.count() == 0:
+        raise Exception(
+            "You selected to use the domain data for timesteps"
+            " in the trajectory, but for the time interval selected"
+            " for the trajectory ({}, {}) there is no domain data"
+            " at the end of simulation (time range: {} to {}).".format(
+                t_min,
+                t_max,
+                ds_domain.time.min().dt.strftime("%Y-%m-%d %H:%M").item(),
+                ds_domain.time.max().dt.strftime("%Y-%m-%d %H:%M").item(),
+            )
+        )
+
+    da_times=da_all_times.sel(time=slice(da_times_start[-1],da_times_end[0]))
+
+    # This should never happen
+    if da_times.count() < 2:
+        raise Exception(
+            "You selected to use the domain data for timesteps"
+            " in the trajectory, but for the time interval selected"
+            " for the trajectory ({}, {}) there is no domain data"
+            " to bracket it (time range: {} to {})".format(
                 t_min,
                 t_max,
                 ds_domain.time.min().dt.strftime("%Y-%m-%d %H:%M").item(),

@@ -165,6 +165,23 @@ def _get_times_from_domain(trajectory_definition, root_data_path):
     ds_domain = load_domain_data(
         root_data_path=root_data_path, name=trajectory_definition.domain
     )
+
+    if t_min_traj < ds_domain.time.min():
+        raise Exception(
+            "You selected to use the domain data for timesteps"
+            " in the trajectory, but in the start-time for the trajectory"
+            " is beyond the beginning of which domain data is currently"
+            " available for the `{trajectory_definition.domain}` domain"
+        )
+
+    if ds_domain.time.max() < t_max_traj:
+        raise Exception(
+            "You selected to use the domain data for timesteps"
+            " in the trajectory, but in the end-time for the trajectory"
+            " is beyond the end of which domain data is currently"
+            " available for the `{trajectory_definition.domain}` domain"
+        )
+
     da_tmin_domain = ds_domain.time.sel(time=slice(None, t_min_traj)).max()
     da_tmax_domain = ds_domain.time.sel(time=slice(t_max_traj, None)).min()
     da_times = ds_domain.time.sel(time=slice(da_tmin_domain, da_tmax_domain))

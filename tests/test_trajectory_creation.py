@@ -3,7 +3,6 @@ import inspect
 from pathlib import Path
 
 import isodate
-import numpy as np
 import xarray as xr
 import yaml
 
@@ -119,4 +118,4 @@ def test_check_for_all_timesteps(ds_domain_test):
         time=slice(da_t_min_expected, da_t_max_expected)
     )
 
-    assert np.testing.assert_allclose(da_t_expected, ds_traj.time)
+    assert (da_t_expected.values == ds_traj.time.values).all()

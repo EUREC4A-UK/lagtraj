@@ -166,7 +166,10 @@ def _get_times_from_domain(trajectory_definition, root_data_path):
         root_data_path=root_data_path, name=trajectory_definition.domain
     )
 
-    if t_min_traj < ds_domain.time.min():
+    # have to convert to `np.datetime64` to be able to make comparisons below,
+    # can't compare `datetime.datetime` with `xr.DataArray` of
+    # `np.datetime64[ns]` objects
+    if np.datetime64(t_min_traj) < ds_domain.time.min():
         raise Exception(
             "You selected to use the domain data for timesteps"
             " in the trajectory, but the start-time for the trajectory"
@@ -174,7 +177,7 @@ def _get_times_from_domain(trajectory_definition, root_data_path):
             " available for the `{trajectory_definition.domain}` domain"
         )
 
-    if ds_domain.time.max() < t_max_traj:
+    if ds_domain.time.max() < np.datetime64(t_max_traj):
         raise Exception(
             "You selected to use the domain data for timesteps"
             " in the trajectory, but the end-time for the trajectory"

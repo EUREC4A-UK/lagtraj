@@ -1,11 +1,11 @@
 from collections import namedtuple
+
+from .. import build_data_path
+from ..input_definitions.examples import LAGTRAJ_EXAMPLES_PATH_PREFIX
 from ..utils.interpolation.levels import (  # noqa
     LevelsDefinition as ForcingLevelsDefinition,
 )
 from .profile_calculation import ForcingSamplingDefinition  # noqa
-from .. import build_data_path
-from ..input_definitions.examples import LAGTRAJ_EXAMPLES_PATH_PREFIX
-
 
 INPUT_REQUIRED_FIELDS = dict(
     trajectory=str,

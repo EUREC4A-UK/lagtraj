@@ -1,7 +1,6 @@
 import numpy as np
 import xarray as xr
 
-
 from .. import njit
 from .geometry import lat_dist, lon_dist
 
@@ -104,7 +103,7 @@ def _regression_gradients(x_array, y_array, val_array):
 
 
 def _era5_boundary_gradients(da_box, ds_ref_pt):
-    """ Calculate gradients from boundary values
+    """Calculate gradients from boundary values
     Using distances along latitude and longitude axes
     Weight by box size?"""
     lat1_point, lon1_point = ds_ref_pt.lat.values, ds_ref_pt.lon.values
@@ -117,7 +116,7 @@ def _era5_boundary_gradients(da_box, ds_ref_pt):
 
 
 def _era5_regression_gradients(da_box, ds_ref_pt):
-    """ Calculate gradients function using local coordinate system and
+    """Calculate gradients function using local coordinate system and
     Regression, using the normal equation"""
     lat1_point, lon1_point = ds_ref_pt.lat.values, ds_ref_pt.lon.values
     lon2_mg, lat2_mg = np.meshgrid(da_box.lon.values, da_box.lat.values)

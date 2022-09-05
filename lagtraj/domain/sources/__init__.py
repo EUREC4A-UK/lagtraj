@@ -4,14 +4,10 @@ correct functions depending on the data source a given dataset originated from.
 """
 import xarray as xr
 
-
-class MissingDomainData(Exception):
-    pass
-
-
+from .common import MissingDomainData  # noqa
+from .era5.aux_variables import calc_variable as era5_calc
 from .era5.interpolation import interpolate_to_height_levels as era5_hl_interp
 from .era5.interpolation import interpolate_to_pressure_levels as era5_pl_interp
-from .era5.aux_variables import calc_variable as era5_calc
 
 
 def calc_auxiliary_variable(ds, v, **kwargs):
@@ -53,8 +49,8 @@ def interpolate_to_height_levels(ds, height):
         ds_hl = era5_hl_interp(ds_model_levels=ds, height=height)
     else:
         raise NotImplementedError(
-            f"No method to inpolate domain data to height levels for"
-            " `{data_source}` has been implemented"
+            "No method to inpolate domain data to height levels for"
+            f" `{data_source}` has been implemented"
         )
 
     ds_hl.attrs["data_source"] = ds.attrs.get("data_source")
@@ -84,8 +80,8 @@ def interpolate_to_pressure_levels(ds, pressure):
         ds_pl = era5_pl_interp(ds_model_levels=ds, pressure=pressure)
     else:
         raise NotImplementedError(
-            f"No method to inpolate domain data to height levels for"
-            " `{data_source}` has been implemented"
+            "No method to inpolate domain data to height levels for"
+            f" `{data_source}` has been implemented"
         )
 
     ds_pl.attrs["data_source"] = ds.attrs.get("data_source")

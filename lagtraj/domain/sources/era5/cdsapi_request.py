@@ -45,7 +45,7 @@ class RequestFetchCDSClient(cdsapi.Client):
 
     def get_request_status(self, request_id):
         reply = self._get_request_status(request_id=request_id)
-        if not "state" in reply:
+        if "state" not in reply:
             if reply["message"] == "Not found":
                 raise self.RequestNotFoundException
             else:

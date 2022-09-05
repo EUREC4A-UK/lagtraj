@@ -1,9 +1,9 @@
-import xarray as xr
 import numpy as np
+import xarray as xr
 
-from .constants import rd, rv_over_rd_minus_one, cp, p_ref, rg, rlv, rls, omega
 from ....utils.interpolation.methods import cos_transition
 from ....utils.thermo import theta_l_detailed
+from .constants import cp, omega, p_ref, rd, rg, rls, rlv, rv_over_rd_minus_one
 
 rd_over_cp = rd / cp
 p_ref_inv = 1.0 / p_ref
@@ -39,7 +39,9 @@ def calc_variable(ds, var, **kwargs):
         # if not "p_f" in ds.data_vars:
         # p_f =
         vals = ds.w - ds.w[:, [-1], :, :].values * cos_transition(
-            ds.p_f[:, :, :, :].values, kwargs["w_cutoff_start"], kwargs["w_cutoff_end"],
+            ds.p_f[:, :, :, :].values,
+            kwargs["w_cutoff_start"],
+            kwargs["w_cutoff_end"],
         )
         return xr.DataArray(
             vals,
@@ -108,7 +110,13 @@ def calc_variable(ds, var, **kwargs):
     elif var == "theta_l":
         # Compute a relatively well conserved liquid water potential temperature
         return xr.DataArray(
-            theta_l_detailed(ds["t"], ds["p_f"], ds["q_t"], ds["clwc"], ds["ciwc"],),
+            theta_l_detailed(
+                ds["t"],
+                ds["p_f"],
+                ds["q_t"],
+                ds["clwc"],
+                ds["ciwc"],
+            ),
             attrs={"long_name": "Liquid water potential temperature", "units": "K"},
         )
     elif var == "u_g":

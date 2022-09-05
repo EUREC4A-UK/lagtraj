@@ -1,21 +1,15 @@
-import yaml
-import sys
-from pathlib import Path
 import difflib
 import shutil
+from pathlib import Path
 
+import yaml
 
-from . import (
-    validate_input,
-    build_input_definition_path,
-    examples as input_examples,
-    InvalidInputDefinition,
-)
 from .. import DATA_TYPE_PLURAL
-from .examples import (
-    get_available as get_available_input_examples,
-    LAGTRAJ_EXAMPLES_PATH_PREFIX,
-)
+from . import InvalidInputDefinition, build_input_definition_path
+from . import examples as input_examples
+from . import validate_input
+from .examples import LAGTRAJ_EXAMPLES_PATH_PREFIX
+from .examples import get_available as get_available_input_examples
 
 FOLDER_STRUCTURE_EXAMPLE = """
 data

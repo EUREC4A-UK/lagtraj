@@ -2,6 +2,9 @@ import os
 import warnings
 from pathlib import Path
 
+__version__ = "0.1.0"
+
+
 try:
     from numba import njit
 except ImportError:

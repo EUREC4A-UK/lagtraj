@@ -129,18 +129,18 @@ def _get_times_from_domain(trajectory_definition, root_data_path):
     """
     Return `xr.DataArray` of `datetime`s as a subset of the times at which the
     requested domain data is available, ensuring that the provided trajectory
-    definition can be interpolate through its full duration from start to
+    definition can be interpolated through its full duration from start to
     finish
 
-    We need to be carefule here to ensure here that the earliest and latest
+    We need to be careful here to ensure here that the earliest and latest
     time that the trajectory was requested at is within the sampling times we
     actually use. For example, when using ERA5 domain data (which is available
     on the hour) while at the same setting a origin time for the trajectory
-    15min part the hour and integrating +-2 hrs, we need to ensure that the
-    domain data includes the time-step the hour immediately before and after
-    the trajectory duration, and so we need to find the latest time which is
-    before the start of the trajectory and the earliest time that is after the
-    trajectory end.
+    15min past the hour and integrating +-2 hrs, we need to ensure that the
+    domain data includes the time-steps for the hour immediately before and after
+    the trajectory's full span in time, and so we need to find the latest time
+    which is before the start of the trajectory and the earliest time that is
+    after the trajectory end.
 
     hours past midnight:   0...1...2...3...4...5...6...7
     domain times:          x   x   x   x   x   x   x   x

@@ -9,6 +9,7 @@ docs/*.blg
 docs/*.log
 docs/*.pdf
 __pycache__/
+dist/
 
 # `data` instead of `data/` so that we can ignore symlinks too
 data

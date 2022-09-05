@@ -1,6 +1,10 @@
 from pathlib import Path
 import os
 
+
+__version__ = "0.1.0"
+
+
 # Optional numba dependency
 try:
     from numba import njit
@@ -30,9 +34,3 @@ DATA_TYPE_PLURAL = dict(
 def build_data_path(root_data_path, data_type):
     data_type_plural = DATA_TYPE_PLURAL[data_type]
     return Path(root_data_path) / data_type_plural
-
-
-from ._version import get_versions
-
-__version__ = get_versions()["version"]
-del get_versions

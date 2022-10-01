@@ -188,7 +188,7 @@ kpt_attributes = {
     "low_veg_lai": {"units": "-", "long_name": "leaf area index of low vegetation"},
     "sea_ice_frct": {"units": "0-1", "long_name": "sea ice fraction"},
     "sdor": {
-        "units": "0-1",
+        "units": "m",
         "long_name": "subgrid-scale orography - standard deviation",
     },
     "isor": {"units": "0-1", "long_name": "subgrid-scale orography - anisotropy"},
@@ -315,7 +315,7 @@ ALLOWED_UNIT_VARIATIONS = dict(
     # but this was corrected to `m` in ecCodes as of version v2.22.0 (May
     # 2021). We allow for the old units and always set to the correct value of
     # `m` for kpt output (see https://github.com/EUREC4A-UK/lagtraj/pull/168)
-    sdor=dict(valid_era_units=("0-1", "m"), kpt_units="m")
+    sdor=dict(valid_era5_units=("0-1", "m"), kpt_units="m")
 )
 
 
@@ -386,7 +386,7 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
                 else:
                     raise Exception(
                         f"The variable `{variable}` has changed units in the ERA5 source files"
-                        " over time, but the units requested for KPT output `{kpt_units}`"
+                        f" over time, but the units requested for KPT output `{kpt_units}`"
                         f" does not match that selected for the ERA5 variable {kpt_units_valid}"
                     )
             else:

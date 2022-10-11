@@ -314,7 +314,7 @@ ALLOWED_UNIT_VARIATIONS = dict(
     # `sdor` (standard deviation of orography) previously had units of `0-1`
     # but this was corrected to `m` in ecCodes as of version v2.22.0 (May
     # 2021). We allow for the old units and always set to the correct value of
-    # `m` for kpt output (see https://github.com/EUREC4A-UK/lagtraj/pull/168)
+    # `m` for kpt output (see https://github.com/EUREC4A-UK/lagtraj/pull/169)
     sdor=dict(valid_era5_units=("0-1", "m"), kpt_units="m")
 )
 

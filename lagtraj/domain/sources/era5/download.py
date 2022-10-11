@@ -335,6 +335,7 @@ def _build_single_level_an_query(date, bbox, latlon_sampling):
     # 187 Medium cloud cover  [(0 - 1)],  mcc
     # 188 High cloud cover  [(0 - 1)],  hcc
     # 198 Skin reservoir content [m of water equivalent], src
+    # 235 Skin temperature [K], skt
     # 236 Soil temperature level 41 [K], stl4
     # 238 Temperature of snow layer [K], tsn
     # 243 Forecast albedo [(0 - 1)], fal
@@ -351,8 +352,8 @@ def _build_single_level_an_query(date, bbox, latlon_sampling):
             "/35.128/39.128/40.128/41.128/42.128/66.128/67.128"
             "/129.128/134.128/136.128/139.128/141.128/151.128/159.128"
             "/160.128/161.128/162.128/163.128/164.128/170.128/172.128"
-            "/183.128/186.128/187.128/188.128/198.128/236.128/238.128"
-            "/243.128/244.128/245.128"
+            "/183.128/186.128/187.128/188.128/198.128/235.128/236.128"
+            "/238.128/243.128/244.128/245.128"
         ),
         "stream": "oper",
         "time": (

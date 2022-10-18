@@ -1,5 +1,5 @@
 trajectory_type : lagrangian
-version         : 1.0.0
+version         : 1.1.0
 velocity_method : single_height_level
 velocity_method_height: 500.
 domain          : lagtraj://eurec4a_north_atlantic

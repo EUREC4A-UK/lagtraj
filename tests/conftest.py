@@ -2,6 +2,7 @@ import os
 import shutil
 import tarfile
 import tempfile
+import warnings
 from pathlib import Path
 
 import pytest
@@ -14,9 +15,21 @@ TESTDATA_URL = "http://gws-access.jasmin.ac.uk/public/eurec4auk/testdata/lagtraj
 
 if os.environ.get("LAGTRAJ_TESTDATA_DIR", None):
     TESTDATA_DIR = Path(os.environ["LAGTRAJ_TESTDATA_DIR"])
+    USING_PERSISTANT_TESTDIR = True
 else:
     tempdir = tempfile.TemporaryDirectory()
     TESTDATA_DIR = Path(tempdir.name)
+    warnings.warn(
+        "The data required for testing is being downloaded to a temporary "
+        "directory and will be deleted once the tests have been run. This means "
+        "that the data will have to be re-downloaded when tests are next run. To "
+        "persist the test-data to a permanent directory please set the "
+        "LAGTRAJ_TESTDATA_DIR environment variable to the place where you would "
+        "like to store the test-data, for example run `export "
+        "LAGTRAJ_TESTDATA_DIR=/tmp/lagtraj` in your command prompt "
+        "(the directory will be created if it doesn't already exist)"
+    )
+    USING_PERSISTANT_TESTDIR = False
 
 
 def _download_testdata():
@@ -30,8 +43,11 @@ def _download_testdata():
 
 
 def ensure_testdata_available():
-    if not TESTDATA_DIR.exists():
+    if USING_PERSISTANT_TESTDIR:
+        TESTDATA_DIR.mkdir(exist_ok=True, parents=True)
+    elif not TESTDATA_DIR.exists():
         raise Exception(f"Couldn't find test-data directory {TESTDATA_DIR}")
+
     # Download testdata if it is not there yet
     if len(list(TESTDATA_DIR.glob("**/*.nc"))) == 0:
         print("Downloading testdata...")

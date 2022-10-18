@@ -7,5 +7,5 @@ lat_origin      : 13.28639889
 lon_origin      : -57.7166481
 datetime_origin : "2020-02-02T12:12"
 backward_duration : PT84H
-forward_duration : PT6H
+forward_duration : PT12H
 timestep        : domain_data  # or for example PT1H

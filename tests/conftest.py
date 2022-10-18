@@ -15,7 +15,7 @@ TESTDATA_URL = "http://gws-access.jasmin.ac.uk/public/eurec4auk/testdata/lagtraj
 
 if os.environ.get("LAGTRAJ_TESTDATA_DIR", None):
     TESTDATA_DIR = Path(os.environ["LAGTRAJ_TESTDATA_DIR"])
-    USING_PERSISTANT_TESTDIR = True
+    USING_PERSISTENT_TESTDIR = True
 else:
     tempdir = tempfile.TemporaryDirectory()
     TESTDATA_DIR = Path(tempdir.name)
@@ -29,7 +29,7 @@ else:
         "LAGTRAJ_TESTDATA_DIR=/tmp/lagtraj` in your command prompt "
         "(the directory will be created if it doesn't already exist)"
     )
-    USING_PERSISTANT_TESTDIR = False
+    USING_PERSISTENT_TESTDIR = False
 
 
 def _download_testdata():
@@ -43,7 +43,7 @@ def _download_testdata():
 
 
 def ensure_testdata_available():
-    if USING_PERSISTANT_TESTDIR:
+    if USING_PERSISTENT_TESTDIR:
         TESTDATA_DIR.mkdir(exist_ok=True, parents=True)
     elif not TESTDATA_DIR.exists():
         raise Exception(f"Couldn't find test-data directory {TESTDATA_DIR}")

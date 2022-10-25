@@ -137,17 +137,17 @@ all data has been downloaded. Every time this command is run it will attempt to
 download only data not yet downloaded.
 
 If you have already created a trajectory *input definition* (see below) you can
-use `download_by_trajectory` to make domain data available to cover the
+use `download_for_trajectory` to make domain data available to cover the
 time-span of that trajectory, passing in the name of the trajectory
 (`<trajectory_name>`):
 
 ```bash
-$> python -m lagtraj.domain.download_by_trajectory lagtraj://<trajectory_name>
+$> python -m lagtraj.domain.download_for_trajectory lagtraj://<trajectory_name>
 ```
 e.g.
 
 ```bash
-$> python -m lagtraj.domain.download_by_trajectory lagtraj://eurec4a_20200202_first_short
+$> python -m lagtraj.domain.download_for_trajectory lagtraj://eurec4a_20200202_first_short
 ```
 
 

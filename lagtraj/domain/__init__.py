@@ -1,12 +1,12 @@
 from collections import namedtuple
 
 from .. import build_data_path
-from .sources import (
+from ..input_definitions.examples import LAGTRAJ_EXAMPLES_PATH_PREFIX
+from .sources import calc_auxiliary_variable  # noqa
+from .sources import (  # noqa
     interpolate_to_height_levels,
     interpolate_to_pressure_levels,
-)  # noqa
-from .sources import calc_auxiliary_variable  # noqa
-from ..input_definitions.examples import LAGTRAJ_EXAMPLES_PATH_PREFIX
+)
 
 LatLonBoundingBox = namedtuple(
     "LatLonBoundingBox", ["lat_min", "lat_max", "lon_min", "lon_max"]

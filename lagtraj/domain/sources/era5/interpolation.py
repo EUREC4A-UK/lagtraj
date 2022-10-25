@@ -1,7 +1,8 @@
 import numbers
 
-import xarray as xr
 import numpy as np
+import xarray as xr
+
 from ....utils.interpolation.methods import steffen_3d
 from .utils import calculate_heights_and_pressures
 

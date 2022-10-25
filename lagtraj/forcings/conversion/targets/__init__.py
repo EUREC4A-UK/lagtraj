@@ -1,6 +1,6 @@
-import os
 import glob
 import importlib
+import os
 
 
 def _package_contents():

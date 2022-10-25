@@ -1,12 +1,11 @@
 from collections import namedtuple
+
 import numpy as np
 
-
-from ..utils.gradient_calculation import calc_horizontal_gradients
 from ..domain import calc_auxiliary_variable as calc_auxiliary_domain_variable
 from ..domain import interpolate_to_height_levels as interpolate_domain_to_height_levels
 from ..domain.mask import calc_mask
-
+from ..utils.gradient_calculation import calc_horizontal_gradients
 
 # list of scalars we want to compute forcings of, TODO: move into yaml input
 # definitions

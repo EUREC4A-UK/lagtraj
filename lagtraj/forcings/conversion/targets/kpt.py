@@ -3,16 +3,13 @@
     2. the mapping between the internal lagtraj variables (era5) and KPT
     3. and a function to process the conversion
 """
-import xarray as xr
-import numpy as np
 import datetime
 
+import numpy as np
+import xarray as xr
 
 from ....domain.sources.era5.constants import rg
-from ....utils.interpolation.methods import (
-    steffen_1d_no_ep_time,
-    central_estimate,
-)
+from ....utils.interpolation.methods import central_estimate, steffen_1d_no_ep_time
 
 kpt_attributes = {
     "lat": {"units": "degrees North", "long_name": "latitude"},
@@ -191,7 +188,7 @@ kpt_attributes = {
     "low_veg_lai": {"units": "-", "long_name": "leaf area index of low vegetation"},
     "sea_ice_frct": {"units": "0-1", "long_name": "sea ice fraction"},
     "sdor": {
-        "units": "0-1",
+        "units": "m",
         "long_name": "subgrid-scale orography - standard deviation",
     },
     "isor": {"units": "0-1", "long_name": "subgrid-scale orography - anisotropy"},
@@ -311,6 +308,16 @@ era5_to_kpt_units = {
     "W m**-2": "W/m2",
 }
 
+# create a special mapping to allow for variations in units of data coming from
+# ERA5, since changes have happened over time
+ALLOWED_UNIT_VARIATIONS = dict(
+    # `sdor` (standard deviation of orography) previously had units of `0-1`
+    # but this was corrected to `m` in ecCodes as of version v2.22.0 (May
+    # 2021). We allow for the old units and always set to the correct value of
+    # `m` for kpt output (see https://github.com/EUREC4A-UK/lagtraj/pull/169)
+    sdor=dict(valid_era5_units=("0-1", "m"), kpt_units="m")
+)
+
 
 def from_era5(ds_era5, da_levels, parameters, metadata):
     """Obtain a kpt input file from era5 variable set at high resolution"""
@@ -332,7 +339,13 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
             {"long_name": "model full levels"},
         )
     }
-    nDS_coord = {"nDS": ("nDS", [0], {},)}
+    nDS_coord = {
+        "nDS": (
+            "nDS",
+            [0],
+            {},
+        )
+    }
     kpt_soil_coord = {
         "nlevs": ("nlevs", np.arange(4) + 1.0, {"long_name": "soil levels"})
     }
@@ -353,16 +366,35 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         # perform units check
         unit_guess = era5_to_kpt_units.get(da_era5.units, da_era5.units)
         if not unit_guess == kpt_attributes[variable]["units"]:
-            except_str = (
-                "Incompatible units between ERA5 and kpt for variable "
-                + variable
-                + ". Please fix using the fix_era5_to_kpt_units "
-                + "dictionary: ERA converted variable is "
-                + unit_guess
-                + ", kpt variable is "
-                + kpt_attributes[variable]["units"]
-            )
-            raise Exception(except_str)
+            kpt_units = kpt_attributes[variable]["units"]
+            if variable in ALLOWED_UNIT_VARIATIONS:
+                unit_variation = ALLOWED_UNIT_VARIATIONS[variable]
+                era5_has_valid_units = (
+                    da_era5.units in unit_variation["valid_era5_units"]
+                )
+                kpt_units_valid = kpt_units == unit_variation["kpt_units"]
+                if era5_has_valid_units and kpt_units_valid:
+                    # the units we want to use for KPT and the ones that we say
+                    # that ERA5 is actually in
+                    pass
+                elif not era5_has_valid_units:
+                    raise Exception(
+                        f"The variable `{variable}` has changed units in the ERA5 source files"
+                        " over time, but the ERA5 units don't match the expected value values"
+                        f" {', '.join(unit_variation['valid_era5_units'])}"
+                    )
+                else:
+                    raise Exception(
+                        f"The variable `{variable}` has changed units in the ERA5 source files"
+                        f" over time, but the units requested for KPT output `{kpt_units}`"
+                        f" does not match that selected for the ERA5 variable {kpt_units_valid}"
+                    )
+            else:
+                raise Exception(
+                    f"Incompatible units between ERA5 and kpt for variable `{variable}`. "
+                    "Please fix using the era5_to_kpt_units dictionary: "
+                    f"ERA converted variable is {unit_guess}, kpt variable is {kpt_units}"
+                )
         # single level variable
         if np.ndim(da_era5.values) == 1:
             ds_kpt[variable] = da_era5
@@ -458,8 +490,7 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     # Heat roughness, derive from "flsr" variable
     ds_kpt["heat_rough"] = np.exp(ds_era5["flsr_mean"])
     ds_kpt["heat_rough"].attrs.update(**kpt_attributes["heat_rough"])
-    # Apply correction to t_skin (see output files)
-    ds_kpt["t_skin"] = ds_era5["stl1_mean"] + 1.0
+    ds_kpt["t_skin"] = ds_era5["skt_mean"]
     ds_kpt["t_skin"].attrs.update(**kpt_attributes["t_skin"])
     # Surface fluxes: obtain from time mean in ERA data, do not change sign
     sfc_sens_flx = central_estimate(ds_era5["msshf_mean"].values)

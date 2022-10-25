@@ -7,14 +7,13 @@
 import numpy as np
 import xarray as xr
 
-
 from ....domain.sources.era5.constants import cp, rlv
-from ....utils.thermo import tref, qvsi, qvsl
 from ....utils.interpolation.methods import (
-    steffen_1d_no_ep_time,
     central_estimate,
     cos_transition,
+    steffen_1d_no_ep_time,
 )
+from ....utils.thermo import qvsi, qvsl, tref
 
 EXPORT_KWARGS = dict(format="NETCDF3_CLASSIC")
 
@@ -355,7 +354,11 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     """Obtain a dephy input file from era5 variable set at high resolution"""
     dephy_level_array = da_levels.values
     dephy_level_coord = {
-        "lev": ("lev", da_levels.values, {"long_name": "altitude", "units": "m"},),
+        "lev": (
+            "lev",
+            da_levels.values,
+            {"long_name": "altitude", "units": "m"},
+        ),
     }
     dephy_t0_coord = {
         "t0": ("t0", [ds_era5.time.values[0]], {"long_name": "Initial time"})
@@ -425,8 +428,7 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     # Heat roughness, derive from "flsr" variable
     z0th_traj = np.exp(ds_era5["flsr_mean"].values)
     ds_dephy["z0th_traj"] = forcing_field_dephy(z0th_traj, "z0th_traj")
-    # Include same t_skin correction used for DALES, may need further work
-    ts = ds_era5["stl1_mean"].values + 1.0
+    ts = ds_era5["skt_mean"].values
     ds_dephy["ts"] = forcing_field_dephy(ts, "ts")
     # Surface fluxes: obtain from time mean in ERA data, change sign for dephy!
     sfc_sens_flx = -central_estimate(ds_era5["msshf_mean"].values)

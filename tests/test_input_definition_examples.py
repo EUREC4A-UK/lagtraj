@@ -2,14 +2,13 @@ import pytest
 
 import lagtraj.input_definitions.examples
 import lagtraj.input_definitions.load
-from lagtraj import DATA_TYPE_PLURAL, DEFAULT_ROOT_DATA_PATH
-
+from lagtraj import DATA_TYPE_PLURAL
 from lagtraj.domain import INPUT_REQUIRED_FIELDS as DOMAIN_REQUIRED_FIELDS
 from lagtraj.forcings import INPUT_REQUIRED_FIELDS as FORCING_REQUIRED_FIELDS
-from lagtraj.trajectory import INPUT_REQUIRED_FIELDS as TRAJECTORY_REQUIRED_FIELDS
-from lagtraj.forcings.conversion import (
+from lagtraj.forcings.conversion.input_definitions import (
     INPUT_REQUIRED_FIELDS as CONVERSION_REQUIRED_FIELDS,
 )
+from lagtraj.trajectory import INPUT_REQUIRED_FIELDS as TRAJECTORY_REQUIRED_FIELDS
 
 INPUT_TYPES = {
     "forcing": FORCING_REQUIRED_FIELDS,

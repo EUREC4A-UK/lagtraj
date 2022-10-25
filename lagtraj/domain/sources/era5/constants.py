@@ -1,5 +1,3 @@
-from scipy.constants import pi
-
 # ECMWF CONSTANTS
 rd = 287.06
 rg = 9.80665

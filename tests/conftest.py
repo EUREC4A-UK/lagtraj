@@ -1,23 +1,35 @@
-from pathlib import Path
-import tarfile
-import tempfile
 import os
 import shutil
+import tarfile
+import tempfile
+import warnings
+from pathlib import Path
 
-import requests
 import pytest
+import requests
+from make_test_data import TEST_FORCING_NAME, forcing_load, trajectory_load
 
 import lagtraj.domain.load
-from make_test_data import TEST_FORCING_NAME, trajectory_load, forcing_load
-
 
 TESTDATA_URL = "http://gws-access.jasmin.ac.uk/public/eurec4auk/testdata/lagtraj.testdata.v0.1.0.tar.gz"  # noqa
 
 if os.environ.get("LAGTRAJ_TESTDATA_DIR", None):
     TESTDATA_DIR = Path(os.environ["LAGTRAJ_TESTDATA_DIR"])
+    USING_PERSISTENT_TESTDIR = True
 else:
     tempdir = tempfile.TemporaryDirectory()
     TESTDATA_DIR = Path(tempdir.name)
+    warnings.warn(
+        "The data required for testing is being downloaded to a temporary "
+        "directory and will be deleted once the tests have been run. This means "
+        "that the data will have to be re-downloaded when tests are next run. To "
+        "persist the test-data to a permanent directory please set the "
+        "LAGTRAJ_TESTDATA_DIR environment variable to the place where you would "
+        "like to store the test-data, for example run `export "
+        "LAGTRAJ_TESTDATA_DIR=/tmp/lagtraj` in your command prompt "
+        "(the directory will be created if it doesn't already exist)"
+    )
+    USING_PERSISTENT_TESTDIR = False
 
 
 def _download_testdata():
@@ -31,8 +43,11 @@ def _download_testdata():
 
 
 def ensure_testdata_available():
-    if not TESTDATA_DIR.exists():
+    if USING_PERSISTENT_TESTDIR:
+        TESTDATA_DIR.mkdir(exist_ok=True, parents=True)
+    elif not TESTDATA_DIR.exists():
         raise Exception(f"Couldn't find test-data directory {TESTDATA_DIR}")
+
     # Download testdata if it is not there yet
     if len(list(TESTDATA_DIR.glob("**/*.nc"))) == 0:
         print("Downloading testdata...")
@@ -58,7 +73,9 @@ def ds_trajectory_linear(ds_domain_test):
     t0 = ds_domain_test.time.isel(time=-15)
 
     origin = lagtraj.trajectory.TrajectoryOrigin(
-        lat=ds_domain_test.lat.mean(), lon=ds_domain_test.lon.mean(), datetime=t0,
+        lat=ds_domain_test.lat.mean(),
+        lon=ds_domain_test.lon.mean(),
+        datetime=t0,
     )
 
     da_times = ds_domain_test.time

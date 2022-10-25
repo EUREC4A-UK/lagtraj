@@ -1,9 +1,10 @@
-import isodate
+import datetime
 from collections import namedtuple
+
+import isodate
 
 from .. import build_data_path as build_data_path_global
 from ..input_definitions.examples import LAGTRAJ_EXAMPLES_PATH_PREFIX
-
 
 TrajectoryOrigin = namedtuple("TrajectoryOrigin", ["lat", "lon", "datetime"])
 
@@ -24,6 +25,12 @@ TrajectoryDefinition = namedtuple(
 )
 
 
+def duration_or_none(s):
+    if s is None:
+        return datetime.timedelta()
+    return isodate.parse_duration(s)
+
+
 INPUT_REQUIRED_FIELDS = {
     "trajectory_type": ["linear", "eulerian", "lagrangian"],
     # domain should only be given when creating a lagrangian trajectory or if
@@ -37,11 +44,14 @@ INPUT_REQUIRED_FIELDS = {
     "lat_origin": float,
     "lon_origin": float,
     "datetime_origin": isodate.parse_datetime,
-    "forward_duration|backward_duration": isodate.parse_duration,
+    "forward_duration|backward_duration": duration_or_none,
     # if the domain is given we can use domain data for the timestep, otherwise
     # the timestep should be a parsable duration string
     "timestep": (
-        dict(requires=dict(domain="__is_set__"), choices=["domain_data"],),
+        dict(
+            requires=dict(domain="__is_set__"),
+            choices=["domain_data"],
+        ),
         isodate.parse_duration,
     ),
     # only linear trajectories need to have their velocity prescribed
@@ -57,10 +67,12 @@ INPUT_REQUIRED_FIELDS = {
         ],
     ),
     "velocity_method_height": dict(
-        requires=dict(velocity_method="single_height_level"), choices=float,
+        requires=dict(velocity_method="single_height_level"),
+        choices=float,
     ),
     "velocity_method_pressure": dict(
-        requires=dict(velocity_method="single_pressure_level"), choices=float,
+        requires=dict(velocity_method="single_pressure_level"),
+        choices=float,
     ),
 }
 

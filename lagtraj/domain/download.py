@@ -155,7 +155,7 @@ def _make_cli_argparser(timedomain_lookup):
         argparser.add_argument("domain")
         argparser.add_argument("start_date", type=_parse_date)
         argparser.add_argument("end_date", type=_parse_date)
-    elif timedomain_lookup == "by_trajectory":
+    elif timedomain_lookup == "for_trajectory":
         argparser.add_argument("trajectory")
     else:
         raise NotImplementedError(timedomain_lookup)
@@ -190,7 +190,7 @@ def _run_cli(args=None, timedomain_lookup="by_arguments"):
         domain = args.domain
         start_date = args.start_date
         end_date = args.end_date
-    elif timedomain_lookup == "by_trajectory":
+    elif timedomain_lookup == "for_trajectory":
         traj_defn = load_traj_definition(
             root_data_path=args.data_path, name=args.trajectory
         )

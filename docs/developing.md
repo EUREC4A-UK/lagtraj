@@ -127,14 +127,13 @@ export PYTEST_ADDOPTS='--pdb --pdbcls=IPython.terminal.debugger:Pdb'
 
 ### Speeding up testing
 
-If you are running the tests repeatedly it's a good idea to download the
-testdata locally and point lagtraj to where it resides (otherwise lagtraj will
-attempt to download the testdata every time the tests are run):
+If you are running the tests repeatedly it's a good idea to ensure that the
+test-data isn't downloaded anew every time the tests are run. To do this you
+just neeed to set the environment variable `LAGTRAJ_TESTDATA_DIR` to set the
+directory where you would like the test-data to be persisted (the directory
+will be created for you if it doesn't already exist):
 
 ```bash
-wget http://gws-access.ceda.ac.uk/public/eurec4auk/testdata/lagtraj.testdata.tar.gz
-mkdir /tmp/lagtraj
-tar zxvf lagtraj.testdata.tar.gz -C /tmp/lagtraj
 export LAGTRAJ_TESTDATA_DIR=/tmp/lagtraj
 ```
 

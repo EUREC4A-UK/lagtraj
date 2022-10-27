@@ -126,15 +126,36 @@ def main(data_path, trajectory_name):
 
 
 def _get_times_from_domain(trajectory_definition, root_data_path):
+    """
+    Return `xr.DataArray` of `datetime`s as a subset of the times at which the
+    requested domain data is available, ensuring that the provided trajectory
+    definition can be interpolated through its full duration from start to
+    finish
+
+    We need to be careful here to ensure here that the earliest and latest
+    time that the trajectory was requested at is within the sampling times we
+    actually use. For example, when using ERA5 domain data (which is available
+    on the hour) while at the same setting a origin time for the trajectory
+    15min past the hour and integrating +-2 hrs, we need to ensure that the
+    domain data includes the time-steps for the hour immediately before and after
+    the trajectory's full span in time, and so we need to find the latest time
+    which is before the start of the trajectory and the earliest time that is
+    after the trajectory end.
+
+    hours past midnight:   0...1...2...3...4...5...6...7
+    domain times:          x   x   x   x   x   x   x   x
+    trajectory times:           s       o       e
+    correct time-span:         |-------------------|
+    """
     t0 = trajectory_definition.origin.datetime
-    t_min = t0 - trajectory_definition.duration.backward
-    t_max = t0 + trajectory_definition.duration.forward
+    t_min_traj = t0 - trajectory_definition.duration.backward
+    t_max_traj = t0 + trajectory_definition.duration.forward
 
     if not download_complete(
         root_data_path=root_data_path,
         domain_name=trajectory_definition.domain,
-        start_date=t_min.date(),
-        end_date=t_max.date(),
+        start_date=t_min_traj.date(),
+        end_date=t_max_traj.date(),
     ):
         warnings.warn(
             "Some of the data for the selected domain"
@@ -144,49 +165,36 @@ def _get_times_from_domain(trajectory_definition, root_data_path):
     ds_domain = load_domain_data(
         root_data_path=root_data_path, name=trajectory_definition.domain
     )
-
-    da_all_times = ds_domain.time
-    # Include first point before or equal to tmin and after or equal to tmax
-    da_times_start= da_all_times.sel(time=slice(None,t_min))
-
-    if da_times_start.count() == 0:
+    # have to convert to `np.datetime64` to be able to make comparisons below,
+    # can't compare `datetime.datetime` with `xr.DataArray` of
+    # `np.datetime64[ns]` objects
+    if np.datetime64(t_min_traj) < ds_domain.time.min():
         raise Exception(
             "You selected to use the domain data for timesteps"
-            " in the trajectory, but for the time interval selected"
-            " for the trajectory ({}, {}) there is no domain data"
-            " at the start of simulation (time range: {} to {})".format(
-                t_min,
-                t_max,
-                ds_domain.time.min().dt.strftime("%Y-%m-%d %H:%M").item(),
-                ds_domain.time.max().dt.strftime("%Y-%m-%d %H:%M").item(),
-            )
-        )
-    da_times_end= da_all_times.sel(time=slice(t_max,None))
-
-    if da_times_end.count() == 0:
-        raise Exception(
-            "You selected to use the domain data for timesteps"
-            " in the trajectory, but for the time interval selected"
-            " for the trajectory ({}, {}) there is no domain data"
-            " at the end of simulation (time range: {} to {}).".format(
-                t_min,
-                t_max,
-                ds_domain.time.min().dt.strftime("%Y-%m-%d %H:%M").item(),
-                ds_domain.time.max().dt.strftime("%Y-%m-%d %H:%M").item(),
-            )
+            " in the trajectory, but the start-time for the trajectory"
+            " is beyond the beginning of which domain data is currently"
+            " available for the `{trajectory_definition.domain}` domain"
         )
 
-    da_times=da_all_times.sel(time=slice(da_times_start[-1],da_times_end[0]))
-
-    # This should never happen
-    if da_times.count() < 2:
+    if ds_domain.time.max() < np.datetime64(t_max_traj):
         raise Exception(
             "You selected to use the domain data for timesteps"
-            " in the trajectory, but for the time interval selected"
-            " for the trajectory ({}, {}) there is no domain data"
-            " to bracket it (time range: {} to {})".format(
-                t_min,
-                t_max,
+            " in the trajectory, but the end-time for the trajectory"
+            " is beyond the end of which domain data is currently"
+            " available for the `{trajectory_definition.domain}` domain"
+        )
+
+    da_tmin_domain = ds_domain.time.sel(time=slice(None, t_min_traj)).max()
+    da_tmax_domain = ds_domain.time.sel(time=slice(t_max_traj, None)).min()
+    da_times = ds_domain.time.sel(time=slice(da_tmin_domain, da_tmax_domain))
+    if da_times.count() == 0:
+        raise Exception(
+            "You selected to use the domain data for timesteps"
+            " in the trajectory, but in the time interval selected"
+            " for the trajectory ({}, {}) there are is no domain data"
+            " (time range: {} to {})".format(
+                t_min_traj,
+                t_max_traj,
                 ds_domain.time.min().dt.strftime("%Y-%m-%d %H:%M").item(),
                 ds_domain.time.max().dt.strftime("%Y-%m-%d %H:%M").item(),
             )

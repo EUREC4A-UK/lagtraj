@@ -428,7 +428,6 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     # Heat roughness, derive from "flsr" variable
     z0th_traj = np.exp(ds_era5["flsr_mean"].values)
     ds_dephy["z0th_traj"] = forcing_field_dephy(z0th_traj, "z0th_traj")
-    # Include same t_skin correction used for DALES, may need further work
     ts = ds_era5["skt_mean"].values
     ds_dephy["ts"] = forcing_field_dephy(ts, "ts")
     # Surface fluxes: obtain from time mean in ERA data, change sign for dephy!

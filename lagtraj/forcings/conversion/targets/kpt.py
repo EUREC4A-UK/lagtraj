@@ -524,11 +524,11 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     # Change order of data, to confirm to other kpt input
     ds_kpt = ds_kpt.sortby("nlev", ascending=True)
     ds_kpt = ds_kpt.sortby("nlevp1", ascending=True)
-    ds_kpt["second"] = ds_kpt["time_traj"]%86400
+    ds_kpt["second"] = ds_kpt["time_traj"] % 86400
     ds_kpt["date"] = (
-         ("time"),
-         (ds_kpt["time"].dt.strftime("%Y%m%d")).values.astype("int"),
-         kpt_attributes["date"],
+        ("time"),
+        (ds_kpt["time"].dt.strftime("%Y%m%d")).values.astype("int"),
+        kpt_attributes["date"],
     )
     for var in kpt_attributes:
         if var not in ds_kpt:

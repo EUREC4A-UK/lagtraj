@@ -1,8 +1,8 @@
 # Changelog
 
-## [Unreleased](https://github.com/EUREC4A-UK/lagtraj/tree/HEAD)
+## [v0.1.1](https://github.com/EUREC4A-UK/lagtraj/tree/v0.1.1)
 
-[Full Changelog](https://github.com/EUREC4A-UK/lagtraj/compare/v0.1.0...HEAD)
+[Full Changelog](https://github.com/EUREC4A-UK/lagtraj/compare/v0.1.0...v0.1.1)
 
 *bugfixes*
 

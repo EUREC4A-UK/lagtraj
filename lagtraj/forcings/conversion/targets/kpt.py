@@ -230,6 +230,8 @@ kpt_attributes = {
         "units": "W/m2",
         "long_name": "Mean top downward short-wave radiation flux",
     },
+    "second": {"units": "s", "long_name": "second of day"},
+    "date": {"units": "days", "long_name": "date in yyyymmdd format"},
 }
 
 
@@ -369,9 +371,7 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
             kpt_units = kpt_attributes[variable]["units"]
             if variable in ALLOWED_UNIT_VARIATIONS:
                 unit_variation = ALLOWED_UNIT_VARIATIONS[variable]
-                era5_has_valid_units = (
-                    da_era5.units in unit_variation["valid_era5_units"]
-                )
+                era5_has_valid_units = unit_guess in unit_variation["valid_era5_units"]
                 kpt_units_valid = kpt_units == unit_variation["kpt_units"]
                 if era5_has_valid_units and kpt_units_valid:
                     # the units we want to use for KPT and the ones that we say
@@ -524,6 +524,12 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     # Change order of data, to confirm to other kpt input
     ds_kpt = ds_kpt.sortby("nlev", ascending=True)
     ds_kpt = ds_kpt.sortby("nlevp1", ascending=True)
+    ds_kpt["second"] = ds_kpt["time_traj"] % 86400
+    ds_kpt["date"] = (
+        ("time"),
+        (ds_kpt["time"].dt.strftime("%Y%m%d")).values.astype("int"),
+        kpt_attributes["date"],
+    )
     for var in kpt_attributes:
         if var not in ds_kpt:
             print(var + " is missing in the kpt formatted output")

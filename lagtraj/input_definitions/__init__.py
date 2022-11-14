@@ -19,6 +19,10 @@ class InvalidInputDefinition(Exception):
     pass
 
 
+class MissingInputDefinition(InvalidInputDefinition):
+    pass
+
+
 def validate_input(input_params, required_fields):
     """
     Checks all entries in `input_params` against the definition in
@@ -96,7 +100,7 @@ def validate_input(input_params, required_fields):
             return None
 
         if f_name not in input_params:
-            raise InvalidInputDefinition("Missing `{}` field".format(f_name))
+            raise MissingInputDefinition("Missing `{}` field".format(f_name))
 
         if callable(f_option):
             # the callable will provide the correct conversion and also ensure
@@ -144,23 +148,28 @@ def validate_input(input_params, required_fields):
         if "|" in f_name:
             f_names = f_name.split("|")
             exceptions = []
+            exceptions_missing_input = []
+            valid_f_names = []
             for f_name in f_names:
                 try:
                     new_val = _check_field(f_name, f_option)
                     if new_val is not None:
                         input_params[f_name] = new_val
+                        valid_f_names.append(f_name)
+                except MissingInputDefinition as e:
+                    exceptions_missing_input.append(e)
                 except Exception as e:
                     exceptions.append(e)
 
-            if len(exceptions) == len(f_names):
+            # we allow for one missing part because `|` denotes an OR operation
+            if len(exceptions) > 0 or len(exceptions_missing_input) > 1:
                 raise InvalidInputDefinition(
-                    "None of the fields `{}` were correctly defined in the input"
-                    " definition. Please define at least one with the {} type"
-                    "\n\nThe errors incurred where: {}"
-                    "".format(", ".join(f_names), f_option, exceptions)
+                    "The following issues were found when trying to parse "
+                    f"the values of {', '.join(f_names)} for the `{f_option}` parameters: "
+                    f"{exceptions}"
                 )
             else:
-                checked_valid_fields += f_names
+                checked_valid_fields += valid_f_names
         else:
             new_val = _check_field(f_name, f_option)
             if new_val is not None:

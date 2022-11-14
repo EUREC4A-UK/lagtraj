@@ -1,3 +1,4 @@
+import datetime
 from collections import namedtuple
 
 import isodate
@@ -24,6 +25,12 @@ TrajectoryDefinition = namedtuple(
 )
 
 
+def duration_or_none(s):
+    if s is None:
+        return datetime.timedelta()
+    return isodate.parse_duration(s)
+
+
 INPUT_REQUIRED_FIELDS = {
     "trajectory_type": ["linear", "eulerian", "lagrangian"],
     # domain should only be given when creating a lagrangian trajectory or if
@@ -37,7 +44,7 @@ INPUT_REQUIRED_FIELDS = {
     "lat_origin": float,
     "lon_origin": float,
     "datetime_origin": isodate.parse_datetime,
-    "forward_duration|backward_duration": isodate.parse_duration,
+    "forward_duration|backward_duration": duration_or_none,
     # if the domain is given we can use domain data for the timestep, otherwise
     # the timestep should be a parsable duration string
     "timestep": (

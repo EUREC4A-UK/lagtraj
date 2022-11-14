@@ -1,3 +1,13 @@
-include versioneer.py
-include lagtraj/_version.py
-recursive-include lagtraj/input_definitions/examples_files *
+include *.in
+include *.md
+include *.txt
+include *.yaml
+recursive-include docs *.bib
+recursive-include docs *.md
+recursive-include docs *.png
+recursive-include docs *.tex
+recursive-include lagtraj *.dat
+recursive-include lagtraj *.yaml
+
+# added by check-manifest
+recursive-include tests *.py

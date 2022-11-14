@@ -1,19 +1,6 @@
 import numpy as np
 from scipy.constants import pi
 
-# Optional numba dependency
-try:
-    from numba import njit
-
-    print("Running with numba")
-except ImportError:
-
-    def njit(numba_function):
-        """Dummy numba function"""
-        return numba_function
-
-    print("Running without numba")
-
 
 def cos_transition(absolute_input, transition_start, transition_end):
     """function that smoothly transitions from 1 to 0 using a cosine-shaped

@@ -1,5 +1,20 @@
 # Changelog
 
+## [v0.1.1](https://github.com/EUREC4A-UK/lagtraj/tree/v0.1.1)
+
+[Full Changelog](https://github.com/EUREC4A-UK/lagtraj/compare/v0.1.0...v0.1.1)
+
+*bugfixes*
+
+- ensure package data (example input definitions and ERA5 level definitions)
+  are installed when installing `lagtraj` from pypi
+  [\#178](https://github.com/EUREC4A-UK/lagtraj/pull/178) @leifdenby
+
+- fix bug preventing creation of KPT files related to change in ERA5 units for
+  `sdor` variable
+  [\#174](https://github.com/EUREC4A-UK/lagtraj/pull/174) @sjboeing & @leifdenby
+
+
 ## [v0.1.0](https://github.com/EUREC4A-UK/lagtraj/tree/v0.1.0)
 
 [Full Changelog](https://github.com/EUREC4A-UK/lagtraj/compare/...v0.1.0)

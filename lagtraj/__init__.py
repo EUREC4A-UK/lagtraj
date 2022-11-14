@@ -1,18 +1,22 @@
 import os
+import warnings
 from pathlib import Path
 
-# Optional numba dependency
+__version__ = "0.1.1"
+
+
 try:
     from numba import njit
-
-    print("Running with numba")
 except ImportError:
 
-    def njit(numba_function):
+    def njit(fn):
         """Dummy numba function"""
-        return numba_function
+        return fn
 
-    print("Running without numba")
+    warnings.warn(
+        "Running without numba. Computation will be severely slowed"
+        "down. Please install `numba` to use it with `lagtraj`"
+    )
 
 
 # by default we store data relative to where lagtraj is invoked from

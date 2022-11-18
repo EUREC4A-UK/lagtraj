@@ -9,11 +9,14 @@
 import datetime
 
 import numpy as np
+
+# import pandas as pd
 import scipy.interpolate as intp
 import xarray as xr
 
 # from ....domain.sources.era5.constants import rg
 from ....utils.interpolation.methods import central_estimate, steffen_1d_no_ep_time
+from ....utils.thermo import cpd, hrl, hrv
 
 # following Peter Blossey's matlab script structure:
 sam_attributes = {
@@ -22,9 +25,6 @@ sam_attributes = {
     "Tg": {
         "units": "K",
         "long_name": "Surface (skin) Temperature (SST if over water)",
-        "t_skin_correct": "Skin temperature has been corrected by 1.000000. "
-        "Motivation: value from IFS is actually the open SST, "
-        "which is lower than the skin temperature.",
     },
     "shflx": {"units": "W/m2", "long_name": "surface sensible heat flux"},
     "lhflx": {"units": "W/m2", "long_name": "surface latent heat flux"},
@@ -232,14 +232,6 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     # Does it apply to sam as well?
     sam_half_level_array = da_levels.values
     sam_full_level_array = 0.5 * (sam_half_level_array[:-1] + sam_half_level_array[1:])
-    #  lev = ds_sam["pres"][:, :, 0, 0].values.mean(axis=0)
-    # sam_half_level_coord = {
-    #    "nlevp1": (
-    #        "nlevp1",
-    #        (np.arange(len(sam_half_level_array)) + 1.0)[::-1],
-    #        {"long_name": "model half levels"},
-    #    )
-    # }
     sam_full_level_coord = {
         "nlev": (
             "nlev",
@@ -274,23 +266,9 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         )
     }
 
-    # set up the right value for "tsec" dimension according to Peter Blossey's script
-    # this part here can be turned in to a function in this python script.
-    # --------------------------------------------------------------------------- #
-    sam_timevars = convert_era5_time_to_sam_timevars(ds_era5.time.values)
-    sam_time_coord = {
-        "time_sam": (
-            "time",
-            sam_timevars["time"],
-            {"units": "s", "long_name": "Time in seconds after 00Z on nbdate"},
-        )
-    }
-    # --------------------------------------------------------------------------- #
-
     ds_sam = xr.Dataset(
         coords={
             "time": ds_era5.time,
-            **sam_time_coord,
             **sam_full_level_coord,
             **sam_mean_preslev_coord,
             **sam_lat_coord,
@@ -377,10 +355,9 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         )
     # Tl, qtot:
     # J/kg specific heat of condensation
-    L = 2.5e6
-    # specific heat of air at constant pressure p; J/kg/Kcontanst as in SAM
-    Cp = 1004
-    T_lw = ds_sam["t"].values - L / Cp * ds_sam["ql"].values
+    L = hrv - hrl
+
+    T_lw = ds_sam["t"].values - L / cpd * ds_sam["ql"].values
     ds_sam["T"] = (
         ("time", "lev", "lat", "lon"),
         T_lw.astype(np.single),
@@ -489,14 +466,13 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         qref.astype(np.single).reshape((Nt, nlev, 1, 1)),
         sam_attributes["qref"],
     )
-
-    Tg_corr = ds_era5["stl1_mean"].values + 1.0
+    Tg_skin = ds_era5["skt_mean"].values
     ds_sam["Tg"] = (
         ("time", "lat", "lon"),
-        Tg_corr.reshape((Nt, 1, 1)).astype(np.single),
+        Tg_skin.reshape((Nt, 1, 1)).astype(np.single),
         sam_attributes["Tg"],
     )
-    # Surface fluxes: obtain from time mean in ERA data, do not change sign (do change sign for SAM)
+    # Surface fluxes: obtain from time mean in ERA data, change sign for SAM
     sfc_sens_flx = central_estimate(ds_era5["msshf_mean"].values)
     ds_sam["shflx"] = (
         ("time", "lat", "lon"),
@@ -510,9 +486,6 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         sam_attributes["lhflx"],
     )
     # Final checks: are all variables present?
-    # also putting in several time variables and lat lon variables:
-    # the time structuring may need to be changed for SAM:
-    # fix this tomorrow;
     ds_sam["time_traj"] = (
         ds_era5["time"] - np.datetime64("1970-01-01T00:00")
     ) / np.timedelta64(1, "s")
@@ -530,10 +503,15 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     ds_sam["lonDS"] = (("nDS"), [ds_era5["origin_lon"]], sam_attributes["lonDS"])
 
     # Follow Peter Blossey's netCDF formatting.
-    # add dimenson variables: (time, calday, year, month, day, hour, nbdate, bdate, phis)
+    # add extra dimenson variables: (time, calday, year, month, day, hour, nbdate, bdate, phis)
     # note: these variables already satisfied the data type
+
+    # set up the right value for "tsec" dimension according to Peter Blossey's script
+    # --------------------------------------------------------------------------- #
+    sam_timevars = convert_era5_time_to_sam_timevars(ds_sam["time"])
+    # --------------------------------------------------------------------------- #
     Dimension_variables = {
-        "tsec": [np.int32, ("time"), sam_timevars["time"]],
+        "tsec": [np.int32, ("time"), sam_timevars["tsec"]],
         "calday": [np.double, ("time"), sam_timevars["calday"]],
         "year": [np.int32, ("time"), sam_timevars["year"]],
         "month": [np.int32, ("time"), sam_timevars["month"]],
@@ -585,9 +563,9 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         "created": datetime.datetime.now().isoformat(),
         "wilting_point": 0.1715,
         "field_capacity": 0.32275,
-        "t_skin_correct": "Skin temperature has been corrected "
-        "by 1.000000. Motivation: value from IFS is actually "
-        "the open SST, which is lower than the skin temperature.",
+        # "t_skin_correct": "Skin temperature has been corrected "
+        # "by 1.000000. Motivation: value from IFS is actually "
+        # "the open SST, which is lower than the skin temperature.",
         "omega_correct": "surface omega corresponds to the atmospheric tide has been removed."
         "by assuming its vertical structure is uniformly one up to 700 hPa and zero above 150hPa (P.Blossey)",
     }
@@ -597,35 +575,24 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
 
 def convert_era5_time_to_sam_timevars(era5_time):
     """
-    Note: era5_time is a numpy data array.
+    Note: era5_time is a xarray data array
+          calday: calendar day (or day or years) in SAM (1~365 or 366), double
+          tsec: seconds from the base date "nbdate" at 0Z. this is second of day if
+                simulation only last within 1 day.
     """
-    yyyy = era5_time.astype("datetime64[Y]").astype(np.int32) + 1970
-    mm = era5_time.astype("datetime64[M]").astype(np.int32) % 12 + 1
-    dd = (
-        era5_time.astype("datetime64[D]") - era5_time.astype("datetime64[M]") + 1
-    ).astype(np.int32)
-    Hour = (
-        era5_time.astype("datetime64[h]") - era5_time.astype("datetime64[D]")
-    ).astype(np.double)
-    # need to add loop, how can I do it without loop?
-    calday = np.zeros(np.shape(era5_time))
-    for i in range(len(yyyy)):
-        refdates = np.datetime64(str(yyyy[i] - 1) + "-12-31")
-        calday[i] = (era5_time[i] - refdates) / np.timedelta64(86400, "s")
-    time_in_sec = np.round(86400 * (calday - np.floor(calday[0])))
-    time_in_sec = time_in_sec.astype(np.int32)
+    refyear = (era5_time.dt.strftime("%Y")).values.astype(np.int32)[0]
+    refdate = np.datetime64(str(refyear - 1) + "-12-31")
+    calday = (era5_time.values - refdate) / np.timedelta64(86400, "s")
 
-    # time = np.round(86400*(calday - np.floor(calday[0]))) same as time_in_sec above.
-
-    yy = yyyy[0] % 100
-    nbdate = 1e4 * yy + 1e2 * mm[0] + dd[0]
+    # time in second from the base date "nbdate"
+    tsec = np.round(86400 * (calday - np.floor(calday[0])))
 
     return {
         "calday": calday.astype(np.double),
-        "time": time_in_sec,
-        "year": yyyy,
-        "month": mm,
-        "day": dd,
-        "hour": Hour,
-        "nbdate": nbdate,
+        "tsec": tsec.astype(np.int32),
+        "year": (era5_time.dt.strftime("%Y")).values.astype(np.int32),
+        "month": (era5_time.dt.strftime("%m")).values.astype(np.int32),
+        "day": (era5_time.dt.strftime("%d")).values.astype(np.int32),
+        "hour": (era5_time.dt.strftime("%H")).values.astype(np.double),
+        "nbdate": (era5_time.dt.strftime("%y%m%d")).values.astype(np.int32)[0],
     }

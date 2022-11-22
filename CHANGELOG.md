@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased](https://github.com/EUREC4A-UK/lagtraj/tree/HEAD)
+
+[Full Changelog](https://github.com/EUREC4A-UK/lagtraj/compare/v0.1.1...HEAD)
+
+*bugfixes*
+
+- fix for forcing conversion input definition filepath (to remove
+  `lagtraj://`-prefix) [\#185](https://github.com/EUREC4A-UK/lagtraj/pull/185)
+  @leifdenby
+
+
 ## [v0.1.1](https://github.com/EUREC4A-UK/lagtraj/tree/v0.1.1)
 
 [Full Changelog](https://github.com/EUREC4A-UK/lagtraj/compare/v0.1.0...v0.1.1)

@@ -38,9 +38,15 @@ def load_definition(
 ):
     params = None
     input_path = None
-    requesting_lagtraj_bundled_input = input_name.startswith(
-        LAGTRAJ_EXAMPLES_PATH_PREFIX
-    )
+    if input_subtype is None:
+        requesting_lagtraj_bundled_input = input_name.startswith(
+            LAGTRAJ_EXAMPLES_PATH_PREFIX
+        )
+    else:
+        input_name = input_name.replace(LAGTRAJ_EXAMPLES_PATH_PREFIX, "")
+        requesting_lagtraj_bundled_input = input_subtype.startswith(
+            LAGTRAJ_EXAMPLES_PATH_PREFIX
+        )
 
     if requesting_lagtraj_bundled_input:
         try:
@@ -122,11 +128,16 @@ def load_definition(
             )
             if not input_path.exists():
                 input_type_plural = DATA_TYPE_PLURAL[input_type]
+                if input_subtype is None:
+                    input_desc = input_type
+                else:
+                    input_desc = f"{input_subtype} {input_type}"
+
                 raise Exception(
-                    f"The requested {input_type} ({input_name}) wasn't found. "
-                    f"To use a {input_type} with this name please define its "
-                    f"parameters {input_path}\n"
-                    "(or run `python -m lagtraj.input_definitions.examples` all available with"
+                    f"The requested input definition for creating {input_desc} `{input_name}` wasn't found. "
+                    f"To create a {input_desc} with this name please define its "
+                    f"parameters in {input_path}\n"
+                    "(or run `python -m lagtraj.input_definitions.examples` all available with "
                     "to see the ones currently bundled with lagtraj"
                 )
             print()

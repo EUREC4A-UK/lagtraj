@@ -20,7 +20,7 @@ def _get_definition_parameters(root_data_path, forcing_name, conversion_name):
     if conversion_name.startswith(LAGTRAJ_EXAMPLES_PATH_PREFIX):
         params_defn_expected_local_path = build_input_definition_path(
             root_data_path=root_data_path,
-            input_name=forcing_name,
+            input_name=forcing_name.replace(LAGTRAJ_EXAMPLES_PATH_PREFIX, ""),
             input_type="forcing",
             input_subtype=conversion_name.replace(LAGTRAJ_EXAMPLES_PATH_PREFIX, ""),
         )
@@ -31,15 +31,15 @@ def _get_definition_parameters(root_data_path, forcing_name, conversion_name):
             required_fields=INPUT_REQUIRED_FIELDS,
             expected_local_path=params_defn_expected_local_path,
         )
-        return conversion_defn
     else:
-        return load.load_definition(
+        conversion_defn = load.load_definition(
             root_data_path=root_data_path,
             input_name=forcing_name,
             input_type="forcing",
             input_subtype=conversion_name,
             required_fields=INPUT_REQUIRED_FIELDS,
         )
+    return conversion_defn
 
 
 def load_definition(root_data_path, forcing_name, conversion_name):

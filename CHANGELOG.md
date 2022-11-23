@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased](https://github.com/EUREC4A-UK/lagtraj/tree/HEAD)
+
+[Full Changelog](https://github.com/EUREC4A-UK/lagtraj/compare/v0.1.1...HEAD)
+
+*bugfix*
+
+- remove inaccurate description of how skin temperature is calculated in KPT
+  formatted output files
+  [\#182](https://github.com/EUREC4A-UK/lagtraj/pull/182/) @sjboeing
+
+
 ## [v0.1.1](https://github.com/EUREC4A-UK/lagtraj/tree/v0.1.1)
 
 [Full Changelog](https://github.com/EUREC4A-UK/lagtraj/compare/v0.1.0...v0.1.1)

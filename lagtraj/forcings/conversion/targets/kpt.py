@@ -128,9 +128,6 @@ kpt_attributes = {
     "t_skin": {
         "units": "K",
         "long_name": "skin temperature",
-        "t_skin_correct": "Skin temperature has been corrected by 1.000000. "
-        "Motivation: value from IFS is actually the open SST, "
-        "which is lower than the skin temperature.",
     },
     "q_skin": {"units": "m of water", "long_name": "skin reservoir content"},
     "snow": {"units": "m, liquid equivalent", "long_name": "snow depth"},
@@ -548,9 +545,6 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         "created": datetime.datetime.now().isoformat(),
         "wilting_point": 0.1715,
         "field_capacity": 0.32275,
-        "t_skin_correct": "Skin temperature has been corrected "
-        "by 1.000000. Motivation: value from IFS is actually "
-        "the open SST, which is lower than the skin temperature.",
     }
     ds_kpt.attrs.update(**kpt_dict)
     return ds_kpt

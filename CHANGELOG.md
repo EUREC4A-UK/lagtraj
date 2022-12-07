@@ -10,6 +10,10 @@
   `lagtraj://`-prefix) [\#185](https://github.com/EUREC4A-UK/lagtraj/pull/185)
   @leifdenby
 
+- remove inaccurate description of how skin temperature is calculated in KPT
+  formatted output files
+  [\#182](https://github.com/EUREC4A-UK/lagtraj/pull/182/) @sjboeing
+
 
 ## [v0.1.1](https://github.com/EUREC4A-UK/lagtraj/tree/v0.1.1)
 

@@ -36,6 +36,35 @@ def load_definition(
     input_subtype=None,
     expected_local_path=None,
 ):
+    """
+    load the input definition of a given type (`input_type`, for example
+    `domain`, `trajectory` or `forcing`) and name (for example
+    `eurec4a_circle_data`) looking within a specific root data-path
+    (`root_data_path`). The returned input definition will be a dictionary. The
+    lookup path for a given input definition is:
+
+        `{root_data_path}/{input_type}s/{input_name}.yaml`
+
+    In the case where the `input_name` has the `lagtraj://`-prefix
+    `load_definition` has some special behaviour:
+    - the lookup path used will instead be internally in lagtraj, i.e. using
+      this prefix enables the use of input definitions bundled with lagtraj
+    - the bundled input definition will be copied to the matching path within
+      `root_data_path`, before this copy is done though a check is made to
+      ensure the local copy of the input definition hasn't been modified (to
+      avoid overwriting any user-changes). In this case lagtraj will emit an
+      exception and instruct the user to remove the `lagtraj://`-prefix, so
+      that the locally modified input definition is used instead.
+
+    `input_subtype` was added to handle the case of producing input definitions
+    for conversion of forcings to specific models. These input definitions
+    behave differently from the rest as an input definition that describes a
+    forcing conversion is stored to describe conversion for a specific forcing
+    (in `{root_data_path}/forcings/{input_name}.{input_subtype}.yaml`) but
+    internally in lagtraj they are stored without reference to a specific
+    forcing (in `{lagtraj_root}/forcing_conversions/{input_submit}.yaml`) so
+    that they can be applied generally to any forcing.
+    """
     params = None
     input_path = None
     if input_subtype is None:
@@ -57,9 +86,10 @@ def load_definition(
             else:
                 if input_type == "forcing":
                     # NB: this is a bit hacky, we're assuming that the
-                    # "subtype" will refer to a converted forcing, but that is
-                    # probably ok for now, it's unlikely that we will have other
-                    # kinds of subtypes of forcings
+                    # "subtype" will refer to how a forcing should be
+                    # converted, but that is probably ok for now since it's
+                    # unlikely that we will have extra sub-types (besides for
+                    # forcings)
                     try:
                         input_path = input_examples.get_path(
                             input_name=f"lagtraj://{input_subtype}",

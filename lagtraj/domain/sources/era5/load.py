@@ -52,8 +52,8 @@ def _load_single_file_preprocess(ds):
     if not time_index.is_monotonic_increasing:
         ds = ds.sortby("time")
         warnings.warn(
-            "loaded ERA5 file `{}` was sorted by the `time` coordinate during load "
-            "to handle out-of-order data in this file"
+            f"loaded ERA5 file `{ds.encoding['source']}` was sorted by the "
+            "`time` coordinate during load to handle out-of-order data in this file"
         )
 
     return ds

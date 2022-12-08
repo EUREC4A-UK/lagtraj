@@ -12,7 +12,7 @@
 
 *maintenance*
 
-- switch to using python v3.7 for continuous integration
+- switch to using python v3.8 for continuous integration
   [\#186](https://github.com/EUREC4A-UK/lagtraj/pull/186) @leifdenby
 
 

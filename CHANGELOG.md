@@ -4,7 +4,11 @@
 
 [Full Changelog](https://github.com/EUREC4A-UK/lagtraj/compare/v0.1.1...HEAD)
 
-*bugfix*
+*bugfixes*
+
+- fix for forcing conversion input definition filepath (to remove
+  `lagtraj://`-prefix) [\#185](https://github.com/EUREC4A-UK/lagtraj/pull/185)
+  @leifdenby
 
 - remove inaccurate description of how skin temperature is calculated in KPT
   formatted output files

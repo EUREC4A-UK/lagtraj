@@ -1,11 +1,23 @@
 import semver
 
 from .. import build_data_path
+from .examples import LAGTRAJ_EXAMPLES_PATH_PREFIX
 
 
 def build_input_definition_path(
     root_data_path, input_name, input_type, input_subtype=None
 ):
+    if LAGTRAJ_EXAMPLES_PATH_PREFIX in input_name:
+        raise Exception(
+            f"Can't build local path to input definition with name `{input_name}`."
+            f" Remove lagtraj-bundle prefix `{LAGTRAJ_EXAMPLES_PATH_PREFIX}` and try again"
+        )
+    if LAGTRAJ_EXAMPLES_PATH_PREFIX in input_type:
+        raise Exception(
+            f"Can't build local path to input definition with name `{input_type}`"
+            f" Remove lagtraj-bundle prefix `{LAGTRAJ_EXAMPLES_PATH_PREFIX}` and try again"
+        )
+
     data_path = build_data_path(root_data_path=root_data_path, data_type=input_type)
 
     if input_subtype is None:

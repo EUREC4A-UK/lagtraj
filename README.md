@@ -37,8 +37,8 @@ $> python -m pip install lagtraj
 *NOTE: if you are intending to modify `lagtraj` yourself you should check out
 the [development notes](docs/developing.md).*
 
-`lagtraj` requires Python 3 and is tested with `python3.7` but later
-versions should work too.
+`lagtraj` requires Python 3 and is developed and tested with `python3.8` but later
+versions should work too (it may work with earlier versions too).
 
 Once installed all `lagtraj`'s commands are available from any directory
 and the follow the pattern

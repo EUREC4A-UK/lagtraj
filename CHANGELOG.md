@@ -10,6 +10,11 @@
   formatted output files
   [\#182](https://github.com/EUREC4A-UK/lagtraj/pull/182/) @sjboeing
 
+*maintenance*
+
+- switch to using python v3.8 for continuous integration
+  [\#186](https://github.com/EUREC4A-UK/lagtraj/pull/186) @leifdenby
+
 
 ## [v0.1.1](https://github.com/EUREC4A-UK/lagtraj/tree/v0.1.1)
 

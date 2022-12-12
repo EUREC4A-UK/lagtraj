@@ -19,6 +19,10 @@
 
 *maintenance*
 
+- handle time-coordinate out-of-order domain data being returned from CDS for
+  ERA5 domain data [\#189](https://github.com/EUREC4A-UK/lagtraj/pull/189)
+  @leifdenby
+
 - switch to using python v3.8 for continuous integration
   [\#186](https://github.com/EUREC4A-UK/lagtraj/pull/186) @leifdenby
 

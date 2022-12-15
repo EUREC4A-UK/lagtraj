@@ -573,4 +573,29 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         "surfaceForcingWind": parameters.surfaceForcingWind,
     }
     ds_dephy.attrs.update(dephy_dictionary)
+    if parameters.inversion_nudging is not None:
+        if parameters.inversion_nudging in [0, 1]:
+            ds_inversion = {
+                "inversion_nudging": parameters.inversion_nudging,
+                "inversion_nudging_height_above": parameters.inversion_nudging_height_above,
+                "inversion_nudging_transition": parameters.inversion_nudging_transition,
+                "inversion_nudging_time": parameters.inversion_nudging_time,
+            }
+        else:
+            raise NotImplementedError(
+                f"Inversion nudging option `{inversion_nudging}` not implemented"
+            )
+        ds_dephy.attrs.update(**ds_inversion)
+    if parameters.wind_at_high_levels_correction is not None:
+        if parameters.wind_at_high_levels_correction in [0, 1]:
+            ds_wind_at_high_levels = {
+                "wind_at_high_levels_correction": parameters.wind_at_high_levels_correction,
+                "wind_at_high_levels_correction_pressure_above": parameters.wind_at_high_levels_correction_pressure_above,
+                "wind_at_high_levels_correction_transition": parameters.wind_at_high_levels_correction_transition,
+            }
+        else:
+            raise NotImplementedError(
+                f"Wind at high level correction option `{wind_at_high_levels_correction}` not implemented"
+            )
+        ds_dephy.attrs.update(**ds_wind_at_high_levels)
     return ds_dephy

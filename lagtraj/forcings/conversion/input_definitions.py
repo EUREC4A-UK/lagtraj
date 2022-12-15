@@ -34,16 +34,18 @@ INPUT_REQUIRED_FIELDS = dict(
     forc_omega=[0, 1],
     forc_w=[0, 1],
     forc_geo=[0, 1],
-    nudging_u=(0, np.nan, float),
-    nudging_v=(0, np.nan, float),
-    nudging_temp=(0, np.nan, float),
-    nudging_theta=(0, np.nan, float),
-    nudging_thetal=(0, np.nan, float),
-    nudging_qv=(0, np.nan, float),
-    nudging_qt=(0, np.nan, float),
-    nudging_rv=(0, np.nan, float),
-    nudging_rt=(0, np.nan, float),
-    surfaceType=["ocean", "land", "mixed"],
+    # Allow integers only to conform to DEPHY standard, for more complex
+    # options, use the nudging "methods" below
+    nudging_u=(int),
+    nudging_v=(int),
+    nudging_temp=(int),
+    nudging_theta=(int),
+    nudging_thetal=(int),
+    nudging_qv=(int),
+    nudging_qt=(int),
+    nudging_rv=(int),
+    nudging_rt=(int),
+    surfaceType=["ocean", "land", "mixed", "landice"],
     surfaceForcing=["ts", "Flux", "surfaceFlux"],
     surfaceForcingWind=["z0", "ustar", "z0_traj"],
     nudging_method_scalar_traj=(None, str),
@@ -54,6 +56,15 @@ INPUT_REQUIRED_FIELDS = dict(
     nudging_time_momentum_traj=(None, float),
     nudging_height_momentum_traj=(None, float),
     nudging_transition_momentum_traj=(None, float),
+    # Nudging above inversion, for EUREC4A cases
+    inversion_nudging=(None, int),
+    inversion_nudging_height_above=(None, float),
+    inversion_nudging_transition=(None, float),
+    inversion_nudging_time=(None, float),
+    # Remove tendencies and set geowind to wind at high levels
+    wind_at_high_levels_correction=(None, int),
+    wind_at_high_levels_correction_pressure_above=(None, float),
+    wind_at_high_levels_correction_transition=(None, float),
 )
 
 ConversionDefinition = namedtuple(
@@ -91,6 +102,13 @@ ConversionParametersDefinition = namedtuple(
         "surfaceForcingWind",
         "nudging_parameters_scalar_traj",
         "nudging_parameters_momentum_traj",
+        "inversion_nudging",
+        "inversion_nudging_height_above",
+        "inversion_nudging_transition",
+        "inversion_nudging_time",
+        "wind_at_high_levels_correction",
+        "wind_at_high_levels_correction_pressure_above",
+        "wind_at_high_levels_correction_transition",
     ],
 )
 

@@ -557,7 +557,7 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
             }
         else:
             raise NotImplementedError(
-                f"Inversion nudging option `{inversion_nudging}` not implemented"
+                f"Inversion nudging option `{parameters.inversion_nudging}` not implemented"
             )
         ds_kpt.attrs.update(**ds_inversion)
     if parameters.wind_at_high_levels_correction is not None:
@@ -569,7 +569,7 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
             }
         else:
             raise NotImplementedError(
-                f"Wind at high level correction option `{wind_at_high_levels_correction}` not implemented"
+                f"Wind at high level correction option `{parameters.wind_at_high_levels_correction}` not implemented"
             )
         ds_kpt.attrs.update(**ds_wind_at_high_levels)
     return ds_kpt

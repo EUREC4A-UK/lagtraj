@@ -1,7 +1,5 @@
 from collections import namedtuple
 
-import numpy as np
-
 from ...utils.interpolation.levels import (  # noqa
     LevelsDefinition as ConversionLevelsDefinition,
 )

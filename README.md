@@ -141,7 +141,7 @@ retrying download of submitted data requests every `num_minutes` minutes until
 all data has been downloaded. Every time this command is run it will attempt to
 download only data not yet downloaded.
 
-Users can monitor the status of their request via the [CDS requests page](cds.climate.copernicus.eu). 
+Users can monitor the status of their request via the [CDS requests page](cds.climate.copernicus.eu).
 Download times for model level data on the CDS can be somewhat variable.
 
 ## 2. Producing a trajectory

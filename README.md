@@ -118,8 +118,8 @@ spatial extent that a trajectory will reach must been known before performining
 a trajectory integration*, otherwise `lagtraj` will issue a warning when the
 edge of the available domain is reached.
 
-In order to download the ERA5 input data for `lagtraj`, users need an account with
-the Copernicus Data Store. They need to install the CDS api, see the [api-howto](https://cds.climate.copernicus.eu/api-how-to).
+In order to download the ERA5 input data for `lagtraj`, you need an account with
+the Copernicus Data Store. You will also need to install the CDS api, see the [api-howto](https://cds.climate.copernicus.eu/api-how-to).
 
 Either create your own domain definition in `data/domains/<domain_name>.yaml` and run
 
@@ -141,7 +141,7 @@ retrying download of submitted data requests every `num_minutes` minutes until
 all data has been downloaded. Every time this command is run it will attempt to
 download only data not yet downloaded.
 
-Users can monitor the status of their request via the [CDS requests page](cds.climate.copernicus.eu).
+You can monitor the status of your request via the [CDS requests page](ihttps://cds.climate.copernicus.eu).
 Download times for model level data on the CDS can be somewhat variable.
 
 ## 2. Producing a trajectory

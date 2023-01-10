@@ -1,6 +1,6 @@
 # Changelog
 
-## [Trunk]
+## [Unreleased]
 
 *improvements*
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased]
+
+*improvements*
+
+- Provide information on CDS and its API in the README file
+  [\#194](https://github.com/EUREC4A-UK/lagtraj/pull/194) @sjboeing
+
 ## [v0.1.2](https://github.com/EUREC4A-UK/lagtraj/tree/v0.1.2)
 
 [Full Changelog](https://github.com/EUREC4A-UK/lagtraj/compare/v0.1.1...v0.1.2)

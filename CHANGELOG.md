@@ -26,6 +26,12 @@
 - switch to using python v3.8 for continuous integration
   [\#186](https://github.com/EUREC4A-UK/lagtraj/pull/186) @leifdenby
 
+- change the default nudging parameters to an integer to adhere to DEPHY standard
+
+- implement a nudging method which depends on inversion height (as diagnosed in model)
+
+- add a set of parameters related to how the geostropic wind is set
+  at very high levels (below 1 hPa, typically)
 
 ## [v0.1.1](https://github.com/EUREC4A-UK/lagtraj/tree/v0.1.1)
 

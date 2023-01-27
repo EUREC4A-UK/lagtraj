@@ -1,5 +1,15 @@
 # Changelog
 
+## [unreleased](https://github.com/EUREC4A-UK/lagtraj/tree/HEAD)
+
+[Full Changelog](https://github.com/EUREC4A-UK/lagtraj/compare/v0.1.2...HEAD)
+
+*maintenance*
+
+- add Zenodo integration and add citation file
+  [\#195](https://github.com/EUREC4A-UK/lagtraj/pull/195) @leifdenby
+
+
 ## [v0.1.2](https://github.com/EUREC4A-UK/lagtraj/tree/v0.1.2)
 
 [Full Changelog](https://github.com/EUREC4A-UK/lagtraj/compare/v0.1.1...v0.1.2)

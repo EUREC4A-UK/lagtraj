@@ -1,11 +1,19 @@
 # Changelog
 
-## [Unreleased]
+## [unreleased](https://github.com/EUREC4A-UK/lagtraj/tree/HEAD)
+
+[Full Changelog](https://github.com/EUREC4A-UK/lagtraj/compare/v0.1.2...HEAD)
 
 *improvements*
 
 - Provide information on CDS and its API in the README file
   [\#194](https://github.com/EUREC4A-UK/lagtraj/pull/194) @sjboeing
+
+*maintenance*
+
+- add Zenodo integration and add citation file
+  [\#195](https://github.com/EUREC4A-UK/lagtraj/pull/195) @leifdenby
+
 
 ## [v0.1.2](https://github.com/EUREC4A-UK/lagtraj/tree/v0.1.2)
 

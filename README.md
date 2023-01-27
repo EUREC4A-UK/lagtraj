@@ -1,6 +1,6 @@
 # lagtraj Lagragian simulations trajectories
 
-![lagtraj](https://github.com/EUREC4A-UK/lagtraj/workflows/lagtraj/badge.svg)
+![lagtraj](https://github.com/EUREC4A-UK/lagtraj/workflows/lagtraj/badge.svg) [![DOI](https://zenodo.org/badge/251601559.svg)](https://zenodo.org/badge/latestdoi/251601559)
 
 ![trajectory example](docs/eurec4a_20191209_12_lag.png)
 

@@ -33,7 +33,6 @@ nudging_rt      : 0
 surfaceType     : ocean
 surfaceForcing  : ts
 surfaceForcingWind               : z0_traj
-surfaceForcingWind               : z0_traj
 inversion_nudging                : 1
 inversion_nudging_height_above   : 0.
 inversion_nudging_transition     : 200.

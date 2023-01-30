@@ -178,7 +178,7 @@ def load_definition(
     try:
         validate_input(input_params=params, required_fields=required_fields)
     except InvalidInputDefinition as ex:
-        raise Exception(
+        raise InvalidInputDefinition(
             "There was a problem parsing the input-definition "
             f"stored in `{input_path}`: {ex}"
         )

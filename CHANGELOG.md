@@ -9,6 +9,9 @@
 - Provide information on CDS and its API in the README file
   [\#194](https://github.com/EUREC4A-UK/lagtraj/pull/194) @sjboeing
 
+- add a set of parameters related to how the geostropic wind is set
+  at very high levels (below 1 hPa, typically) to DEPHY and KPT output
+
 *maintenance*
 
 - add Zenodo integration and add citation file

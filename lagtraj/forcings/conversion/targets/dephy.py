@@ -573,40 +573,49 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     }
     ds_dephy.attrs.update(dephy_dictionary)
     # Correct geostropic winds and wind tendencies at high levels
-    if parameters.wind_at_high_levels_correction is None:
+    if parameters.wind_at_high_levels_correction_method is None:
         # Use sensible default values
-        wind_at_high_levels_correction = 1
-        wind_at_high_levels_correction_pressure_above = 500.0  # Pa, not hPa!
-        wind_at_high_levels_correction_transition = 200.0  # Also expressed in Pa
-    elif parameters.wind_at_high_levels_correction in [0, 1]:
-        wind_at_high_levels_correction = parameters.wind_at_high_levels_correction
-        wind_at_high_levels_correction_pressure_above = (
-            parameters.wind_at_high_levels_correction_pressure_above
-        )  # Pa, not hPa!
-        wind_at_high_levels_correction_transition = (
-            parameters.wind_at_high_levels_correction_transition
+        wind_at_high_levels_correction_method = "fixed_height"
+        wind_at_high_levels_correction_highest_pressure = 500.0  # Pa, not hPa!
+        wind_at_high_levels_correction_transition_thickness = 200.0
+        wind_at_high_levels_correction_shape = "cos"
+    elif parameters.wind_at_high_levels_correction_method == "fixed_height":
+        wind_at_high_levels_correction_method = (
+            parameters.wind_at_high_levels_correction_method
         )
+        wind_at_high_levels_correction_highest_pressure = (
+            parameters.wind_at_high_levels_correction_highest_pressure
+        )  # Pa, not hPa!
+        wind_at_high_levels_correction_transition_thickness = (
+            parameters.wind_at_high_levels_correction_transition_thickness
+        )
+        wind_at_high_levels_correction_shape = (
+            parameters.wind_at_high_levels_correction_shape
+        )
+    elif parameters.wind_at_high_levels_correction_method == "off":
+        pass
     else:
         raise NotImplementedError(
             f"Wind at high level correction option `{parameters.wind_at_high_levels_correction}` not implemented"
         )
-    ds_wind_at_high_levels = {
-        "wind_at_high_levels_correction": wind_at_high_levels_correction,
-        "wind_at_high_levels_correction_pressure_above": wind_at_high_levels_correction_pressure_above,
-        "wind_at_high_levels_correction_transition": wind_at_high_levels_correction_transition,
-    }
-    ds_dephy.attrs.update(**ds_wind_at_high_levels)
-    pressure_array = ds_dephy["pressure_forc"].values
-    wind_at_high_levels_correction_factor = cos_transition(
-        pressure_array,
-        wind_at_high_levels_correction_pressure_above
-        + 0.5 * wind_at_high_levels_correction_transition,
-        wind_at_high_levels_correction_pressure_above
-        - 0.5 * wind_at_high_levels_correction_transition,
-    )
-    # Set ug and vg equal to actual (nudging) wind at very high levels
-    # Remove advection tendencies at high levels
-    if wind_at_high_levels_correction == 1:
+    if not (parameters.wind_at_high_levels_correction_method == "off"):
+        ds_wind_at_high_levels = {
+            "wind_at_high_levels_correction_method": wind_at_high_levels_correction_method,
+            "wind_at_high_levels_correction_highest_pressure": wind_at_high_levels_correction_highest_pressure,
+            "wind_at_high_levels_correction_transition_thickness": wind_at_high_levels_correction_transition_thickness,
+            "wind_at_high_levels_correction_shape": wind_at_high_levels_correction_shape,
+        }
+        ds_dephy.attrs.update(**ds_wind_at_high_levels)
+        pressure_array = ds_dephy["pressure"].values
+
+        wind_at_high_levels_correction_factor = cos_transition(
+            pressure_array,
+            wind_at_high_levels_correction_highest_pressure
+            + wind_at_high_levels_correction_transition_thickness,
+            wind_at_high_levels_correction_highest_pressure,
+        )
+        # Set ug and vg equal to actual (nudging) wind at very high levels
+        # Remove advection tendencies at high levels
         ds_dephy["ug"] = ds_dephy["ug"] * wind_at_high_levels_correction_factor[
             :
         ] + ds_dephy["u_nudging"] * (1.0 - wind_at_high_levels_correction_factor)

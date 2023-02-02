@@ -551,54 +551,50 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         "field_capacity": 0.32275,
     }
     ds_kpt.attrs.update(**kpt_dict)
-    if parameters.inversion_nudging is not None:
-        if parameters.inversion_nudging in [0, 1]:
-            ds_inversion = {
-                "inversion_nudging": parameters.inversion_nudging,
-                "inversion_nudging_height_above": parameters.inversion_nudging_height_above,
-                "inversion_nudging_transition": parameters.inversion_nudging_transition,
-                "inversion_nudging_time": parameters.inversion_nudging_time,
-            }
-        else:
-            raise NotImplementedError(
-                f"Inversion nudging option `{parameters.inversion_nudging}` not implemented"
-            )
-        ds_kpt.attrs.update(**ds_inversion)
     # Correct geostropic winds and wind tendencies at high levels
-    if parameters.wind_at_high_levels_correction is None:
+    if parameters.wind_at_high_levels_correction_method is None:
         # Use sensible default values
-        wind_at_high_levels_correction = 1
-        wind_at_high_levels_correction_pressure_above = 500.0  # Pa, not hPa!
-        wind_at_high_levels_correction_transition = 200.0
-    elif parameters.wind_at_high_levels_correction in [0, 1]:
-        wind_at_high_levels_correction = parameters.wind_at_high_levels_correction
-        wind_at_high_levels_correction_pressure_above = (
-            parameters.wind_at_high_levels_correction_pressure_above
-        )  # Pa, not hPa!
-        wind_at_high_levels_correction_transition = (
-            parameters.wind_at_high_levels_correction_transition
+        wind_at_high_levels_correction_method = "fixed_height"
+        wind_at_high_levels_correction_highest_pressure = 500.0  # Pa, not hPa!
+        wind_at_high_levels_correction_transition_thickness = 200.0
+        wind_at_high_levels_correction_shape = "cos"
+    elif parameters.wind_at_high_levels_correction_method == "fixed_height":
+        wind_at_high_levels_correction_method = (
+            parameters.wind_at_high_levels_correction_method
         )
+        wind_at_high_levels_correction_highest_pressure = (
+            parameters.wind_at_high_levels_correction_highest_pressure
+        )  # Pa, not hPa!
+        wind_at_high_levels_correction_transition_thickness = (
+            parameters.wind_at_high_levels_correction_transition_thickness
+        )
+        wind_at_high_levels_correction_transition_shape = (
+            parameters.wind_at_high_levels_correction_shape
+        )
+    elif parameters.wind_at_high_levels_correction_method == "off":
+        pass
     else:
         raise NotImplementedError(
             f"Wind at high level correction option `{parameters.wind_at_high_levels_correction}` not implemented"
         )
-    ds_wind_at_high_levels = {
-        "wind_at_high_levels_correction": wind_at_high_levels_correction,
-        "wind_at_high_levels_correction_pressure_above": wind_at_high_levels_correction_pressure_above,
-        "wind_at_high_levels_correction_transition": wind_at_high_levels_correction_transition,
-    }
-    ds_kpt.attrs.update(**ds_wind_at_high_levels)
-    pressure_array = ds_kpt["pres"].values
-    wind_at_high_levels_correction_factor = cos_transition(
-        pressure_array,
-        wind_at_high_levels_correction_pressure_above
-        + 0.5 * wind_at_high_levels_correction_transition,
-        wind_at_high_levels_correction_pressure_above
-        - 0.5 * wind_at_high_levels_correction_transition,
-    )
-    # Set ug and vg equal to actual (nudging) wind at very high levels
-    # Remove advection tendencies at high levels
-    if wind_at_high_levels_correction == 1:
+    if not (parameters.wind_at_high_levels_correction_method == "off"):
+        ds_wind_at_high_levels = {
+            "wind_at_high_levels_correction_method": wind_at_high_levels_correction_method,
+            "wind_at_high_levels_correction_highest_pressure": wind_at_high_levels_correction_highest_pressure,
+            "wind_at_high_levels_correction_transition_thickness": wind_at_high_levels_correction_transition_thickness,
+            "wind_at_high_levels_correction_shape": wind_at_high_levels_correction_shape,
+        }
+        ds_kpt.attrs.update(**ds_wind_at_high_levels)
+        pressure_array = ds_kpt["pres"].values
+
+        wind_at_high_levels_correction_factor = cos_transition(
+            pressure_array,
+            wind_at_high_levels_correction_highest_pressure
+            + wind_at_high_levels_correction_transition_thickness,
+            wind_at_high_levels_correction_highest_pressure,
+        )
+        # Set ug and vg equal to actual (nudging) wind at very high levels
+        # Remove advection tendencies at high levels
         ds_kpt["ug"] = ds_kpt["ug"] * wind_at_high_levels_correction_factor[:] + ds_kpt[
             "u"
         ] * (1.0 - wind_at_high_levels_correction_factor)

@@ -98,14 +98,17 @@ def load_definition(root_data_path, forcing_name, conversion_name):
         surfaceForcingWind=conversion_params["surfaceForcingWind"],
         nudging_parameters_momentum_traj=conversion_nudging_momentum_definition,
         nudging_parameters_scalar_traj=conversion_nudging_scalar_definition,
-        wind_at_high_levels_correction=conversion_params.get(
-            "wind_at_high_levels_correction", None
+        wind_at_high_levels_correction_method=conversion_params.get(
+            "wind_at_high_levels_correction_method", None
         ),
-        wind_at_high_levels_correction_pressure_above=conversion_params.get(
-            "wind_at_high_levels_correction_pressure_above", None
+        wind_at_high_levels_correction_highest_pressure=conversion_params.get(
+            "wind_at_high_levels_correction_highest_pressure", None
         ),
-        wind_at_high_levels_correction_transition=conversion_params.get(
-            "wind_at_high_levels_correction_transition", None
+        wind_at_high_levels_correction_transition_thickness=conversion_params.get(
+            "wind_at_high_levels_correction_transition_thickness", None
+        ),
+        wind_at_high_levels_correction_shape=conversion_params.get(
+            "wind_at_high_levels_correction_shape", None
         ),
     )
 

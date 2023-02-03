@@ -54,6 +54,11 @@ INPUT_REQUIRED_FIELDS = dict(
     nudging_time_momentum_traj=(None, float),
     nudging_height_momentum_traj=(None, float),
     nudging_transition_momentum_traj=(None, float),
+    # Remove tendencies and set geowind to wind at high levels
+    wind_at_high_levels_correction_method=(None, "fixed_pressure", "off"),
+    wind_at_high_levels_correction_highest_pressure=(None, float),
+    wind_at_high_levels_correction_transition_thickness=(None, float),
+    wind_at_high_levels_correction_shape=(None, "cos"),
 )
 
 ConversionDefinition = namedtuple(
@@ -91,6 +96,10 @@ ConversionParametersDefinition = namedtuple(
         "surfaceForcingWind",
         "nudging_parameters_scalar_traj",
         "nudging_parameters_momentum_traj",
+        "wind_at_high_levels_correction_method",
+        "wind_at_high_levels_correction_highest_pressure",
+        "wind_at_high_levels_correction_transition_thickness",
+        "wind_at_high_levels_correction_shape",
     ],
 )
 

@@ -568,7 +568,7 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         wind_at_high_levels_correction_transition_thickness = (
             parameters.wind_at_high_levels_correction_transition_thickness
         )
-        wind_at_high_levels_correction_transition_shape = (
+        wind_at_high_levels_correction_shape = (
             parameters.wind_at_high_levels_correction_shape
         )
     elif parameters.wind_at_high_levels_correction_method == "off":

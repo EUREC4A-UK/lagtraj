@@ -1,5 +1,47 @@
 # Changelog
 
+## [unreleased](https://github.com/EUREC4A-UK/lagtraj/tree/HEAD)
+
+[Full Changelog](https://github.com/EUREC4A-UK/lagtraj/compare/v0.1.2...HEAD)
+
+*improvements*
+
+- Provide information on CDS and its API in the README file
+  [\#194](https://github.com/EUREC4A-UK/lagtraj/pull/194) @sjboeing
+
+*maintenance*
+
+- add Zenodo integration and add citation file
+  [\#195](https://github.com/EUREC4A-UK/lagtraj/pull/195) @leifdenby
+
+
+## [v0.1.2](https://github.com/EUREC4A-UK/lagtraj/tree/v0.1.2)
+
+[Full Changelog](https://github.com/EUREC4A-UK/lagtraj/compare/v0.1.1...v0.1.2)
+
+*bugfixes*
+
+- fix text shown when using CLI command to list lagtraj bundled examples
+  [\#187](https://github.com/EUREC4A-UK/lagtraj/pull/187) @leifdenby
+
+- fix for forcing conversion input definition filepath (to remove
+  `lagtraj://`-prefix) [\#185](https://github.com/EUREC4A-UK/lagtraj/pull/185)
+  @leifdenby
+
+- remove inaccurate description of how skin temperature is calculated in KPT
+  formatted output files
+  [\#182](https://github.com/EUREC4A-UK/lagtraj/pull/182/) @sjboeing
+
+*maintenance*
+
+- handle time-coordinate out-of-order domain data being returned from CDS for
+  ERA5 domain data [\#189](https://github.com/EUREC4A-UK/lagtraj/pull/189)
+  @leifdenby
+
+- switch to using python v3.8 for continuous integration
+  [\#186](https://github.com/EUREC4A-UK/lagtraj/pull/186) @leifdenby
+
+
 ## [v0.1.1](https://github.com/EUREC4A-UK/lagtraj/tree/v0.1.1)
 
 [Full Changelog](https://github.com/EUREC4A-UK/lagtraj/compare/v0.1.0...v0.1.1)

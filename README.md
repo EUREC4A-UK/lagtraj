@@ -1,6 +1,6 @@
 # lagtraj Lagragian simulations trajectories
 
-![lagtraj](https://github.com/EUREC4A-UK/lagtraj/workflows/lagtraj/badge.svg)
+![lagtraj](https://github.com/EUREC4A-UK/lagtraj/workflows/lagtraj/badge.svg) [![DOI](https://zenodo.org/badge/251601559.svg)](https://zenodo.org/badge/latestdoi/251601559)
 
 ![trajectory example](docs/eurec4a_20191209_12_lag.png)
 
@@ -37,8 +37,10 @@ $> python -m pip install lagtraj
 *NOTE: if you are intending to modify `lagtraj` yourself you should check out
 the [development notes](docs/developing.md).*
 
-`lagtraj` requires Python 3 and is tested with `python3.6` but later
-versions should work too.
+`lagtraj` requires Python 3 and is developed and tested with `python3.8` (in
+that we aim to follow the recommendations of
+[NEP29](https://numpy.org/neps/nep-0029-deprecation_policy.html)) but later
+versions should work too (it may work with earlier versions too).
 
 Once installed all `lagtraj`'s commands are available from any directory
 and the follow the pattern
@@ -116,6 +118,9 @@ spatial extent that a trajectory will reach must been known before performining
 a trajectory integration*, otherwise `lagtraj` will issue a warning when the
 edge of the available domain is reached.
 
+In order to download the ERA5 input data for `lagtraj`, you need an account with
+the Copernicus Data Store. You will also need to install the CDS api, see the [api-howto](https://cds.climate.copernicus.eu/api-how-to).
+
 Either create your own domain definition in `data/domains/<domain_name>.yaml` and run
 
 ```bash
@@ -129,12 +134,15 @@ Or use one of the domain definitions included with `lagtraj` (e.g.
 ```bash
 $> python -m lagtraj.domain.download lagtraj://eurec4a_circle <start_date> <end_date>
 ```
-the `<start_date>` and `<end_date>` should be formatted as `YYYY/MM/DD`, e.g. `2020/02/01` for the 2nd of February 2020.
+the `<start_date>` and `<end_date>` should be formatted as `YYYY/MM/DD`, e.g. `2020/02/02` for the 2nd of February 2020.
 
 An optional flag `--retry-rate <num_minutes>` causes `lagtraj` to continue
 retrying download of submitted data requests every `num_minutes` minutes until
 all data has been downloaded. Every time this command is run it will attempt to
 download only data not yet downloaded.
+
+You can monitor the status of your requests via the [CDS requests page](https://cds.climate.copernicus.eu).
+Download times for model level data on the CDS can be somewhat variable.
 
 ## 2. Producing a trajectory
 

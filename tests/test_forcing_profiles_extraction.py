@@ -6,7 +6,13 @@ import lagtraj.forcings.create
 from lagtraj.forcings import ForcingLevelsDefinition, ForcingSamplingDefinition
 from lagtraj.utils import validation
 
-AVAILABLE_CONVERSIONS = [None, "lagtraj://kpt", "lagtraj://dephy", "lagtraj://sam"]
+AVAILABLE_CONVERSIONS = [
+    None,
+    "lagtraj://kpt",
+    "lagtraj://dephy",
+    "lagtraj://sam",
+    "lagtraj://sam_eulerian",
+]
 
 
 @pytest.mark.parametrize(

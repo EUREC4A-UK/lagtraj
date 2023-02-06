@@ -84,8 +84,7 @@ sam_attributes = {
         "large-scale horizontal advection",
         "info": "derived at pressure levels",
         "lagrangian": "Lagrangian setup: horizontal advection calculated "
-        "using velocity relative to wind "
-        "on trajectory (u_traj,v_traj)",
+        "using domain mean wind ",
     },
     "xgradT": {
         "units": "K/m",
@@ -106,7 +105,7 @@ sam_attributes = {
         "long_name": "tendency in water vapor due to large-scale horizontal advection",
         "info": "derived at pressure levels",
         "lagrangian": "Lagrangian setup: horizontal advection calculated "
-        "using velocity relative to wind on trajectory (u_traj,v_traj)",
+        "using domain mean wind",
     },
     "xgradq": {
         "units": "kg/kg/m",

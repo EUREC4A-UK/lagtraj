@@ -432,7 +432,7 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     # update the pressure coordinate values
     ds_sam["lev"] = (
         ("lev"),
-        lev,
+        lev.astype(np.double),
         {"units": "Pa", "long_name": "Pressure level (time-averaged)"},
     )
 

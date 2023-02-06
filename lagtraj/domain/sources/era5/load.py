@@ -39,6 +39,26 @@ def _create_normalised_longitude(da_lon):
     )
 
 
+def _load_single_file_preprocess(ds):
+    """
+    Preprocess a single file ensuring the time coordinate is monotonically
+    increasing as expected. This sort is needed with some model-level files
+    returned from ECMWF CDS as they have recently not been in correct time
+    order (see discussion on https://github.com/EUREC4A-UK/lagtraj/issues/183
+    for details)
+    """
+    time_index = ds._indexes.get("time").to_pandas_index()
+
+    if not time_index.is_monotonic_increasing:
+        ds = ds.sortby("time")
+        warnings.warn(
+            f"loaded ERA5 file `{ds.encoding['source']}` was sorted by the "
+            "`time` coordinate during load to handle out-of-order data in this file"
+        )
+
+    return ds
+
+
 def _find_datasets(data_path):
     datasets = {}
 
@@ -56,7 +76,9 @@ def _find_datasets(data_path):
                     f"level were found in {data_path}."
                 )
 
-            ds_ = xr.open_mfdataset(files, combine="by_coords")
+            ds_ = xr.open_mfdataset(
+                files, combine="by_coords", preprocess=_load_single_file_preprocess
+            )
             # z needs to be dropped to prevent duplicity, lnsp is simply
             # redundant
             if model_run_type == "an" and level_type == "model":

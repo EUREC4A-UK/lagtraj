@@ -73,14 +73,16 @@ def cli(args=None):
 
     print_available()
 
+    first_available_domain = list(get_available(input_types=["domains"])["domains"])[0]
+
     print("\n")
     print(
-        "To use for example the `eurec4a_north_atlantic` domain definition\n"
-        "for downloading domain data run lagtraj.domain.download as"
-        " follows:\n"
+        f"To use for example the `{first_available_domain}` domain definition\n"
+        "for downloading domain data for Feb 1st to 3rd 2020 run"
+        " lagtraj.domain.download as follows:\n"
         "\n"
         "    $> python -m lagtraj.domain.download"
-        " lagtraj://eurec4a_20200202_first"
+        f" lagtraj://{first_available_domain} 2020/02/01 2020/02/03"
     )
 
 

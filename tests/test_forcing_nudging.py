@@ -1,6 +1,15 @@
 """
 Tests for checking different options related to nudging when doing forcing
-conversion
+conversion to 
+
+In this file we will be doing two things:
+
+    1) Checking that the forcing step runs without error for different valid
+    sets of parameters in the yaml-files that describe the conversion step
+    2) When converting to DEPHY format we also check the output xr.Dataset
+    (and so netCDF file), based on the conversion parameters used, whether the
+    nudging related attributes have the correct values and the correct nudging
+    variables are present (and have the correct values)
 """
 import uuid
 from pathlib import Path
@@ -41,25 +50,116 @@ surfaceForcingWind               : z0_traj
 """
 
 
+
+# 1. global attributes to check for
+dict(
+    # 0: off, -1: profile -2: run-time inversion height,
+    # both constant and "fixed_height" us the "profile" option (-1), and we
+    # will introduce our own option (-2) for "runtime_inversion_height"
+    nudging_u,
+    nudging_v,
+    nudging_temp,
+    nudging_theta,
+    nudging_thetal,
+    nudging_qv,
+    nudging_qt,
+    nudging_rv,
+    nudging_rt,
+)
+
+# 2. variables to look for within the dataset
+# shape: [time, height, lat, lon]
+
+variables="""
+nudging_inv_u_traj
+nudging_inv_v_traj
+nudging_inv_temp_traj
+nudging_inv_theta_traj
+nudging_inv_thetal_traj
+nudging_inv_qv_traj
+nudging_inv_qt_traj
+nudging_inv_rv_traj
+nudging_inv_rt_traj
+"""
+
+
+nudging_method_scalars: constant
+nudging_method_scalars: runtime_inversion_height
+nudging_method_scalars: fixed_height
+
+if method == "constant":
+    # all values for momentum/scalars should be the inverse of the timescale
+    # given by nudging_timescale_scalars/nudging_timescale_momentum
+
+elif method == "fixed_height":
+    # below the fixed height the nudging_inv_* values are zero and at the very
+    # domain top as method=="constant" above
+
+elif method == "runtime_inversion_height":
+    # check that variables for nudging profiles aren't present
+
+elif method == "off":
+    # no variable presents
+
+
+
+# 3. ensure parameters in yaml file describing conversion are present as
+# attribute in output netCDF file
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 VALID_YAML_EXAMPLES = [
+    """
+nudging_method_scalars: off
+""",
     """
 nudging_method_scalars: constant
 nudging_timescale_scalars: 10
 """,
     """
 nudging_method_scalars: runtime_inversion_height
-nudging_timescale_scalars: 10
-nudging_layer_thickness_scalars: 3000.0
+nudging_timescale_scalars: 10800
+nudging_transition_thickness_scalars: 500.0
 nudging_shape_scalars: cos
 """,
     """
 nudging_method_scalars: fixed_height
-nudging_timescale_scalars: 10
-nudging_layer_thickness_scalars: 3000.0
+nudging_timescale_scalars: 10800
+nudging_transitions_thickness_scalars: 500.0
 nudging_shape_scalars: cos
-nudging_height_scalars: 1000.0
+nudging_above_height_scalars: 1000.0
 """,
 ]
+
+    """
+nudging_method_scalars: fixed_height
+nudging_transitions_thickness_scalars: 500.0
+nudging_shape_scalars: cos
+nudging_above_height_scalars: 1000.0
+""",
+
 
 
 @pytest.fixture(scope="session")

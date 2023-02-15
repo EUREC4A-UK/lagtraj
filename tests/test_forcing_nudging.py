@@ -50,7 +50,6 @@ surfaceForcingWind               : z0_traj
 """
 
 
-
 # 1. global attributes to check for
 dict(
     # 0: off, -1: profile -2: run-time inversion height,
@@ -70,7 +69,7 @@ dict(
 # 2. variables to look for within the dataset
 # shape: [time, height, lat, lon]
 
-variables="""
+variables = """
 nudging_inv_u_traj
 nudging_inv_v_traj
 nudging_inv_temp_traj
@@ -88,46 +87,23 @@ nudging_method_scalars: runtime_inversion_height
 nudging_method_scalars: fixed_height
 
 if method == "constant":
+    raise ValueError("not implemented")
     # all values for momentum/scalars should be the inverse of the timescale
     # given by nudging_timescale_scalars/nudging_timescale_momentum
-
 elif method == "fixed_height":
+    raise ValueError("not implemented")
     # below the fixed height the nudging_inv_* values are zero and at the very
     # domain top as method=="constant" above
-
 elif method == "runtime_inversion_height":
+    raise ValueError("not implemented")
     # check that variables for nudging profiles aren't present
-
 elif method == "off":
+    raise ValueError("not implemented")
     # no variable presents
-
 
 
 # 3. ensure parameters in yaml file describing conversion are present as
 # attribute in output netCDF file
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 VALID_YAML_EXAMPLES = [
@@ -152,14 +128,6 @@ nudging_shape_scalars: cos
 nudging_above_height_scalars: 1000.0
 """,
 ]
-
-    """
-nudging_method_scalars: fixed_height
-nudging_transitions_thickness_scalars: 500.0
-nudging_shape_scalars: cos
-nudging_above_height_scalars: 1000.0
-""",
-
 
 
 @pytest.fixture(scope="session")

@@ -12,6 +12,7 @@ AVAILABLE_NUDGING_METHODS = [
     "fixed_height",
     "runtime_inversion_height",
     "constant",
+    "off",
 ]
 
 NUDGING_PARAMS_VALID_VALUES = dict(
@@ -19,14 +20,14 @@ NUDGING_PARAMS_VALID_VALUES = dict(
 )
 
 
-def _construct_nudging_required_fields():
+def _construct_nudging_required_parameters():
     """
     parameters for nudging scalars and momentum are set separately, so we add
     them here in turn to the set of required parameters
     """
-    fields = {}
+    nudging_parameters = {}
     for nudged_variable_groups in ["scalars", "momentum"]:
-        fields[
+        nudging_parameters[
             f"nudging_method_{nudged_variable_groups}"
         ] = AVAILABLE_NUDGING_METHODS + [
             None,
@@ -38,8 +39,12 @@ def _construct_nudging_required_fields():
             if param == "height":
                 required_for_nudging_method = ["fixed_height"]
             elif param == "timescale":
-                required_for_nudging_method = AVAILABLE_NUDGING_METHODS
-            elif param in ["layer_thickness", "shape"]:
+                required_for_nudging_method = [
+                    "fixed_height",
+                    "runtime_inversion_height",
+                    "constant",
+                ]
+            elif param in ["transition_thickness", "shape"]:
                 required_for_nudging_method = [
                     "fixed_height",
                     "runtime_inversion_height",
@@ -47,14 +52,14 @@ def _construct_nudging_required_fields():
             else:
                 raise NotImplementedError(param)
 
-            fields[param_fullname] = dict(
+            nudging_parameters[param_fullname] = dict(
                 requires={
                     f"nudging_method_{nudged_variable_groups}": required_for_nudging_method,
                 },
                 choices=param_choices,
             )
 
-    return fields
+    return nudging_parameters
 
 
-NUDGING_REQUIRED_FIELDS = _construct_nudging_required_fields()
+NUDGING_REQUIRED_FIELDS = _construct_nudging_required_parameters()

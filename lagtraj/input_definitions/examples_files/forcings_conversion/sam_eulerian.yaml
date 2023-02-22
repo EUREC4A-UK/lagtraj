@@ -1,0 +1,43 @@
+levels_method   : copy
+version         : 1.0.0
+export_format   : sam
+comment         : Eulerian Forcing and initial conditions obtained from lagtraj toolbox
+campaign        : EUREC4A
+source_domain   : n/a
+reference       : n/a
+author          : s.j. boeing
+modifications   : First version
+case            : n/a
+adv_temp        : 1
+adv_theta       : 1
+adv_thetal      : 1
+adv_qv          : 1
+adv_qt          : 1
+adv_rv          : 1
+adv_rt          : 1
+rad_temp        : 0
+rad_theta       : 0
+rad_thetal      : 0
+forc_omega      : 0
+forc_w          : 1
+forc_geo        : 1
+nudging_u       : 0
+nudging_v       : 0
+nudging_temp    : 0
+nudging_theta   : 0
+nudging_thetal  : 0
+nudging_qv      : 0
+nudging_qt      : 0
+nudging_rv      : 0
+nudging_rt      : 0
+surfaceType     : ocean
+surfaceForcing  : ts
+surfaceForcingWind               : z0_traj
+#nudging_method_scalar_traj       : cos
+#nudging_time_scalar_traj         : 10800.
+#nudging_height_scalar_traj       : 600.
+#nudging_transition_scalar_traj   : 200.
+#nudging_method_momentum_traj     : cos
+#nudging_time_momentum_traj       : 10800.
+#nudging_height_momentum_traj     : 600.
+#nudging_transition_momentum_traj : 200.

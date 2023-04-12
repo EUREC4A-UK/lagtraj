@@ -174,7 +174,6 @@ def load_definition(
 
     with open(input_path) as fh:
         params = yaml.load(fh, Loader=yaml.FullLoader)
-
     try:
         validate_input(input_params=params, required_fields=required_fields)
     except InvalidInputDefinition as ex:

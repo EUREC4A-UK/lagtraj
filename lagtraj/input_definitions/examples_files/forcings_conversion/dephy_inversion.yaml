@@ -23,6 +23,12 @@ forc_w          : 1
 forc_geo        : 1
 surfaceType     : ocean
 surfaceForcing  : ts
-surfaceForcingWind               : z0_traj
-nudging_method_scalars           : off
-nudging_method_momentum          : off
+surfaceForcingWind                        : z0_traj
+nudging_method_scalars                    : runtime_inversion_height
+nudging_transition_thickness_scalars      : 500
+nudging_transition_shape_scalars          : cos
+nudging_timescale_scalars                 : 10800
+nudging_method_momentum                   : runtime_inversion_height
+nudging_transition_thickness_momentum     : 500
+nudging_transition_shape_momentum         : cos
+nudging_timescale_momentum                : 10800

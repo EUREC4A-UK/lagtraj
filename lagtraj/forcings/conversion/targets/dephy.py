@@ -455,21 +455,33 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     rh = _rh_dephy(ds_dephy["temp"], ds_dephy["pressure"], ds_dephy["qt"])
     ds_dephy["rh"] = init_field_dephy(rh.values[:, :, 0, 0], "rh")
 
-    def nudging_inv_time_prof(nudging_parameters, variable):
+    def nudging_inv_time_prof(parameter_type, variable):
         height_array = ds_dephy["height_forc"].values
-        nudging_method = nudging_parameters.method
-        nudging_time = nudging_parameters.time
-        nudging_height = nudging_parameters.height
-        nudging_transition = nudging_parameters.transition
-        if nudging_method is None:
-            inv_time_array = 0.0 * height_array
-        elif nudging_method == "cos":
+        if parameter_type == "momentum":
+            nudging_method = parameters.nudging_method_momentum
+            nudging_above_height = parameters.nudging_above_height_momentum
+            nudging_timescale = parameters.nudging_timescale_momentum
+            nudging_transition_shape = parameters.nudging_transition_shape_momentum
+            nudging_transition_thickness = (
+                parameters.nudging_transition_thickness_momentum
+            )
+        elif parameter_type == "scalars":
+            nudging_method = parameters.nudging_method_scalars
+            nudging_above_height = parameters.nudging_above_height_scalars
+            nudging_timescale = parameters.nudging_timescale_scalars
+            nudging_transition_shape = parameters.nudging_transition_shape_scalars
+            nudging_transition_thickness = (
+                parameters.nudging_transition_thickness_scalars
+            )
+        else:
+            raise Exception("parameter_type for nudging not defined")
+        if nudging_transition_shape == "cos":
             div_factor = cos_transition(
                 height_array,
-                nudging_height + 0.5 * nudging_transition,
-                nudging_height - 0.5 * nudging_transition,
+                nudging_above_height + nudging_transition_thickness,
+                nudging_above_height,
             )
-            inv_time_array = div_factor / nudging_time
+            inv_time_array = div_factor / nudging_timescale
         else:
             raise Exception(
                 "Method for calculating inverse nudging time profile undefined"
@@ -480,42 +492,79 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
             dephy_variables[variable],
         )
 
-    nudging_parameters_momentum_traj = parameters.nudging_parameters_momentum_traj
-    nudging_parameters_scalar_traj = parameters.nudging_parameters_scalar_traj
-    ds_dephy["nudging_inv_u_traj"] = nudging_inv_time_prof(
-        nudging_parameters_momentum_traj, "nudging_inv_u_traj"
-    )
-    ds_dephy["nudging_inv_v_traj"] = nudging_inv_time_prof(
-        nudging_parameters_momentum_traj, "nudging_inv_v_traj"
-    )
-    ds_dephy["nudging_inv_temp_traj"] = nudging_inv_time_prof(
-        nudging_parameters_scalar_traj, "nudging_inv_temp_traj"
-    )
-    ds_dephy["nudging_inv_theta_traj"] = nudging_inv_time_prof(
-        nudging_parameters_scalar_traj, "nudging_inv_theta_traj"
-    )
-    ds_dephy["nudging_inv_thetal_traj"] = nudging_inv_time_prof(
-        nudging_parameters_scalar_traj, "nudging_inv_thetal_traj"
-    )
-    ds_dephy["nudging_inv_qv_traj"] = nudging_inv_time_prof(
-        nudging_parameters_scalar_traj, "nudging_inv_qv_traj"
-    )
-    ds_dephy["nudging_inv_qt_traj"] = nudging_inv_time_prof(
-        nudging_parameters_scalar_traj, "nudging_inv_qt_traj"
-    )
-    ds_dephy["nudging_inv_rv_traj"] = nudging_inv_time_prof(
-        nudging_parameters_scalar_traj, "nudging_inv_rv_traj"
-    )
-    ds_dephy["nudging_inv_rt_traj"] = nudging_inv_time_prof(
-        nudging_parameters_scalar_traj, "nudging_inv_rt_traj"
-    )
-
+    # First, set the flags
+    if parameters.nudging_method_momentum in [False, None]:
+        nudging_u = 0
+        nudging_v = 0
+    elif parameters.nudging_method_momentum in ["constant", "fixed_height"]:
+        nudging_u = -1
+        nudging_v = -1
+    elif parameters.nudging_method_momentum == "runtime_inversion_height":
+        nudging_u = -2
+        nudging_v = -2
+    else:
+        raise ValueError("nudging_method_momentum value invalid")
+    if parameters.nudging_method_scalars in [False, None]:
+        nudging_temp = 0
+        nudging_theta = 0
+        nudging_thetal = 0
+        nudging_qv = 0
+        nudging_qt = 0
+        nudging_rv = 0
+        nudging_rt = 0
+    elif parameters.nudging_method_scalars in ["constant", "fixed_height"]:
+        nudging_temp = -1
+        nudging_theta = -1
+        nudging_thetal = -1
+        nudging_qv = -1
+        nudging_qt = -1
+        nudging_rv = -1
+        nudging_rt = -1
+    elif parameters.nudging_method_scalars == "runtime_inversion_height":
+        nudging_temp = -2
+        nudging_theta = -2
+        nudging_thetal = -2
+        nudging_qv = -2
+        nudging_qt = -2
+        nudging_rv = -2
+        nudging_rt = -2
+    else:
+        raise ValueError("nudging_method_scalars value invalid")
+    # Make the profiles if needed
+    if parameters.nudging_method_momentum in ["constant", "fixed_height"]:
+        ds_dephy["nudging_inv_u_traj"] = nudging_inv_time_prof(
+            "momentum", "nudging_inv_u_traj"
+        )
+        ds_dephy["nudging_inv_v_traj"] = nudging_inv_time_prof(
+            "momentum", "nudging_inv_v_traj"
+        )
+    if parameters.nudging_method_scalars in ["constant", "fixed_height"]:
+        ds_dephy["nudging_inv_temp_traj"] = nudging_inv_time_prof(
+            "scalars", "nudging_inv_temp_traj"
+        )
+        ds_dephy["nudging_inv_theta_traj"] = nudging_inv_time_prof(
+            "scalars", "nudging_inv_theta_traj"
+        )
+        ds_dephy["nudging_inv_thetal_traj"] = nudging_inv_time_prof(
+            "scalars", "nudging_inv_thetal_traj"
+        )
+        ds_dephy["nudging_inv_qv_traj"] = nudging_inv_time_prof(
+            "scalars", "nudging_inv_qv_traj"
+        )
+        ds_dephy["nudging_inv_qt_traj"] = nudging_inv_time_prof(
+            "scalars", "nudging_inv_qt_traj"
+        )
+        ds_dephy["nudging_inv_rv_traj"] = nudging_inv_time_prof(
+            "scalars", "nudging_inv_rv_traj"
+        )
+        ds_dephy["nudging_inv_rt_traj"] = nudging_inv_time_prof(
+            "scalars", "nudging_inv_rt_traj"
+        )
     # Final checks: are all variables present?
     for var in dephy_variables:
         if var not in ds_dephy:
             print(var + " is missing in the dephy formatted output")
     # Needs improvement
-
     dephy_dictionary = {
         "Conventions": "CF-1.0",
         "comment": metadata.comment,
@@ -539,15 +588,15 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         "forc_omega": parameters.forc_omega,
         "forc_w": parameters.forc_w,
         "forc_geo": parameters.forc_geo,
-        "nudging_u": parameters.nudging_u,
-        "nudging_v": parameters.nudging_v,
-        "nudging_temp": parameters.nudging_temp,
-        "nudging_theta": parameters.nudging_theta,
-        "nudging_thetal": parameters.nudging_thetal,
-        "nudging_qv": parameters.nudging_qv,
-        "nudging_qt": parameters.nudging_qt,
-        "nudging_rv": parameters.nudging_rv,
-        "nudging_rt": parameters.nudging_rt,
+        "nudging_u": nudging_u,
+        "nudging_v": nudging_v,
+        "nudging_temp": nudging_temp,
+        "nudging_theta": nudging_theta,
+        "nudging_thetal": nudging_thetal,
+        "nudging_qv": nudging_qv,
+        "nudging_qt": nudging_qt,
+        "nudging_rv": nudging_rv,
+        "nudging_rt": nudging_rt,
         "z_nudging_u": np.nan,
         "z_nudging_v": np.nan,
         "z_nudging_temp": np.nan,

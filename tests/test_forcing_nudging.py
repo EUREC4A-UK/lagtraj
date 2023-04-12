@@ -1,6 +1,6 @@
 """
 Tests for checking different options related to nudging when doing forcing
-conversion to 
+conversion to
 
 In this file we will be doing two things:
 
@@ -20,6 +20,7 @@ import yaml
 
 import lagtraj
 from lagtraj.forcings import ForcingLevelsDefinition, ForcingSamplingDefinition
+from lagtraj import DEFAULT_ROOT_DATA_PATH
 
 FORCING_CONVERSION_BASE = """
 levels_method   : copy
@@ -51,60 +52,56 @@ surfaceForcingWind               : z0_traj
 
 
 # 1. global attributes to check for
-dict(
+global_attributes = dict(
     # 0: off, -1: profile -2: run-time inversion height,
     # both constant and "fixed_height" us the "profile" option (-1), and we
     # will introduce our own option (-2) for "runtime_inversion_height"
-    nudging_u,
-    nudging_v,
-    nudging_temp,
-    nudging_theta,
-    nudging_thetal,
-    nudging_qv,
-    nudging_qt,
-    nudging_rv,
-    nudging_rt,
+    nudging_u=[0, -1, -2],
+    nudging_v=[0, -1, -2],
+    nudging_temp=[0, -1, -2],
+    nudging_theta=[0, -1, -2],
+    nudging_thetal=[0, -1, -2],
+    nudging_qv=[0, -1, -2],
+    nudging_qt=[0, -1, -2],
+    nudging_rv=[0, -1, -2],
+    nudging_rt=[0, -1, -2],
 )
 
 # 2. variables to look for within the dataset
 # shape: [time, height, lat, lon]
+variables = [
+    "nudging_inv_u_traj",
+    "nudging_inv_v_traj",
+    "nudging_inv_temp_traj",
+    "nudging_inv_theta_traj",
+    "nudging_inv_thetal_traj",
+    "nudging_inv_qv_traj",
+    "nudging_inv_qt_traj",
+    "nudging_inv_rv_traj",
+    "nudging_inv_rt_traj",
+]
 
-variables = """
-nudging_inv_u_traj
-nudging_inv_v_traj
-nudging_inv_temp_traj
-nudging_inv_theta_traj
-nudging_inv_thetal_traj
-nudging_inv_qv_traj
-nudging_inv_qt_traj
-nudging_inv_rv_traj
-nudging_inv_rt_traj
-"""
 
+nudging_methods_scalars = ["constant", "runtime_inversion_height", "fixed_height"]
 
-nudging_method_scalars: constant
-nudging_method_scalars: runtime_inversion_height
-nudging_method_scalars: fixed_height
-
-if method == "constant":
-    raise ValueError("not implemented")
-    # all values for momentum/scalars should be the inverse of the timescale
-    # given by nudging_timescale_scalars/nudging_timescale_momentum
-elif method == "fixed_height":
-    raise ValueError("not implemented")
-    # below the fixed height the nudging_inv_* values are zero and at the very
-    # domain top as method=="constant" above
-elif method == "runtime_inversion_height":
-    raise ValueError("not implemented")
-    # check that variables for nudging profiles aren't present
-elif method == "off":
-    raise ValueError("not implemented")
-    # no variable presents
+# ~ if method == "constant":
+# ~ raise ValueError("not implemented")
+# ~ # all values for momentum/scalars should be the inverse of the timescale
+# ~ # given by nudging_timescale_scalars/nudging_timescale_momentum
+# ~ elif method == "fixed_height":
+# ~ raise ValueError("not implemented")
+# ~ # below the fixed height the nudging_inv_* values are zero and at the very
+# ~ # domain top as method=="constant" above
+# ~ elif method == "runtime_inversion_height":
+# ~ raise ValueError("not implemented")
+# ~ # check that variables for nudging profiles aren't present
+# ~ elif method == "off":
+# ~ raise ValueError("not implemented")
+# ~ # no variable presents
 
 
 # 3. ensure parameters in yaml file describing conversion are present as
 # attribute in output netCDF file
-
 
 VALID_YAML_EXAMPLES = [
     """
@@ -118,14 +115,33 @@ nudging_timescale_scalars: 10
 nudging_method_scalars: runtime_inversion_height
 nudging_timescale_scalars: 10800
 nudging_transition_thickness_scalars: 500.0
-nudging_shape_scalars: cos
+nudging_transition_shape_scalars: cos
 """,
     """
 nudging_method_scalars: fixed_height
 nudging_timescale_scalars: 10800
-nudging_transitions_thickness_scalars: 500.0
-nudging_shape_scalars: cos
+nudging_transition_thickness_scalars: 500.0
+nudging_transition_shape_scalars: cos
 nudging_above_height_scalars: 1000.0
+""",
+    """
+nudging_method_momentum: fixed_height
+nudging_timescale_momentum: 10800
+nudging_transition_thickness_momentum: 500.0
+nudging_transition_shape_momentum: cos
+nudging_above_height_momentum: 1000.0
+""",
+    """
+nudging_method_scalars: fixed_height
+nudging_timescale_scalars: 10800
+nudging_transition_thickness_scalars: 500.0
+nudging_transition_shape_scalars: cos
+nudging_above_height_scalars: 1000.0
+nudging_method_momentum: fixed_height
+nudging_timescale_momentum: 10800
+nudging_transition_thickness_momentum: 500.0
+nudging_transition_shape_momentum: cos
+nudging_above_height_momentum: 1000.0
 """,
 ]
 
@@ -201,7 +217,7 @@ def test_forcing_conversion_config(example_forcing, example_yaml):
     # files or have parallel tests clobber each other
     ds_forcing = example_forcing
 
-    root_data_path = Path("/tmp/leiftest")
+    root_data_path = Path(DEFAULT_ROOT_DATA_PATH)
 
     # with tempfile.TemporaryDirectory() as root_data_path:
     conversion_yaml = FORCING_CONVERSION_BASE + example_yaml

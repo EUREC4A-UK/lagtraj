@@ -12,11 +12,14 @@ AVAILABLE_NUDGING_METHODS = [
     "fixed_height",
     "runtime_inversion_height",
     "constant",
-    "off",
+    False,
 ]
 
 NUDGING_PARAMS_VALID_VALUES = dict(
-    height=float, layer_thickness=float, timescale=int, shape=["cos"]
+    above_height=float,
+    transition_thickness=float,
+    timescale=int,
+    transition_shape=["cos"],
 )
 
 
@@ -36,7 +39,7 @@ def _construct_nudging_required_parameters():
         for param, param_choices in NUDGING_PARAMS_VALID_VALUES.items():
             param_fullname = f"nudging_{param}_{nudged_variable_groups}"
 
-            if param == "height":
+            if param == "above_height":
                 required_for_nudging_method = ["fixed_height"]
             elif param == "timescale":
                 required_for_nudging_method = [
@@ -44,7 +47,7 @@ def _construct_nudging_required_parameters():
                     "runtime_inversion_height",
                     "constant",
                 ]
-            elif param in ["transition_thickness", "shape"]:
+            elif param in ["transition_thickness", "transition_shape"]:
                 required_for_nudging_method = [
                     "fixed_height",
                     "runtime_inversion_height",
@@ -58,7 +61,6 @@ def _construct_nudging_required_parameters():
                 },
                 choices=param_choices,
             )
-
     return nudging_parameters
 
 

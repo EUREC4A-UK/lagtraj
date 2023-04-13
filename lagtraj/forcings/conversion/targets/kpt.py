@@ -397,7 +397,7 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
             ds_kpt[variable] = da_era5
             ds_kpt[variable].attrs.update(kpt_attributes[variable])
         # half level variable
-        elif variable in ["zh", "pressure_h"]:
+        elif variable in ["height_h", "pressure_h"]:
             da_era5_on_half_levels = steffen_1d_no_ep_time(
                 da_era5.values, ds_era5["level"].values, kpt_half_level_array
             )

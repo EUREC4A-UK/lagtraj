@@ -14,11 +14,11 @@ from ....utils.interpolation.methods import central_estimate, steffen_1d_no_ep_t
 kpt_attributes = {
     "lat": {"units": "degrees North", "long_name": "latitude"},
     "lon": {"units": "degrees East", "long_name": "longitude"},
-    "zf": {"units": "m", "long_name": "full level height"},
-    "zh": {"units": "m", "long_name": "half level height"},
+    "height_f": {"units": "m", "long_name": "full level height"},
+    "height_h": {"units": "m", "long_name": "half level height"},
     "ps": {"units": "Pa", "long_name": "surface pressure"},
-    "pres": {"units": "Pa", "long_name": "full level pressure"},
-    "presh": {"units": "Pa", "long_name": "half level pressure"},
+    "pressure_f": {"units": "Pa", "long_name": "full level pressure"},
+    "pressure_h": {"units": "Pa", "long_name": "half level pressure"},
     "u": {"units": "m/s", "long_name": "zonal wind (domain averaged)"},
     "v": {"units": "m/s", "long_name": "meridional wind (domain averaged)"},
     "t": {"units": "K", "long_name": "temperature (domain averaged)"},
@@ -96,11 +96,11 @@ kpt_attributes = {
         "units": "K/s",
         "long_name": "tendency in T_l due to large-scale horizontal advection",
     },
-    "qladv": {
+    "ladv": {
         "units": "kg/kg/s",
         "long_name": "tendency in liquid water spec hum due to large-scale horizontal advection",
     },
-    "qiadv": {
+    "iadv": {
         "units": "kg/kg/s",
         "long_name": "tendency in frozen water due to large-scale horizontal advection",
     },
@@ -235,11 +235,11 @@ kpt_attributes = {
 # kpt variable : era5 variable
 # (we loop over kpt variables here)
 kpt_from_era5_variables = {
-    "zf": "height_h_local",
-    "zh": "height_h_local",
+    "height_f": "height_h_local",
+    "height_h": "height_h_local",
     "ps": "sp_mean",
-    "pres": "p_h_mean",
-    "presh": "p_h_mean",
+    "pressure_f": "p_h_mean",
+    "pressure_h": "p_h_mean",
     "u": "u_mean",
     "v": "v_mean",
     "t": "t_mean",
@@ -263,8 +263,8 @@ kpt_from_era5_variables = {
     "ug": "u_g",
     "vg": "v_g",
     "tladv": "dt_ldt_adv",
-    "qladv": "dclwcdt_adv",
-    "qiadv": "dciwcdt_adv",
+    "ladv": "dclwcdt_adv",
+    "iadv": "dciwcdt_adv",
     "ccadv": "dccdt_adv",
     "lat": "lat",
     "lon": "lon",
@@ -397,7 +397,7 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
             ds_kpt[variable] = da_era5
             ds_kpt[variable].attrs.update(kpt_attributes[variable])
         # half level variable
-        elif variable in ["zh", "presh"]:
+        elif variable in ["zh", "pressure_h"]:
             da_era5_on_half_levels = steffen_1d_no_ep_time(
                 da_era5.values, ds_era5["level"].values, kpt_half_level_array
             )

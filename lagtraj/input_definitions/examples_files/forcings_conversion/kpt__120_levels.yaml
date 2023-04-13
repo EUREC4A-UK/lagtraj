@@ -20,5 +20,5 @@ forc_geo        : 1
 surfaceType     : ocean
 surfaceForcing  : ts
 surfaceForcingWind               : z0_traj
-nudging_method_scalars           : off
-nudging_method_momentum          : off
+nudging_method_scalars           : false
+nudging_method_momentum          : false

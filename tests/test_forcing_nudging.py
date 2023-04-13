@@ -95,7 +95,7 @@ nudging_methods_scalars = ["constant", "runtime_inversion_height", "fixed_height
 # ~ elif method == "runtime_inversion_height":
 # ~ raise ValueError("not implemented")
 # ~ # check that variables for nudging profiles aren't present
-# ~ elif method == "off":
+# ~ elif method == False:
 # ~ raise ValueError("not implemented")
 # ~ # no variable presents
 
@@ -105,7 +105,7 @@ nudging_methods_scalars = ["constant", "runtime_inversion_height", "fixed_height
 
 VALID_YAML_EXAMPLES = [
     """
-nudging_method_scalars: off
+nudging_method_scalars: false
 """,
     """
 nudging_method_scalars: constant

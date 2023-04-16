@@ -475,13 +475,20 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
             )
         else:
             raise Exception("parameter_type for nudging not defined")
-        if nudging_transition_shape == "cos":
-            div_factor = cos_transition(
-                height_array,
-                nudging_above_height + nudging_transition_thickness,
-                nudging_above_height,
-            )
-            inv_time_array = div_factor / nudging_timescale
+        if nudging_method == "constant":
+            inv_time_array = np.ones(np.shape(height_array)) / nudging_timescale
+        elif nudging_method == "fixed_height":
+            if nudging_transition_shape == "cos":
+                div_factor = cos_transition(
+                    height_array,
+                    nudging_above_height + nudging_transition_thickness,
+                    nudging_above_height,
+                )
+                inv_time_array = div_factor / nudging_timescale
+            else:
+                raise Exception(
+                    "Shape for calculating inverse nudging time profile undefined"
+                )
         else:
             raise Exception(
                 "Method for calculating inverse nudging time profile undefined"

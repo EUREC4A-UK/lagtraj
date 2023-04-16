@@ -19,8 +19,8 @@ import xarray as xr
 import yaml
 
 import lagtraj
-from lagtraj.forcings import ForcingLevelsDefinition, ForcingSamplingDefinition
 from lagtraj import DEFAULT_ROOT_DATA_PATH
+from lagtraj.forcings import ForcingLevelsDefinition, ForcingSamplingDefinition
 
 FORCING_CONVERSION_BASE = """
 levels_method   : copy

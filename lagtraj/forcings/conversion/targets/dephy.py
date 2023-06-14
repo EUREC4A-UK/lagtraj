@@ -301,7 +301,7 @@ def _rh_dephy(tt, pp, qt):
 
 def from_era5(ds_era5, da_levels, parameters, metadata):
     def none_pass(x):
-        if x == None:
+        if x is None:
             return "None"
         else:
             return x

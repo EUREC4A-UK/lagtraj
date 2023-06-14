@@ -40,7 +40,10 @@ def _construct_nudging_required_parameters():
             param_fullname = f"nudging_{param}_{nudged_variable_groups}"
 
             if param == "above_height":
-                required_for_nudging_method = ["fixed_height"]
+                required_for_nudging_method = [
+                    "fixed_height",
+                    "runtime_inversion_height",
+                ]
             elif param == "timescale":
                 required_for_nudging_method = [
                     "fixed_height",

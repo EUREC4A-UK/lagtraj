@@ -300,6 +300,12 @@ def _rh_dephy(tt, pp, qt):
 
 
 def from_era5(ds_era5, da_levels, parameters, metadata):
+    def none_pass(x):
+        if x == None:
+            return "None"
+        else:
+            return x
+
     def init_field_dephy(field, variable):
         if np.ndim(field) == 1:
             return (
@@ -627,6 +633,15 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         "surfaceType": parameters.surfaceType,
         "surfaceForcing": parameters.surfaceForcing,
         "surfaceForcingWind": parameters.surfaceForcingWind,
+        "nudging_method": none_pass(parameters.nudging_method_momentum),
+        "nudging_above_height": none_pass(parameters.nudging_above_height_momentum),
+        "nudging_timescale": none_pass(parameters.nudging_timescale_momentum),
+        "nudging_transition_shape": none_pass(
+            parameters.nudging_transition_shape_momentum
+        ),
+        "nudging_transition_thickness": none_pass(
+            parameters.nudging_transition_thickness_momentum
+        ),
     }
     ds_dephy.attrs.update(dephy_dictionary)
     return ds_dephy

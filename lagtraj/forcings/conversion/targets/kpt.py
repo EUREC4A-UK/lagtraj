@@ -319,6 +319,12 @@ ALLOWED_UNIT_VARIATIONS = dict(
 
 
 def from_era5(ds_era5, da_levels, parameters, metadata):
+    def none_pass(x):
+        if x == None:
+            return "None"
+        else:
+            return x
+
     """Obtain a kpt input file from era5 variable set at high resolution"""
     # Put full levels midway between half-levels, I think this is consistent with DALES
     # Reverse order of data, to confirm to other kpt input
@@ -536,7 +542,7 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         "flight": metadata.case,
         "date": ds_era5["origin_datetime"].values.astype("str"),
         "source": "ERA5",
-        "source_domain": "NEEDS ADDING",
+        "source_domain": ds_era5.trajectory_domain,
         "source_grid": "grid0.1x0.1",
         # TODO: (Leif) these need adding, where should they come from?
         # "source_latsamp": ds_era5.sampling_method[1],
@@ -545,6 +551,15 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         "created": datetime.datetime.now().isoformat(),
         "wilting_point": 0.1715,
         "field_capacity": 0.32275,
+        "nudging_method": none_pass(parameters.nudging_method_momentum),
+        "nudging_above_height": none_pass(parameters.nudging_above_height_momentum),
+        "nudging_timescale": none_pass(parameters.nudging_timescale_momentum),
+        "nudging_transition_shape": none_pass(
+            parameters.nudging_transition_shape_momentum
+        ),
+        "nudging_transition_thickness": none_pass(
+            parameters.nudging_transition_thickness_momentum
+        ),
     }
     ds_kpt.attrs.update(**kpt_dict)
     return ds_kpt

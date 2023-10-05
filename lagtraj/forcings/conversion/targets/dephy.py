@@ -634,14 +634,15 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         "surfaceForcing": parameters.surfaceForcing,
         "surfaceForcingWind": parameters.surfaceForcingWind,
         "nudging_method": none_pass(parameters.nudging_method_momentum),
-        "nudging_above_height": none_pass(parameters.nudging_above_height_momentum),
-        "nudging_timescale": none_pass(parameters.nudging_timescale_momentum),
-        "nudging_transition_shape": none_pass(
-            parameters.nudging_transition_shape_momentum
-        ),
-        "nudging_transition_thickness": none_pass(
-            parameters.nudging_transition_thickness_momentum
-        ),
     }
-    ds_dephy.attrs.update(dephy_dictionary)
+    ds_dephy.attrs.update(**dephy_dictionary)
+    nudging_specs_dict = { 
+        "nudging_above_height": parameters.nudging_above_height_momentum,
+        "nudging_timescale": parameters.nudging_timescale_momentum,
+        "nudging_transition_shape": parameters.nudging_transition_shape_momentum,
+        "nudging_transition_thickness": parameters.nudging_transition_thickness_momentum,
+    }
+    # Filter out None values
+    nudging_filtered_dict = {k: v for k, v in nudging_specs_dict.items() if v is not None}
+    ds_dephy.attrs.update(**nudging_filtered_dict)
     return ds_dephy

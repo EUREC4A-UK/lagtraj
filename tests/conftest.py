@@ -35,8 +35,8 @@ else:
 def _download_testdata():
     fhtar = tempfile.NamedTemporaryFile(delete=False, suffix=".tar.gz")
 
-    r = requests.get(TESTDATA_URL)
-    fhtar.write(r.content)
+    req = requests.get(TESTDATA_URL)
+    fhtar.write(req.content)
     fhtar.close()
 
     tarfile.open(fhtar.name, "r:gz").extractall(TESTDATA_DIR)
@@ -60,15 +60,15 @@ def ensure_testdata_available():
         shutil.rmtree(path_to_delete)
 
 
-@pytest.fixture
-def ds_domain_test(scope="session"):
+@pytest.fixture(scope="session")
+def ds_domain_test():
     ensure_testdata_available()
     DOMAIN_NAME = "eurec4a_circle"
     ds = lagtraj.domain.load.load_data(root_data_path=TESTDATA_DIR, name=DOMAIN_NAME)
     return ds
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def ds_trajectory_linear(ds_domain_test):
     t0 = ds_domain_test.time.isel(time=-15)
 
@@ -87,7 +87,7 @@ def ds_trajectory_linear(ds_domain_test):
     return ds_traj
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def testdata_info():
     """
     These are used for the CLI tests. We might want to add input definitions to

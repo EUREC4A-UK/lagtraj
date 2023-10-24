@@ -2,10 +2,10 @@ from ...input_definitions import build_input_definition_path, load
 from ...input_definitions.examples import LAGTRAJ_EXAMPLES_PATH_PREFIX
 from .input_definitions import (
     INPUT_REQUIRED_FIELDS,
+    NUDGING_REQUIRED_FIELDS,
     ConversionDefinition,
     ConversionLevelsDefinition,
     ConversionMetadataDefinition,
-    ConversionNudgingDefinition,
     ConversionParametersDefinition,
 )
 
@@ -56,19 +56,15 @@ def load_definition(root_data_path, forcing_name, conversion_name):
         method=conversion_params.get("levels_method", None),
     )
 
-    conversion_nudging_momentum_definition = ConversionNudgingDefinition(
-        method=conversion_params.get("nudging_method_momentum_traj", None),
-        time=conversion_params.get("nudging_time_momentum_traj", None),
-        height=conversion_params.get("nudging_height_momentum_traj", None),
-        transition=conversion_params.get("nudging_transition_momentum_traj", None),
-    )
+    nudging_param_values = {}
 
-    conversion_nudging_scalar_definition = ConversionNudgingDefinition(
-        method=conversion_params.get("nudging_method_scalar_traj", None),
-        time=conversion_params.get("nudging_time_scalar_traj", None),
-        height=conversion_params.get("nudging_height_scalar_traj", None),
-        transition=conversion_params.get("nudging_transition_scalar_traj", None),
-    )
+    for k in NUDGING_REQUIRED_FIELDS:
+        value = conversion_params.get(k)
+        if value is None:
+            # TODO: implement default values here
+            pass
+
+        nudging_param_values[k] = value
 
     conversion_parameters_definition = ConversionParametersDefinition(
         adv_temp=conversion_params["adv_temp"],
@@ -84,20 +80,10 @@ def load_definition(root_data_path, forcing_name, conversion_name):
         forc_omega=conversion_params["forc_omega"],
         forc_w=conversion_params["forc_w"],
         forc_geo=conversion_params["forc_geo"],
-        nudging_u=conversion_params["nudging_u"],
-        nudging_v=conversion_params["nudging_v"],
-        nudging_temp=conversion_params["nudging_temp"],
-        nudging_theta=conversion_params["nudging_theta"],
-        nudging_thetal=conversion_params["nudging_thetal"],
-        nudging_qv=conversion_params["nudging_qv"],
-        nudging_qt=conversion_params["nudging_qt"],
-        nudging_rv=conversion_params["nudging_rv"],
-        nudging_rt=conversion_params["nudging_rt"],
         surfaceType=conversion_params["surfaceType"],
         surfaceForcing=conversion_params["surfaceForcing"],
         surfaceForcingWind=conversion_params["surfaceForcingWind"],
-        nudging_parameters_momentum_traj=conversion_nudging_momentum_definition,
-        nudging_parameters_scalar_traj=conversion_nudging_scalar_definition,
+        **nudging_param_values
     )
 
     conversion_metadata_definition = ConversionMetadataDefinition(

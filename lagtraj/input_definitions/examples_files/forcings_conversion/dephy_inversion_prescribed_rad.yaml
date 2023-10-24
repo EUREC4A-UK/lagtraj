@@ -18,7 +18,7 @@ adv_rt          : 1
 rad_temp        : 1
 rad_theta       : 1
 rad_thetal      : 1
-forc_omega      : 1
+forc_omega      : 0
 forc_w          : 1
 forc_geo        : 1
 surfaceType     : ocean

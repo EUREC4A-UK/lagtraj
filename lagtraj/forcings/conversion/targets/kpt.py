@@ -554,13 +554,15 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         "nudging_method": none_pass(parameters.nudging_method_momentum),
     }
     ds_kpt.attrs.update(**kpt_dict)
-    nudging_specs_dict = { 
+    nudging_specs_dict = {
         "nudging_above_height": parameters.nudging_above_height_momentum,
         "nudging_timescale": parameters.nudging_timescale_momentum,
         "nudging_transition_shape": parameters.nudging_transition_shape_momentum,
         "nudging_transition_thickness": parameters.nudging_transition_thickness_momentum,
     }
     # Filter out None values
-    nudging_filtered_dict = {k: v for k, v in nudging_specs_dict.items() if v is not None}
+    nudging_filtered_dict = {
+        k: v for k, v in nudging_specs_dict.items() if v is not None
+    }
     ds_kpt.attrs.update(**nudging_filtered_dict)
     return ds_kpt

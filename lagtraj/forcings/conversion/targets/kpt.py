@@ -542,7 +542,7 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         "flight": metadata.case,
         "date": ds_era5["origin_datetime"].values.astype("str"),
         "source": "ERA5",
-        "source_domain": ds_era5.trajectory_domain,
+        # "source_domain": metadata.trajectory_domain_name,
         "source_grid": "grid0.1x0.1",
         # TODO: (Leif) these need adding, where should they come from?
         # "source_latsamp": ds_era5.sampling_method[1],
@@ -551,14 +551,19 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         "created": datetime.datetime.now().isoformat(),
         "wilting_point": 0.1715,
         "field_capacity": 0.32275,
-        "nudging_method": none_pass(parameters.nudging_method_momentum),
+        "nudging_method_momentum": str(none_pass(parameters.nudging_method_momentum)),
+        "nudging_method_scalars": str(none_pass(parameters.nudging_method_scalars)),
     }
     ds_kpt.attrs.update(**kpt_dict)
     nudging_specs_dict = {
-        "nudging_above_height": parameters.nudging_above_height_momentum,
-        "nudging_timescale": parameters.nudging_timescale_momentum,
-        "nudging_transition_shape": parameters.nudging_transition_shape_momentum,
-        "nudging_transition_thickness": parameters.nudging_transition_thickness_momentum,
+        "nudging_above_height_momentum": parameters.nudging_above_height_momentum,
+        "nudging_timescale_momentum": parameters.nudging_timescale_momentum,
+        "nudging_transition_shape_momentum": parameters.nudging_transition_shape_momentum,
+        "nudging_transition_thickness_momentum": parameters.nudging_transition_thickness_momentum,
+        "nudging_above_height_scalars": parameters.nudging_above_height_scalars,
+        "nudging_timescale_scalars": parameters.nudging_timescale_scalars,
+        "nudging_transition_shape_scalars": parameters.nudging_transition_shape_scalars,
+        "nudging_transition_thickness_scalars": parameters.nudging_transition_thickness_scalars,
     }
     # Filter out None values
     nudging_filtered_dict = {

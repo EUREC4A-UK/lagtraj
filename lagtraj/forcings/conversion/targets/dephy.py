@@ -300,6 +300,8 @@ def _rh_dephy(tt, pp, qt):
 
 
 def from_era5(ds_era5, da_levels, parameters, metadata):
+    print(parameters)
+
     def none_pass(x):
         if x is None:
             return "None"
@@ -633,14 +635,19 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         "surfaceType": parameters.surfaceType,
         "surfaceForcing": parameters.surfaceForcing,
         "surfaceForcingWind": parameters.surfaceForcingWind,
-        "nudging_method": none_pass(parameters.nudging_method_momentum),
+        "nudging_method_momentum": str(none_pass(parameters.nudging_method_momentum)),
+        "nudging_method_scalars": str(none_pass(parameters.nudging_method_scalars)),
     }
     ds_dephy.attrs.update(**dephy_dictionary)
     nudging_specs_dict = {
-        "nudging_above_height": parameters.nudging_above_height_momentum,
-        "nudging_timescale": parameters.nudging_timescale_momentum,
-        "nudging_transition_shape": parameters.nudging_transition_shape_momentum,
-        "nudging_transition_thickness": parameters.nudging_transition_thickness_momentum,
+        "nudging_above_height_momentum": parameters.nudging_above_height_momentum,
+        "nudging_timescale_momentum": parameters.nudging_timescale_momentum,
+        "nudging_transition_shape_momentum": parameters.nudging_transition_shape_momentum,
+        "nudging_transition_thickness_momentum": parameters.nudging_transition_thickness_momentum,
+        "nudging_above_height_scalars": parameters.nudging_above_height_scalars,
+        "nudging_timescale_scalars": parameters.nudging_timescale_scalars,
+        "nudging_transition_shape_scalars": parameters.nudging_transition_shape_scalars,
+        "nudging_transition_thickness_scalars": parameters.nudging_transition_thickness_scalars,
     }
     # Filter out None values
     nudging_filtered_dict = {

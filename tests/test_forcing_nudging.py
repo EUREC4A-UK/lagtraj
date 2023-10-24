@@ -115,6 +115,7 @@ nudging_timescale_scalars: 10
 nudging_method_scalars: runtime_inversion_height
 nudging_timescale_scalars: 10800
 nudging_transition_thickness_scalars: 500.0
+nudging_above_height_scalars: 500.0
 nudging_transition_shape_scalars: cos
 """,
     """

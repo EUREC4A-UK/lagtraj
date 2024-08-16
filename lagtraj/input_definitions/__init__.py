@@ -58,7 +58,7 @@ def validate_input(input_params, required_fields):
         # with the fields `requires` and `choices` can be provided. `requires`
         # indicate other validations that must pass and choices are the valid
         # choices if they pass
-        if type(f_option) == dict:
+        if isinstance(f_option, dict):
             if "requires" in f_option and "choices" in f_option:
                 requirements = f_option["requires"]
                 satisfied_requirements = {}
@@ -122,7 +122,9 @@ def validate_input(input_params, required_fields):
 
         # here we check whether the parameter was prescribed to have a specific
         # type and in that case whether the value provided has the correct type
-        if type(f_option) == type and type(input_params[f_name]) != f_option:
+        if isinstance(f_option, type) and not isinstance(
+            input_params[f_name], f_option
+        ):
             raise InvalidInputDefinition(
                 "Field `{}` should have type {}, but has type `{}`".format(
                     f_name, f_option, type(input_params[f_name])
@@ -138,7 +140,7 @@ def validate_input(input_params, required_fields):
 
         # choices a given as a list or tuple, so we call `_check_field`
         # recursively to see if one of the options fit
-        if type(f_option) == list or type(f_option) == tuple:
+        if isinstance(f_option, list) or isinstance(f_option, tuple):
             f_options = f_option
             exceptions = []
             new_val = None

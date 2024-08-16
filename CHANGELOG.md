@@ -9,6 +9,25 @@
 - Provide information on CDS and its API in the README file
   [\#194](https://github.com/EUREC4A-UK/lagtraj/pull/194) @sjboeing
 
+- Change format of nudging options in yaml to separate out the different choices
+  made for nudging:
+  * The nudging method (which can be set as 'false')
+  * The height or height offset where nudging begins
+  * The timescale of nudging
+  * The height over which nudging transitions from inactive to full strength
+  * The shape of the transition profile
+  This requires changing the yaml files for forcing conversion.
+  The format of these yaml files is such that the nudging method determines
+  which of the other parameters can and should be present.
+  [\#202](https://github.com/EUREC4A-UK/lagtraj/pull/202) @sjboeing
+
+*bugfixes*
+
+- Update KPT variable naming to be consistent with documentation
+  (https://web.lmd.jussieu.fr/~mpllmd/dephy2_forcages_communs/KPT_documentation.pdf)
+  This impacts on any applications that need to read the KPT output
+  [\#202](https://github.com/EUREC4A-UK/lagtraj/pull/202) @sjboeing
+
 *maintenance*
 
 - add Zenodo integration and add citation file

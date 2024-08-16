@@ -87,7 +87,7 @@ def _parse_readme_cli_commands():
 
     lines = [line.replace("$>", "").strip() for line in lines]
 
-    cli_commands = list(filter(lambda l: "python -m lagtraj" in l, lines))
+    cli_commands = list(filter(lambda line: "python -m lagtraj" in line, lines))
 
     return cli_commands
 

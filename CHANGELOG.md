@@ -33,6 +33,10 @@
 - add Zenodo integration and add citation file
   [\#195](https://github.com/EUREC4A-UK/lagtraj/pull/195) @leifdenby
 
+- update versions of flake8, black and isort in pre-commit config and resolve
+  linting issues arising from these updates
+  [\#206](https://github.com/EUREC4A-UK/lagtraj/pull/206), @leifdenby
+
 
 ## [v0.1.2](https://github.com/EUREC4A-UK/lagtraj/tree/v0.1.2)
 

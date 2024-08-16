@@ -14,7 +14,7 @@ def create_attributes_dictionary(*args, **kwargs):
     """
 
     def _serialize_item(item, prefix=""):
-        if type(item) == str:
+        if isinstance(item, str):
             yield (prefix, item)
         elif isinstance(item, float) or isinstance(item, int):
             yield (prefix, str(item))
@@ -24,7 +24,7 @@ def create_attributes_dictionary(*args, **kwargs):
             yield (prefix, item.isoformat())
         else:
             sub_items = []
-            if type(item) == dict:
+            if isinstance(item, dict):
                 sub_items = item.items()
             elif (
                 isinstance(item, xr.Dataset)
@@ -32,9 +32,9 @@ def create_attributes_dictionary(*args, **kwargs):
                 or isinstance(item, ERA5DataSet)
             ):
                 sub_items = item.attrs.items()
-            # can use isinstance because namedtuple is a kind of tuple and we
+            # can't use isinstance because namedtuple is a kind of tuple and we
             # want to save the tuple keys in that case
-            elif isinstance(item, list) or type(item) == tuple:
+            elif isinstance(item, list) or type(item) is tuple:
                 sub_items = zip(range(len(item)), item)
             else:
                 # collections.named_tuple has a `_asdict` method to turn it into a dictionary
@@ -64,5 +64,7 @@ def create_attributes_dictionary(*args, **kwargs):
     ]
     for item in items:
         for (label, value) in _serialize_item(item=item):
+            if not isinstance(label, str):
+                raise ValueError(f"Expected string, got {type(label)}")
             attrs[label] = value
     return attrs

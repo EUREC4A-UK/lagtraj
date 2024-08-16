@@ -73,7 +73,7 @@ def main(data_path, trajectory_name):
         da_times = _get_times_from_domain(
             trajectory_definition=traj_definition, root_data_path=data_path
         )
-    elif type(traj_definition.timestep) == datetime.timedelta:
+    elif isinstance(traj_definition.timestep, datetime.timedelta):
         da_times = _build_times_dataarray(
             origin=traj_definition.origin,
             duration=traj_definition.duration,

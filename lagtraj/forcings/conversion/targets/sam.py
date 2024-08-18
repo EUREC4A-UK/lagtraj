@@ -228,8 +228,6 @@ era5_to_sam_units = {
 def from_era5(ds_era5, da_levels, parameters, metadata):
     """Obtain a sam input file from era5 variable set at high resolution"""
     # Put full levels midway between half-levels, I think this is consistent with DALES
-    # Reverse order of data, to confirm to other kpt input
-    # Does it apply to sam as well?
     sam_half_level_array = da_levels.values
     sam_full_level_array = 0.5 * (sam_half_level_array[:-1] + sam_half_level_array[1:])
     sam_full_level_coord = {
@@ -240,8 +238,7 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         )
     }
 
-    # note: the sam_full_level is actully height in meters, so later on in the code, I should actually
-    # update the values to make it truely the pressure coord.
+    # note: the "sam_full_level" has units: meters, so later on in the code, I update the units to Pa.
     sam_mean_preslev_coord = {
         "lev": (
             "lev",
@@ -378,7 +375,7 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     #    Ps.astype(np.single).reshape((Ntime, 1, 1)),
     #    sam_attributes["Ps"],
     # )
-    # surface temperature and humidity: (needs interpolation)
+    # surface temperature and humidity: (used linear extrapolation following P.Blossey's matlab script)
     Nt = len(ds_era5.time)
     T_surf = np.zeros((Nt, 1, 1))
     q_surf = np.zeros((Nt, 1, 1))

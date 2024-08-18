@@ -165,7 +165,7 @@ class ERA5DataSet(object):
         return da_combined
 
     def __getitem__(self, item):
-        requested_vars = type(item) == set and item or set(item)
+        requested_vars = set(item)
         available_vars = self._selected_vars or self.data_vars
         missing_vars = requested_vars.difference(available_vars)
         if len(missing_vars) > 0:
@@ -292,7 +292,7 @@ class ERA5DataSet(object):
                 if np.array(interp_to[d]) in d_vals_array:
                     slices[d] = interp_to[d]
                     continue
-                if type(interp_to[d]) == xr.core.dataarray.DataArray:
+                if isinstance(interp_to[d], xr.core.dataarray.DataArray):
                     d_interp_val = interp_to[d].values
                 else:
                     d_interp_val = interp_to[d]

@@ -18,6 +18,10 @@
   linting issues arising from these updates
   [\#206](https://github.com/EUREC4A-UK/lagtraj/pull/206), @leifdenby
 
+*features*
+- add support for converting forcing files to target the SAM LES model
+  (using the [SCAM IOP](https://www.cesm.ucar.edu/models/simple/scam) format)
+  [\#160](https://github.com/EUREC4A-UK/lagtraj/pull/160) @xychen-ocn @pblossey
 
 ## [v0.1.2](https://github.com/EUREC4A-UK/lagtraj/tree/v0.1.2)
 

@@ -188,9 +188,9 @@ specific to the model being targeted. This can be achieved by using the
 `--conversion` flag and providing a `conversion_name`. `lagtraj` currently
 comes bundled with functionality to target the
 [KPT](https://www.lmd.jussieu.fr/~mpllmd/dephy2_forcages_communs/KPT_documentation.pdf)
-LES and
+LES,
 [dephy](https://docs.google.com/document/d/118xP04jB9HO7Y2LqWk3HZpZ9n3CFujgzimLI7Ug8vO4)
-LES format.
+LES, and [SAM](http://rossby.msrc.sunysb.edu/SAM.html) LES format.
 
 Conversion parameters are defined in a yaml-files similarly to how domain,
 trajectory and forcings definitions are stored, with one important difference:

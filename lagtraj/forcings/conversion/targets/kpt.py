@@ -9,7 +9,11 @@ import numpy as np
 import xarray as xr
 
 from ....domain.sources.era5.constants import rg
-from ....utils.interpolation.methods import central_estimate, steffen_1d_no_ep_time
+from ....utils.interpolation.methods import (
+    central_estimate,
+    cos_transition,
+    steffen_1d_no_ep_time,
+)
 
 kpt_attributes = {
     "lat": {"units": "degrees North", "long_name": "latitude"},
@@ -547,4 +551,62 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         "field_capacity": 0.32275,
     }
     ds_kpt.attrs.update(**kpt_dict)
+    # Correct geostropic winds and wind tendencies at high levels
+    if parameters.wind_at_high_levels_correction_method is None:
+        # Use sensible default values
+        wind_at_high_levels_correction_method = "fixed_height"
+        wind_at_high_levels_correction_highest_pressure = 500.0  # Pa, not hPa!
+        wind_at_high_levels_correction_transition_thickness = 200.0
+        wind_at_high_levels_correction_shape = "cos"
+    elif parameters.wind_at_high_levels_correction_method == "fixed_height":
+        wind_at_high_levels_correction_method = (
+            parameters.wind_at_high_levels_correction_method
+        )
+        wind_at_high_levels_correction_highest_pressure = (
+            parameters.wind_at_high_levels_correction_highest_pressure
+        )  # Pa, not hPa!
+        wind_at_high_levels_correction_transition_thickness = (
+            parameters.wind_at_high_levels_correction_transition_thickness
+        )
+        wind_at_high_levels_correction_shape = (
+            parameters.wind_at_high_levels_correction_shape
+        )
+    elif parameters.wind_at_high_levels_correction_method == "off":
+        pass
+    else:
+        raise NotImplementedError(
+            f"Wind at high level correction option `{parameters.wind_at_high_levels_correction}` not implemented"
+        )
+    if not (parameters.wind_at_high_levels_correction_method == "off"):
+        ds_wind_at_high_levels = {
+            "wind_at_high_levels_correction_method": wind_at_high_levels_correction_method,
+            "wind_at_high_levels_correction_highest_pressure": wind_at_high_levels_correction_highest_pressure,
+            "wind_at_high_levels_correction_transition_thickness": wind_at_high_levels_correction_transition_thickness,
+            "wind_at_high_levels_correction_shape": wind_at_high_levels_correction_shape,
+        }
+        ds_kpt.attrs.update(**ds_wind_at_high_levels)
+        pressure_array = ds_kpt["pres"].values
+
+        wind_at_high_levels_correction_factor = cos_transition(
+            pressure_array,
+            wind_at_high_levels_correction_highest_pressure
+            + wind_at_high_levels_correction_transition_thickness,
+            wind_at_high_levels_correction_highest_pressure,
+        )
+        # Set ug and vg equal to actual (nudging) wind at very high levels
+        # Remove advection tendencies at high levels
+        ds_kpt["ug"] = ds_kpt["ug"] * wind_at_high_levels_correction_factor[:] + ds_kpt[
+            "u"
+        ] * (1.0 - wind_at_high_levels_correction_factor)
+        ds_kpt["vg"] = ds_kpt["vg"] * wind_at_high_levels_correction_factor + ds_kpt[
+            "v"
+        ] * (1.0 - wind_at_high_levels_correction_factor)
+        ds_kpt["uadv"] = ds_kpt["uadv"] * wind_at_high_levels_correction_factor
+        ds_kpt["vadv"] = ds_kpt["vadv"] * wind_at_high_levels_correction_factor
+        ds_kpt["tadv"] = ds_kpt["tadv"] * wind_at_high_levels_correction_factor
+        ds_kpt["qadv"] = ds_kpt["qadv"] * wind_at_high_levels_correction_factor
+        ds_kpt["tladv"] = ds_kpt["tladv"] * wind_at_high_levels_correction_factor
+        ds_kpt["qladv"] = ds_kpt["qladv"] * wind_at_high_levels_correction_factor
+        ds_kpt["qiadv"] = ds_kpt["qiadv"] * wind_at_high_levels_correction_factor
+        ds_kpt["ccadv"] = ds_kpt["ccadv"] * wind_at_high_levels_correction_factor
     return ds_kpt

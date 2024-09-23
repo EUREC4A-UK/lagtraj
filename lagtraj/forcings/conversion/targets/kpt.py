@@ -542,7 +542,9 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         "flight": metadata.case,
         "date": ds_era5["origin_datetime"].values.astype("str"),
         "source": "ERA5",
-        # "source_domain": metadata.trajectory_domain_name,
+        "source_domain": getattr(
+            metadata, "trajectory_domain_name", "unknown-trajectory-domain"
+        ),
         "source_grid": "grid0.1x0.1",
         # TODO: (Leif) these need adding, where should they come from?
         # "source_latsamp": ds_era5.sampling_method[1],

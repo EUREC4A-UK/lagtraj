@@ -2,14 +2,14 @@
 Tests for checking different options related to nudging when doing forcing
 conversion to
 
-In this file we will be doing two things:
+In this file we will be checking that the forcing step runs without error 
+for different valid sets of parameters in the yaml-files that describe the
+conversion step
 
-    1) Checking that the forcing step runs without error for different valid
-    sets of parameters in the yaml-files that describe the conversion step
-    2) When converting to DEPHY format we also check the output xr.Dataset
-    (and so netCDF file), based on the conversion parameters used, whether the
-    nudging related attributes have the correct values and the correct nudging
-    variables are present (and have the correct values)
+Idea for furture work: when converting to DEPHY format, also check the output 
+xr.Dataset (and so netCDF file), based on the conversion parameters used, 
+whether the nudging related attributes have the correct values and the correct 
+nudging variables are present (and have the correct values)
 """
 import uuid
 from pathlib import Path
@@ -83,22 +83,6 @@ variables = [
 
 
 nudging_methods_scalars = ["constant", "runtime_inversion_height", "fixed_height"]
-
-# ~ if method == "constant":
-# ~ raise ValueError("not implemented")
-# ~ # all values for momentum/scalars should be the inverse of the timescale
-# ~ # given by nudging_timescale_scalars/nudging_timescale_momentum
-# ~ elif method == "fixed_height":
-# ~ raise ValueError("not implemented")
-# ~ # below the fixed height the nudging_inv_* values are zero and at the very
-# ~ # domain top as method=="constant" above
-# ~ elif method == "runtime_inversion_height":
-# ~ raise ValueError("not implemented")
-# ~ # check that variables for nudging profiles aren't present
-# ~ elif method == False:
-# ~ raise ValueError("not implemented")
-# ~ # no variable presents
-
 
 # 3. ensure parameters in yaml file describing conversion are present as
 # attribute in output netCDF file

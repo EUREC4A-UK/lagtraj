@@ -300,8 +300,6 @@ def _rh_dephy(tt, pp, qt):
 
 
 def from_era5(ds_era5, da_levels, parameters, metadata):
-    print(parameters)
-
     def none_pass(x):
         if x is None:
             return "None"
@@ -518,7 +516,9 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         nudging_u = -2
         nudging_v = -2
     else:
-        raise ValueError(f"nudging_method_momentum value `{parameters.nudging_method_momentum}` invalid")
+        raise ValueError(
+            f"nudging_method_momentum value `{parameters.nudging_method_momentum}` invalid"
+        )
     if parameters.nudging_method_scalars in [False, None]:
         nudging_temp = 0
         nudging_theta = 0

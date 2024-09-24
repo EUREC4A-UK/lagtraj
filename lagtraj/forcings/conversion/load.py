@@ -61,7 +61,7 @@ def load_definition(root_data_path, forcing_name, conversion_name):
     for k in NUDGING_REQUIRED_FIELDS:
         value = conversion_params.get(k)
         if value is None:
-            raise NotImplementedError(value)
+            # TODO: implement default values here
             pass
 
         nudging_param_values[k] = value

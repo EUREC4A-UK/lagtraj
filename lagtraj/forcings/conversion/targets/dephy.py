@@ -533,6 +533,7 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     else:
         raise ValueError("nudging_method_scalars value invalid")
     # Make the profiles if needed
+
     def make_nudge_profs(nudged_vars, var_type):
         for var_name in nudged_vars:
             ds_dephy[f"nudging_inv_{var_name}_traj"] = nudging_inv_time_prof(
@@ -585,12 +586,12 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     ]
     for attr_name in attrs_to_copy_from_parameters:
         dephy_dictionary[attr_name] = getattr(parameters, attr_name)
-    attrs_to_set_nan = "z0"
-    attrs_to_set_to_nan = attrs_to_set_nan + [
+    attrs_to_set_to_nan = "z0"
+    attrs_to_set_to_nan = attrs_to_set_to_nan + [
         f"z_nudging_{prog_var} p_nudging_{prog_var}".split()
         for prog_var in thermo_vars + momentum_vars
     ]
-    for attr_name in attrs_to_set_nan:
+    for attr_name in attrs_to_set_to_nan:
         dephy_dictionary[attr_name] = np.nan
     # Filter out None values
     nudging_filtered_dict = {

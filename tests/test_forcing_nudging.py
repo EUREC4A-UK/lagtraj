@@ -2,13 +2,13 @@
 Tests for checking different options related to nudging when doing forcing
 conversion to
 
-In this file we will be checking that the forcing step runs without error 
+In this file we will be checking that the forcing step runs without error
 for different valid sets of parameters in the yaml-files that describe the
 conversion step
 
-Idea for furture work: when converting to DEPHY format, also check the output 
-xr.Dataset (and so netCDF file), based on the conversion parameters used, 
-whether the nudging related attributes have the correct values and the correct 
+Idea for furture work: when converting to DEPHY format, also check the output
+xr.Dataset (and so netCDF file), based on the conversion parameters used,
+whether the nudging related attributes have the correct values and the correct
 nudging variables are present (and have the correct values)
 """
 import uuid

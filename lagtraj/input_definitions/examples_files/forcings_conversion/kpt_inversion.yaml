@@ -25,12 +25,12 @@ surfaceType     : ocean
 surfaceForcing  : ts
 surfaceForcingWind                        : z0_traj
 nudging_method_scalars                    : runtime_inversion_height
-nudging_transition_thickness_scalars      : 500
-nudging_above_height_scalars              : 500
+nudging_transition_thickness_scalars      : 500 # [m]
+nudging_above_height_scalars              : 500 # [m]
 nudging_transition_shape_scalars          : cos
-nudging_timescale_scalars                 : 10800
+nudging_timescale_scalars                 : 10800 # [s]
 nudging_method_momentum                   : runtime_inversion_height
-nudging_transition_thickness_momentum     : 500
-nudging_above_height_momentum             : 500
+nudging_transition_thickness_momentum     : 500 # [m]
+nudging_above_height_momentum             : 500 # [m]
 nudging_transition_shape_momentum         : cos
-nudging_timescale_momentum                : 10800
+nudging_timescale_momentum                : 10800 # [s]

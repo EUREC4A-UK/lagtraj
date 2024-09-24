@@ -510,40 +510,41 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     thermo_vars = "temp theta thetal qv qt rv rt".split()
     momentum_vars = "u v".split()
 
-    def set_nudging_scalars(prog_vars, value):
+    # Sets the nudging flag for DEPHY
+    def set_nudging_flag(prog_vars, value):
         for prog_var in prog_vars:
             nudging_dict[f"nudging_{prog_var}"] = value
 
     if parameters.nudging_method_momentum in [False, None]:
-        set_nudging_scalars(momentum_vars, 0)
+        set_nudging_flag(momentum_vars, 0)
     elif parameters.nudging_method_momentum in ["constant", "fixed_height"]:
-        set_nudging_scalars(momentum_vars, -1)
+        set_nudging_flag(momentum_vars, -1)
     elif parameters.nudging_method_momentum == "runtime_inversion_height":
-        set_nudging_scalars(momentum_vars, -2)
+        set_nudging_flag(momentum_vars, -2)
     else:
         raise ValueError(
             f"nudging_method_momentum value `{parameters.nudging_method_momentum}` invalid"
         )
     if parameters.nudging_method_scalars in [False, None]:
-        set_nudging_scalars(thermo_vars, 0)
+        set_nudging_flag(thermo_vars, 0)
     elif parameters.nudging_method_scalars in ["constant", "fixed_height"]:
-        set_nudging_scalars(thermo_vars, -1)
+        set_nudging_flag(thermo_vars, -1)
     elif parameters.nudging_method_scalars == "runtime_inversion_height":
-        set_nudging_scalars(thermo_vars - 2)
+        set_nudging_flag(thermo_vars - 2)
     else:
         raise ValueError("nudging_method_scalars value invalid")
     # Make the profiles if needed
 
-    def make_nudge_profs(nudged_vars, var_type):
+    def make_nudging_profs(parameter_type, nudged_vars):
         for var_name in nudged_vars:
             ds_dephy[f"nudging_inv_{var_name}_traj"] = nudging_inv_time_prof(
-                var_type, f"nudging_inv_{var_name}_traj"
+                parameter_type, f"nudging_inv_{var_name}_traj"
             )
 
     if parameters.nudging_method_momentum in ["constant", "fixed_height"]:
-        make_nudge_profs(momentum_vars, "momentum")
+        make_nudging_profs("momentum", momentum_vars)
     if parameters.nudging_method_scalars in ["constant", "fixed_height"]:
-        make_nudge_profs(thermo_vars, "scalars")
+        make_nudging_profs("scalars", thermo_vars)
     # Final checks: are all variables present?
     for var in dephy_variables:
         if var not in ds_dephy:
@@ -587,10 +588,10 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     for attr_name in attrs_to_copy_from_parameters:
         dephy_dictionary[attr_name] = getattr(parameters, attr_name)
     attrs_to_set_to_nan = "z0"
-    attrs_to_set_to_nan = attrs_to_set_to_nan + [
-        f"z_nudging_{prog_var} p_nudging_{prog_var}".split()
-        for prog_var in thermo_vars + momentum_vars
-    ]
+    for prog_var in thermo_vars + momentum_vars:
+        attrs_to_set_to_nan = (
+            attrs_to_set_to_nan + "z_nudging_{prog_var} p_nudging_{prog_var}".split()
+        )
     for attr_name in attrs_to_set_to_nan:
         dephy_dictionary[attr_name] = np.nan
     # Filter out None values

@@ -590,7 +590,7 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     attrs_to_set_to_nan = "z0"
     for prog_var in thermo_vars + momentum_vars:
         attrs_to_set_to_nan = (
-            attrs_to_set_to_nan + "z_nudging_{prog_var} p_nudging_{prog_var}".split()
+            attrs_to_set_to_nan + f"z_nudging_{prog_var} p_nudging_{prog_var}".split()
         )
     for attr_name in attrs_to_set_to_nan:
         dephy_dictionary[attr_name] = np.nan

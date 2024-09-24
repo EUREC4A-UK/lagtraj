@@ -300,6 +300,12 @@ def _rh_dephy(tt, pp, qt):
 
 
 def from_era5(ds_era5, da_levels, parameters, metadata):
+    def none_pass(x):
+        if x is None:
+            return "None"
+        else:
+            return x
+
     def init_field_dephy(field, variable):
         if np.ndim(field) == 1:
             return (
@@ -455,21 +461,40 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     rh = _rh_dephy(ds_dephy["temp"], ds_dephy["pressure"], ds_dephy["qt"])
     ds_dephy["rh"] = init_field_dephy(rh.values[:, :, 0, 0], "rh")
 
-    def nudging_inv_time_prof(nudging_parameters, variable):
+    def nudging_inv_time_prof(parameter_type, variable):
         height_array = ds_dephy["height_forc"].values
-        nudging_method = nudging_parameters.method
-        nudging_time = nudging_parameters.time
-        nudging_height = nudging_parameters.height
-        nudging_transition = nudging_parameters.transition
-        if nudging_method is None:
-            inv_time_array = 0.0 * height_array
-        elif nudging_method == "cos":
-            div_factor = cos_transition(
-                height_array,
-                nudging_height + 0.5 * nudging_transition,
-                nudging_height - 0.5 * nudging_transition,
+        if parameter_type == "momentum":
+            nudging_method = parameters.nudging_method_momentum
+            nudging_above_height = parameters.nudging_above_height_momentum
+            nudging_timescale = parameters.nudging_timescale_momentum
+            nudging_transition_shape = parameters.nudging_transition_shape_momentum
+            nudging_transition_thickness = (
+                parameters.nudging_transition_thickness_momentum
             )
-            inv_time_array = div_factor / nudging_time
+        elif parameter_type == "scalars":
+            nudging_method = parameters.nudging_method_scalars
+            nudging_above_height = parameters.nudging_above_height_scalars
+            nudging_timescale = parameters.nudging_timescale_scalars
+            nudging_transition_shape = parameters.nudging_transition_shape_scalars
+            nudging_transition_thickness = (
+                parameters.nudging_transition_thickness_scalars
+            )
+        else:
+            raise Exception("parameter_type for nudging not defined")
+        if nudging_method == "constant":
+            inv_time_array = np.ones(np.shape(height_array)) / nudging_timescale
+        elif nudging_method == "fixed_height":
+            if nudging_transition_shape == "cos":
+                div_factor = cos_transition(
+                    height_array,
+                    nudging_above_height + nudging_transition_thickness,
+                    nudging_above_height,
+                )
+                inv_time_array = div_factor / nudging_timescale
+            else:
+                raise Exception(
+                    "Shape for calculating inverse nudging time profile undefined"
+                )
         else:
             raise Exception(
                 "Method for calculating inverse nudging time profile undefined"
@@ -480,42 +505,51 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
             dephy_variables[variable],
         )
 
-    nudging_parameters_momentum_traj = parameters.nudging_parameters_momentum_traj
-    nudging_parameters_scalar_traj = parameters.nudging_parameters_scalar_traj
-    ds_dephy["nudging_inv_u_traj"] = nudging_inv_time_prof(
-        nudging_parameters_momentum_traj, "nudging_inv_u_traj"
-    )
-    ds_dephy["nudging_inv_v_traj"] = nudging_inv_time_prof(
-        nudging_parameters_momentum_traj, "nudging_inv_v_traj"
-    )
-    ds_dephy["nudging_inv_temp_traj"] = nudging_inv_time_prof(
-        nudging_parameters_scalar_traj, "nudging_inv_temp_traj"
-    )
-    ds_dephy["nudging_inv_theta_traj"] = nudging_inv_time_prof(
-        nudging_parameters_scalar_traj, "nudging_inv_theta_traj"
-    )
-    ds_dephy["nudging_inv_thetal_traj"] = nudging_inv_time_prof(
-        nudging_parameters_scalar_traj, "nudging_inv_thetal_traj"
-    )
-    ds_dephy["nudging_inv_qv_traj"] = nudging_inv_time_prof(
-        nudging_parameters_scalar_traj, "nudging_inv_qv_traj"
-    )
-    ds_dephy["nudging_inv_qt_traj"] = nudging_inv_time_prof(
-        nudging_parameters_scalar_traj, "nudging_inv_qt_traj"
-    )
-    ds_dephy["nudging_inv_rv_traj"] = nudging_inv_time_prof(
-        nudging_parameters_scalar_traj, "nudging_inv_rv_traj"
-    )
-    ds_dephy["nudging_inv_rt_traj"] = nudging_inv_time_prof(
-        nudging_parameters_scalar_traj, "nudging_inv_rt_traj"
-    )
+    # First, set the flags
+    nudging_dict = {}
+    thermo_vars = "temp theta thetal qv qt rv rt".split()
+    momentum_vars = "u v".split()
 
+    # Sets the nudging flag for DEPHY
+    def set_nudging_flag(prog_vars, value):
+        for prog_var in prog_vars:
+            nudging_dict[f"nudging_{prog_var}"] = value
+
+    if parameters.nudging_method_momentum in [False, None]:
+        set_nudging_flag(momentum_vars, 0)
+    elif parameters.nudging_method_momentum in ["constant", "fixed_height"]:
+        set_nudging_flag(momentum_vars, -1)
+    elif parameters.nudging_method_momentum == "runtime_inversion_height":
+        set_nudging_flag(momentum_vars, -2)
+    else:
+        raise ValueError(
+            f"nudging_method_momentum value `{parameters.nudging_method_momentum}` invalid"
+        )
+    if parameters.nudging_method_scalars in [False, None]:
+        set_nudging_flag(thermo_vars, 0)
+    elif parameters.nudging_method_scalars in ["constant", "fixed_height"]:
+        set_nudging_flag(thermo_vars, -1)
+    elif parameters.nudging_method_scalars == "runtime_inversion_height":
+        set_nudging_flag(thermo_vars - 2)
+    else:
+        raise ValueError("nudging_method_scalars value invalid")
+    # Make the profiles if needed
+
+    def make_nudging_profs(parameter_type, nudged_vars):
+        for var_name in nudged_vars:
+            ds_dephy[f"nudging_inv_{var_name}_traj"] = nudging_inv_time_prof(
+                parameter_type, f"nudging_inv_{var_name}_traj"
+            )
+
+    if parameters.nudging_method_momentum in ["constant", "fixed_height"]:
+        make_nudging_profs("momentum", momentum_vars)
+    if parameters.nudging_method_scalars in ["constant", "fixed_height"]:
+        make_nudging_profs("scalars", thermo_vars)
     # Final checks: are all variables present?
     for var in dephy_variables:
         if var not in ds_dephy:
             print(var + " is missing in the dephy formatted output")
     # Needs improvement
-
     dephy_dictionary = {
         "Conventions": "CF-1.0",
         "comment": metadata.comment,
@@ -526,51 +560,43 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
         "script": "https://github.com/EUREC4A-UK/lagtraj",
         "startDate": ds_dephy["time"][0].values.astype("str"),
         "endDate": ds_dephy["time"][-1].values.astype("str"),
-        "adv_temp": parameters.adv_temp,
-        "adv_theta": parameters.adv_theta,
-        "adv_thetal": parameters.adv_thetal,
-        "adv_qv": parameters.adv_qv,
-        "adv_qt": parameters.adv_qt,
-        "adv_rv": parameters.adv_rv,
-        "adv_rt": parameters.adv_rt,
-        "rad_temp": parameters.rad_temp,
-        "rad_theta": parameters.rad_theta,
-        "rad_thetal": parameters.rad_thetal,
-        "forc_omega": parameters.forc_omega,
-        "forc_w": parameters.forc_w,
-        "forc_geo": parameters.forc_geo,
-        "nudging_u": parameters.nudging_u,
-        "nudging_v": parameters.nudging_v,
-        "nudging_temp": parameters.nudging_temp,
-        "nudging_theta": parameters.nudging_theta,
-        "nudging_thetal": parameters.nudging_thetal,
-        "nudging_qv": parameters.nudging_qv,
-        "nudging_qt": parameters.nudging_qt,
-        "nudging_rv": parameters.nudging_rv,
-        "nudging_rt": parameters.nudging_rt,
-        "z_nudging_u": np.nan,
-        "z_nudging_v": np.nan,
-        "z_nudging_temp": np.nan,
-        "z_nudging_theta": np.nan,
-        "z_nudging_thetal": np.nan,
-        "z_nudging_qv": np.nan,
-        "z_nudging_qt": np.nan,
-        "z_nudging_rv": np.nan,
-        "z_nudging_rt": np.nan,
-        "p_nudging_u": np.nan,
-        "p_nudging_v": np.nan,
-        "p_nudging_temp": np.nan,
-        "p_nudging_theta": np.nan,
-        "p_nudging_thetal": np.nan,
-        "p_nudging_qv": np.nan,
-        "p_nudging_qt": np.nan,
-        "p_nudging_rv": np.nan,
-        "p_nudging_rt": np.nan,
         "zorog": 0.0,
-        "z0": np.nan,
         "surfaceType": parameters.surfaceType,
         "surfaceForcing": parameters.surfaceForcing,
         "surfaceForcingWind": parameters.surfaceForcingWind,
+        "nudging_method_momentum": str(none_pass(parameters.nudging_method_momentum)),
+        "nudging_method_scalars": str(none_pass(parameters.nudging_method_scalars)),
     }
-    ds_dephy.attrs.update(dephy_dictionary)
+    ds_dephy.attrs.update(**dephy_dictionary)
+    nudging_specs_dict = {
+        "nudging_above_height_momentum": parameters.nudging_above_height_momentum,
+        "nudging_timescale_momentum": parameters.nudging_timescale_momentum,
+        "nudging_transition_shape_momentum": parameters.nudging_transition_shape_momentum,
+        "nudging_transition_thickness_momentum": parameters.nudging_transition_thickness_momentum,
+        "nudging_above_height_scalars": parameters.nudging_above_height_scalars,
+        "nudging_timescale_scalars": parameters.nudging_timescale_scalars,
+        "nudging_transition_shape_scalars": parameters.nudging_transition_shape_scalars,
+        "nudging_transition_thickness_scalars": parameters.nudging_transition_thickness_scalars,
+    }
+    ds_dephy.attrs.update(**nudging_dict)
+    attrs_to_copy_from_parameters = (
+        "rad_temp rad_theta rad_thetal forc_omega forc_w forc_geo".split()
+    )
+    attrs_to_copy_from_parameters = attrs_to_copy_from_parameters + [
+        f"adv_{thermo_var}" for thermo_var in thermo_vars
+    ]
+    for attr_name in attrs_to_copy_from_parameters:
+        dephy_dictionary[attr_name] = getattr(parameters, attr_name)
+    attrs_to_set_to_nan = ["z0"]
+    for prog_var in thermo_vars + momentum_vars:
+        attrs_to_set_to_nan = (
+            attrs_to_set_to_nan + f"z_nudging_{prog_var} p_nudging_{prog_var}".split()
+        )
+    for attr_name in attrs_to_set_to_nan:
+        dephy_dictionary[attr_name] = np.nan
+    # Filter out None values
+    nudging_filtered_dict = {
+        k: v for k, v in nudging_specs_dict.items() if v is not None
+    }
+    ds_dephy.attrs.update(**nudging_filtered_dict)
     return ds_dephy

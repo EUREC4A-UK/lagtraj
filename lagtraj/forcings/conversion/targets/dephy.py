@@ -587,7 +587,7 @@ def from_era5(ds_era5, da_levels, parameters, metadata):
     ]
     for attr_name in attrs_to_copy_from_parameters:
         dephy_dictionary[attr_name] = getattr(parameters, attr_name)
-    attrs_to_set_to_nan = "z0"
+    attrs_to_set_to_nan = ["z0"]
     for prog_var in thermo_vars + momentum_vars:
         attrs_to_set_to_nan = (
             attrs_to_set_to_nan + f"z_nudging_{prog_var} p_nudging_{prog_var}".split()
